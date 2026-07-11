@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% set active_page = "sessions" %}
+{% block title %}Session #{{ session.id }} - ZTR Dashboard{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="text-sm text-on-surface-muted mb-4">
+    <a href="/" class="hover:text-accent transition-colors">Sessions</a>
+    <span class="mx-1">></span>
+    <span class="text-on-surface">Session #{{ session.id }}</span>
+</div>
+
+<!-- Header Card -->
+<div class="bg-surface-low rounded-lg p-6 mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <h2 class="text-2xl font-extrabold">Session #{{ session.id }}</h2>
+                {% if session.final_verdict in ('PASS', 'pass') %}
+                <span class="px-3 py-1 rounded-full bg-success/15 text-success text-xs font-bold font-mono">PASS</span>
+                {% elif session.final_verdict in ('CHANGES_REQUESTED', 'conditional') %}
+                <span class="px-3 py-1 rounded-full bg-warning/15 text-warning text-xs font-bold font-mono">{{ session.final_verdict|upper }}</span>
+                {% elif session.final_verdict in ('BLOCKED', 'fail', 'timeout', 'error') %}
+                <span class="px-3 py-1 rounded-full bg-error/15 text-error text-xs font-bold font-mono">{{ session.final_verdict|upper }}</span>
+                {% else %}
+                <span class="px-3 py-1 rounded-full bg-accent/15 text-accent text-xs font-bold font-mono">RUNNING</span>
+                {% endif %}
+            </div>
+            <p class="text-on-surface-dim text-sm mb-1">Task: "{{ session.task }}"</p>
+            <p class="font-mono text-xs text-on-surface-muted">Target: {{ session.target_file or '(none)' }}</p>
+        </div>
+        <div class="text-right">
+            <div class="font-mono text-4xl font-extrabold text-on-surface">{{ "%02d"|format(session.rounds or 0) }}</div>
+            <div class="text-[10px] uppercase tracking-widest text-on-surface-muted">rounds</div>
+            <div class="font-mono text-xs text-on-surface-muted mt-2">{{ session.started_at[:19] if session.started_at else '' }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-[1fr_280px] gap-6">
+    <!-- Left: Round Timeline -->
+    <div class="space-y-4">
+        {% for rl in round_logs %}
+        <div class="bg-surface-low rounded-lg p-5">
+            <!-- Round Header -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-surface-high flex items-center justify-center font-mono text-sm font-bold">{{ "%02d"|format(rl.round_number) }}</div>
+                    <span class="font-semibold">Round {{ rl.round_number }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if rl.verdict in ('PASS', 'pass') %}
+                    <span class="px-2.5 py-0.5 rounded-full bg-success/15 text-success text-xs font-bold font-mono">PASS</span>
+                    {% elif rl.verdict in ('CHANGES_REQUESTED', 'conditional') %}
+                    <span class="px-2.5 py-0.5 rounded-full bg-warning/15 text-warning text-xs font-bold font-mono">{{ rl.verdict|upper }}</span>
+                    {% elif rl.verdict in ('BLOCKED', 'fail') %}
+                    <span class="px-2.5 py-0.5 rounded-full bg-error/15 text-error text-xs font-bold font-mono">{{ rl.verdict|upper }}</span>
+                    {% endif %}
+                    {% if rl.parse_method %}
+                    <span class="px-2 py-0.5 rounded bg-surface-high text-on-surface-muted text-[10px] font-mono">{{ rl.parse_method }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Writer -->
+            {% if rl.writer_content %}
+            <div class="mb-4 pb-4 border-b border-surface-high">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full {% if 'gemini' in rl.writer_id %}bg-blue{% elif 'claude' in rl.writer_id %}bg-purple{% else %}bg-on-surface-muted{% endif %}"></div>
+                        <span class="text-sm font-semibold">[Writer] {{ rl.writer_id }}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success font-mono">SUCCESS</span>
+                    </div>
+                </div>
+                <div class="bg-surface-lowest rounded p-3 font-mono text-xs leading-relaxed overflow-x-auto max-h-80 overflow-y-auto whitespace-pre-wrap">{{ rl.writer_content[:3000] }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Nitpicker -->
+            {% if rl.nitpicker_status %}
+            <div class="mb-4 pb-4 border-b border-surface-high">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-2 h-2 rounded-full bg-orange"></div>
+                    <span class="text-sm font-semibold">[Nitpicker]</span>
+                    {% if rl.nitpicker_status == 'pass' %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success font-mono">PASS</span>
+                    {% else %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-error/10 text-error font-mono">REJECT</span>
+                    {% endif %}
+                </div>
+                {% if rl.nitpicker_content %}
+                <p class="text-xs text-on-surface-dim ml-4">{{ rl.nitpicker_content[:300] }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Critic -->
+            {% if rl.critic_content %}
+            <div class="mb-4 pb-4 border-b border-surface-high">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-2 h-2 rounded-full {% if 'gemini' in rl.critic_id %}bg-blue{% elif 'claude' in rl.critic_id %}bg-purple{% else %}bg-on-surface-muted{% endif %}"></div>
+                    <span class="text-sm font-semibold">[Critic] {{ rl.critic_id }}</span>
+                </div>
+                <div class="bg-surface-lowest rounded p-3 font-mono text-xs leading-relaxed overflow-x-auto max-h-80 overflow-y-auto whitespace-pre-wrap">{{ rl.critic_content[:3000] }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Findings -->
+            {% if rl.findings %}
+            <div class="space-y-1.5 mb-3">
+                {% for f in rl.findings %}
+                <div class="flex items-start gap-2">
+                    {% if f.severity == 'blocker' %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-error/20 text-error font-mono font-bold shrink-0">BLOCKER</span>
+                    {% elif f.severity == 'major' %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-warning/20 text-warning font-mono font-bold shrink-0">MAJOR</span>
+                    {% else %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-high text-on-surface-muted font-mono shrink-0">MINOR</span>
+                    {% endif %}
+                    <span class="text-xs text-on-surface-dim">{{ f.message[:150] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Consensus Reasoning -->
+            {% if rl.reasoning %}
+            <div class="pt-3 border-t border-surface-high">
+                <p class="text-xs text-on-surface-muted">{{ rl.reasoning[:250] }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if not round_logs %}
+        <div class="bg-surface-low rounded-lg p-12 text-center text-on-surface-muted">
+            <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">hourglass_empty</span>
+            No round logs recorded.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Side Panels -->
+    <div class="space-y-4">
+        <!-- Insights -->
+        <div class="bg-surface-low rounded-lg p-5">
+            <div class="text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold mb-4">Insights Summary</div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div>
+                    <div class="text-2xl font-extrabold font-mono text-error">{{ total_blockers }}</div>
+                    <div class="text-[10px] text-on-surface-muted uppercase">Blockers</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-extrabold font-mono text-warning">{{ total_majors }}</div>
+                    <div class="text-[10px] text-on-surface-muted uppercase">Majors</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-extrabold font-mono text-on-surface-dim">{{ total_minors }}</div>
+                    <div class="text-[10px] text-on-surface-muted uppercase">Minors</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Findings Trend -->
+        {% if round_logs|length > 1 %}
+        <div class="bg-surface-low rounded-lg p-5">
+            <div class="text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold mb-3">Findings Trend</div>
+            {% for rl in round_logs %}
+            {% set count = rl.findings|length if rl.findings else 0 %}
+            <div class="flex items-center gap-2 mb-2">
+                <span class="font-mono text-xs text-on-surface-muted w-6">R{{ rl.round_number }}</span>
+                <div class="flex-1 bg-surface-high rounded-sm h-3">
+                    <div class="h-full rounded-sm transition-all {% if count == 0 %}bg-success{% elif count <= 2 %}bg-warning{% else %}bg-error{% endif %}"
+                         style="width: {{ [count * 20, 100]|min }}%"></div>
+                </div>
+                <span class="font-mono text-xs text-on-surface-muted w-4 text-right">{{ count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Token Usage -->
+        <div class="bg-surface-low rounded-lg p-5">
+            <div class="text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold mb-3">Token Usage</div>
+            {% set total_tokens = namespace(val=0) %}
+            {% for aid, usage in token_usage.items() %}
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full {% if 'gemini' in aid %}bg-blue{% elif 'claude' in aid %}bg-purple{% elif 'ollama' in aid %}bg-green{% elif 'nitpicker' in aid %}bg-orange{% else %}bg-on-surface-muted{% endif %}"></div>
+                    <span class="text-xs">{{ aid }}</span>
+                </div>
+                <span class="font-mono text-xs font-semibold">{{ "{:,}".format(usage.tokens) }}</span>
+            </div>
+            {% set total_tokens.val = total_tokens.val + usage.tokens %}
+            {% endfor %}
+            {% if token_usage %}
+            <div class="flex justify-between items-center pt-2 mt-2 border-t border-surface-high">
+                <span class="text-xs font-semibold">Total</span>
+                <span class="font-mono text-sm font-bold text-accent">{{ "{:,}".format(total_tokens.val) }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if session.error %}
+        <div class="bg-surface-low rounded-lg p-5">
+            <div class="text-[10px] uppercase tracking-widest text-error font-semibold mb-2">Error</div>
+            <p class="text-xs text-error/80">{{ session.error }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

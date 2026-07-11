@@ -1,0 +1,41 @@
+{
+  "name": "agent-workflow",
+  "version": "1.1.0+codex.20260613",
+  "description": "Role-based multi-agent workflow skills for discovery, phased handoff, phase-cycle orchestration, cross-session review, local Nitpicker review, and ZRT phase commit closeout.",
+  "author": {
+    "name": "shkim",
+    "email": "gkstkqnsla@gmail.com"
+  },
+  "keywords": [
+    "workflow",
+    "discovery",
+    "handoff",
+    "phased",
+    "orchestrator",
+    "nitpicker",
+    "ollama",
+    "korean",
+    "commit"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Workflow",
+    "shortDescription": "Multi-agent workflow skills for phased implementation, orchestration, and commit closeout.",
+    "longDescription": "Use role-based Discovery, Planner, Implementer, Reviewer, Nitpicker, phase-cycle orchestration, and ZRT phase commit closeout workflows across Codex, Claude, and other coding-agent sessions.",
+    "developerName": "shkim",
+    "category": "Productivity",
+    "capabilities": [
+      "Planning",
+      "Review",
+      "LocalWorkflow",
+      "Git"
+    ],
+    "defaultPrompt": [
+      "Use phased implementation handoff for the next phase.",
+      "Use phase-cycle-orchestrator to run the next phase loop.",
+      "Run cross-session plan review on this prompt.",
+      "Run local Nitpicker review for the changed files.",
+      "Use zrt-phase-commit to verify and commit this phase."
+    ]
+  }
+}

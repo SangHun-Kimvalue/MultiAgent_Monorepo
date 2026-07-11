@@ -1,0 +1,43 @@
+{
+  "provider": "ollama",
+  "base_url": "http://localhost:11434",
+  "model": "qwen2.5-coder:7b",
+  "default_scope": "changed",
+  "review_docs_by_default": false,
+  "timeout_seconds": 120,
+  "max_diff_chars": 60000,
+  "include_extensions": [
+    ".c",
+    ".cc",
+    ".cpp",
+    ".cxx",
+    ".h",
+    ".hh",
+    ".hpp",
+    ".hxx",
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cmake"
+  ],
+  "exclude_prefixes": [
+    ".git/",
+    ".venv/",
+    "node_modules/",
+    "dist/",
+    "build/",
+    "out/",
+    "output/",
+    "outputs/",
+    "tmp/",
+    ".claude/",
+    ".agent-workflow-backup/"
+  ]
+}

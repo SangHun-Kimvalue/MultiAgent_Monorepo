@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phase Cycle Orchestrator"
+  short_description: "Run the outer phase loop with human gates and ztr run-phase."
+  default_prompt: "Use phase-cycle-orchestrator to run the next phase loop with review artifacts and human gates."

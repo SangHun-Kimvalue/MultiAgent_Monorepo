@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script id="initial-sessions" type="application/json">{{ sessions | tojson }}</script>
+  <script id="initial-notifications" type="application/json">{{ notifications | tojson }}</script>
+  <script>window.__ACP_POLL_INTERVAL__ = {{ poll_interval | tojson }};</script>
+  <script src="/static/dashboard.js" defer></script>
+  <script src="/static/vendor/alpine.min.js" defer></script>
+</head>
+<body x-data="dashboardStore()" x-init="init()" x-on:beforeunload.window="destroy()">
+  <header>
+    <h1>Agent Control Plane</h1>
+    <span
+      id="stream-status"
+      class="stream-indicator"
+      :class="streamConnected ? 'connected' : 'disconnected'"
+      x-text="'● ' + streamStatus"
+    >● 연결 중...</span>
+  </header>
+
+  <main>
+    <section id="kpi-section" data-testid="kpi-strip" class="kpi-strip" :class="kpis.actionRequired > 0 ? 'needs-action' : 'healthy'">
+      <div class="kpi-card kpi-summary">
+        <span class="kpi-label">전체</span>
+        <strong id="session-count" data-testid="kpi-total" x-text="kpis.total"></strong>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">앱</span>
+        <strong data-testid="kpi-apps" x-text="kpis.apps"></strong>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">프로젝트</span>
+        <strong data-testid="kpi-projects" x-text="kpis.projects"></strong>
+      </div>
+      <div class="kpi-card kpi-action">
+        <span class="kpi-label" x-text="kpis.healthLabel"></span>
+        <strong data-testid="kpi-action-required" x-text="kpis.actionRequired"></strong>
+      </div>
+      <template x-for="state in ['holding','stale','error','live','running','idle','done','unknown']" :key="state">
+        <div class="kpi-state" :class="isActionState(state) ? 'kpi-state-action' : ''" :data-testid="'kpi-state-' + state">
+          <span class="badge" :class="'badge-' + state" x-text="state"></span>
+          <strong x-text="kpis.counts[state]"></strong>
+        </div>
+      </template>
+    </section>
+
+    <p x-show="fetchError" x-cloak class="inline-error" data-testid="snapshot-error" x-text="fetchError"></p>
+
+    <section id="filters-section" class="filter-band" data-testid="filter-band">
+      <div class="filter-summary">
+        <strong data-testid="visible-count" x-text="visibleCount"></strong>
+        <span>/</span>
+        <span data-testid="visible-total" x-text="kpis.total"></span>
+      </div>
+      <label class="toggle-control">
+        <input
+          type="checkbox"
+          data-testid="filter-action-only"
+          :checked="actionOnly"
+          @change="updateActionOnly($event.target.checked)"
+        >
+        <span>행동 필요만</span>
+      </label>
+      <details class="filter-menu">
+        <summary>앱</summary>
+        <div class="filter-options">
+          <template x-for="app in availableApps" :key="app">
+            <label>
+              <input type="checkbox" :data-testid="'filter-app-' + app" :checked="selectedApps.includes(app)" @change="toggleFilter('selectedApps', app)">
+              <span x-text="app"></span>
+            </label>
+          </template>
+        </div>
+      </details>
+      <details class="filter-menu">
+        <summary>상태</summary>
+        <div class="filter-options">
+          <template x-for="state in ['holding','stale','error','live','running','idle','done','unknown']" :key="state">
+            <label>
+              <input type="checkbox" :data-testid="'filter-state-' + state" :checked="selectedStates.includes(state)" @change="toggleFilter('selectedStates', state)">
+              <span x-text="state"></span>
+            </label>
+          </template>
+        </div>
+      </details>
+      <details class="filter-menu filter-menu-wide">
+        <summary>프로젝트</summary>
+        <div class="filter-options">
+          <template x-for="project in availableProjects" :key="project">
+            <label>
+              <input type="checkbox" data-testid="filter-project-option" :data-filter-project="project" :checked="selectedProjects.includes(project)" @change="toggleFilter('selectedProjects', project)">
+              <span x-text="project"></span>
+            </label>
+          </template>
+        </div>
+      </details>
+      <button type="button" class="filter-reset" data-testid="filter-reset" @click="resetFilters()">초기화</button>
+    </section>
+
+    <section id="notifications-section">
+      <h2>최근 알림</h2>
+      <div id="notifications-list" class="notification-list" data-testid="notifications-list">
+        <template x-for="item in notifications" :key="`${item.session_id || ''}-${item.created_at || item.to}`">
+          <div class="notification-item">
+            <span class="badge" :class="'badge-' + (item.to || 'unknown')" x-text="item.to || 'unknown'"></span>
+            <span class="notification-title" x-text="item.title || '-'"></span>
+            <span class="notification-detail mono" x-text="item.detail || '-'"></span>
+            <span class="notification-time mono small" x-text="shortText(item.created_at, 19)"></span>
+          </div>
+        </template>
+        <div x-show="notifications.length === 0" id="notifications-empty" class="notification-empty">알림 대기 중...</div>
+      </div>
+    </section>
+
+    <section id="orch-run-section" data-testid="orch-run-panel">
+      <h2>오케스트레이터 구동 <span class="orch-run-note">(Phase 2 UI PoC · mock gate driver)</span></h2>
+      <div class="orch-run-panel">
+        <div class="orch-run-inputs">
+          <textarea
+            data-testid="orch-run-prompt"
+            class="orch-run-prompt"
+            rows="2"
+            placeholder="구동 프롬프트 (예: T2 단일 페이즈 진행)"
+            x-model="orchInput.prompt"
+          ></textarea>
+          <input
+            type="text"
+            data-testid="orch-run-project"
+            class="orch-run-field"
+            placeholder="project_id (선택, 기본 MAM)"
+            x-model="orchInput.projectId"
+          >
+          <input
+            type="text"
+            data-testid="orch-run-phase"
+            class="orch-run-field"
+            placeholder="phase_id (선택)"
+            x-model="orchInput.phaseId"
+          >
+        </div>
+        <div class="orch-run-actions">
+          <button
+            type="button"
+            class="orch-run-btn"
+            data-testid="orch-run-start"
+            :disabled="orchRun.busy"
+            @click="startOrchRun()"
+          >Run</button>
+          <button
+            type="button"
+            class="orch-run-btn orch-run-approve"
+            data-testid="orch-run-approve"
+            :disabled="!canApproveOrchRun"
+            @click="approveOrchRun()"
+          >Approve</button>
+        </div>
+        <div class="orch-run-state">
+          <span class="orch-run-stat"><span class="orch-run-key">run_id</span><span class="mono small" data-testid="orch-run-id" x-text="orchRun.runId || '-'"></span></span>
+          <span class="orch-run-stat"><span class="orch-run-key">status</span><span class="badge" :class="orchRunStatusBadge(orchRun.status)" data-testid="orch-run-status" x-text="orchRun.status || 'idle'"></span></span>
+          <span class="orch-run-stat"><span class="orch-run-key">resume_token</span><span class="mono small" data-testid="orch-run-token" x-text="orchRun.resumeToken || '-'"></span></span>
+          <span class="orch-run-stat"><span class="orch-run-key">message</span><span class="mono small" data-testid="orch-run-message" x-text="orchRun.message || '-'"></span></span>
+        </div>
+        <p class="inline-error" x-show="orchRun.error" x-cloak data-testid="orch-run-error" x-text="orchRun.error"></p>
+      </div>
+    </section>
+
+    <section id="orch-events-section">
+      <h2>오케스트레이터 이벤트
+        <span x-show="orchFailures.length > 0" x-cloak class="badge badge-error" x-text="orchFailures.length + ' 파싱 실패'"></span>
+      </h2>
+      <div id="orch-events-list" class="notification-list" data-testid="orch-events-list">
+        <template x-for="ev in orchEvents" :key="orchEventKey(ev)">
+          <div class="notification-item" data-testid="orch-event-item">
+            <span class="badge" :class="orchTypeBadge(ev.type)" x-text="ev.type || 'unknown'"></span>
+            <span class="notification-title mono" x-text="ev.phase_id || '-'"></span>
+            <span class="mono small" x-text="ev.project_id || '-'"></span>
+            <span class="notification-detail mono small" :title="orchPayloadText(ev.payload)" x-text="shortText(orchPayloadText(ev.payload), 60)"></span>
+            <span class="notification-time mono small" x-text="shortText(ev.ts, 19)"></span>
+          </div>
+        </template>
+        <template x-for="f in orchFailures" :key="(f.path || '') + (f.seen_at || '')">
+          <div class="notification-item" data-testid="orch-event-failure">
+            <span class="badge badge-error">parse-fail</span>
+            <span class="notification-detail mono small" :title="f.path" x-text="shortText(f.path, 50)"></span>
+            <span class="mono small" x-text="shortText(f.reason, 40)"></span>
+          </div>
+        </template>
+        <div x-show="orchEvents.length === 0 && orchFailures.length === 0" id="orch-events-empty" class="notification-empty">오케스트레이터 이벤트 대기 중...</div>
+      </div>
+    </section>
+
+    <section id="sessions-section">
+      <h2>세션 현황 <span x-text="'(' + visibleCount + '/' + kpis.total + ')'"></span></h2>
+      <table id="sessions-table" data-testid="sessions-table">
+        <thead>
+          <tr>
+            <th><button type="button" class="sort-button" data-testid="sort-state" :class="sortKey === 'state' ? 'active' : ''" @click="setSort('state')">상태<span x-text="sortLabel('state')"></span></button></th>
+            <th><button type="button" class="sort-button" data-testid="sort-app" :class="sortKey === 'app' ? 'active' : ''" @click="setSort('app')">앱<span x-text="sortLabel('app')"></span></button></th>
+            <th>세션 ID</th>
+            <th><button type="button" class="sort-button" data-testid="sort-project" :class="sortKey === 'project_path' ? 'active' : ''" @click="setSort('project_path')">프로젝트<span x-text="sortLabel('project_path')"></span></button></th>
+            <th>모델</th>
+            <th>현재 페이즈</th>
+            <th>진행률</th>
+            <th>역할</th>
+            <th>마지막 이벤트</th>
+            <th><button type="button" class="sort-button" data-testid="sort-updated" :class="sortKey === 'last_activity' ? 'active' : ''" @click="setSort('last_activity')">최근 활동<span x-text="sortLabel('last_activity')"></span></button></th>
+            <th>실행 명령</th>
+            <th>PID</th>
+            <th>갱신</th>
+          </tr>
+        </thead>
+        <template x-for="group in visibleGroups" :key="group.key">
+          <tbody>
+            <tr class="group-row">
+              <td colspan="13">
+                <span class="group-app" x-text="group.app"></span>
+                <span class="group-path" x-text="group.project_path"></span>
+                <span class="group-count" x-text="group.sessions.length + (group.sessions.length > 1 ? ' sessions' : ' session')"></span>
+              </td>
+            </tr>
+            <template x-for="s in group.sessions" :key="s.session_id">
+              <tr
+                :id="rowId(s)"
+                :data-session-id="s.session_id"
+                :data-state="s.state"
+                :data-last-activity="s.last_activity || ''"
+                :data-app="s.app"
+                :data-project="s.project_path || 'no-project'"
+                data-testid="session-row"
+              >
+                <td><span data-testid="state-badge" :class="badgeClass(s.state)" x-text="s.state"></span></td>
+                <td x-text="s.app"></td>
+                <td class="mono small" :title="s.session_id" x-text="shortId(s)"></td>
+                <td class="project-path" x-text="s.project_path || '-'"></td>
+                <td x-text="s.model || '-'"></td>
+                <td><span :class="phaseBadgeClass(s)" x-text="phaseLabel(s)"></span></td>
+                <td class="mono small" x-text="progressText(s)"></td>
+                <td x-text="s.owner_session || '-'"></td>
+                <td class="mono small last-event" x-text="s.last_event || '-'"></td>
+                <td class="mono small" x-text="s.last_activity || '-'"></td>
+                <td class="running-cmd" :title="s.running_cmd || ''" x-text="shortText(s.running_cmd)"></td>
+                <td class="mono small" x-text="s.running_pid || '-'"></td>
+                <td class="mono small" x-text="shortText(s.updated_at, 19)"></td>
+              </tr>
+            </template>
+          </tbody>
+        </template>
+        <tbody x-show="visibleCount === 0" x-cloak>
+          <tr><td colspan="13" class="empty-row" x-text="kpis.total === 0 ? '수집 대기 중...' : '조건에 맞는 세션 없음'"></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

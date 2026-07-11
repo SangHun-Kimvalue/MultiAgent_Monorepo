@@ -1,0 +1,4 @@
+interface:
+  display_name: "ZRT Phase Commit"
+  short_description: "Close ZRT phase work with Korean commits after verification."
+  default_prompt: "Use zrt-phase-commit to verify and commit this phase."

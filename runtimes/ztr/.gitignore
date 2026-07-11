@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Virtual environment
+.venv/
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Secrets
+.env
+config.json
+Config.ini
+
+# Logs
+logs/
+*.log
+
+# DB
+*.db
+*.db-shm
+*.db-wal
+
+# ZRT runtime captures
+.ztr/phase7-e2e/
+.ztr/phase8-live/
+.ztr/run-phase/
+.ztr/run-phase-dogfood/
+
+# Google Drive
+.tmp.drivedownload/
+.tmp.driveupload/
+.gdriveignore
+.ztr/_*.txt

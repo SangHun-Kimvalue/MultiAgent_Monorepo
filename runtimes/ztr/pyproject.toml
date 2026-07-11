@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zero-token-roundtable"
+version = "0.1.0"
+description = "Multi-agent orchestration system using subscription-based LLM access"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0,<7.0",
+    "pydantic>=2.5,<3.0",
+    "httpx[http2]>=0.27,<1.0",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "jinja2>=3.1",
+    "sse-starlette>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23,<1.0",
+    "mypy>=1.10",
+    "ruff>=0.8",
+    "types-PyYAML>=6.0",
+]
+sdk = [
+    "claude-agent-sdk>=0.1",
+]
+
+[project.scripts]
+ztr = "src.runner:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src", "src.*"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

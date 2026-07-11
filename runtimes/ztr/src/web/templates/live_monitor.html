@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% set active_page = "live" %}
+{% block title %}Live Monitor - ZTR Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+        <div class="w-2.5 h-2.5 rounded-full bg-success pulsing-dot"></div>
+        <h2 class="text-xl font-bold tracking-tight">Live Monitor</h2>
+    </div>
+    <span class="text-xs font-mono px-3 py-1 rounded-full bg-accent/10 text-accent font-semibold" id="sse-status">SSE CONNECTING...</span>
+</div>
+
+<div class="grid grid-cols-[1fr_300px] gap-6">
+    <!-- Left: Live Events -->
+    <div>
+        <div class="bg-surface-low rounded-lg p-5 min-h-[500px]" id="live-feed"
+             hx-ext="sse"
+             sse-connect="/api/live/stream"
+             sse-swap="update"
+             hx-swap="afterbegin">
+            <div class="text-center py-16 text-on-surface-muted" id="live-placeholder">
+                <div class="w-4 h-4 rounded-full bg-success pulsing-dot mx-auto mb-4"></div>
+                <p class="text-sm">Waiting for events...</p>
+                <p class="text-xs mt-2 text-on-surface-muted">
+                    Run <code class="bg-surface-high px-1.5 py-0.5 rounded text-accent">python -m src run --task "..."</code> to see live progress
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Sidebar -->
+    <div class="space-y-4">
+        <!-- Recent Sessions -->
+        <div class="bg-surface-low rounded-lg p-5">
+            <div class="text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold mb-3">Recent Sessions</div>
+            <div hx-get="/htmx/recent-sessions" hx-trigger="load, every 10s" hx-swap="innerHTML" id="recent-sessions">
+                <div class="text-xs text-on-surface-muted">Loading...</div>
+            </div>
+        </div>
+
+        <!-- SSE Event Log -->
+        <div class="bg-surface-low rounded-lg p-5">
+            <div class="text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold mb-3">Event Log</div>
+            <div id="sse-log" class="max-h-[300px] overflow-y-auto space-y-1">
+                <div class="text-xs text-on-surface-muted">No events yet.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.body.addEventListener('htmx:sseOpen', function() {
+    document.getElementById('sse-status').textContent = 'SSE CONNECTED';
+    document.getElementById('sse-status').className = 'text-xs font-mono px-3 py-1 rounded-full bg-success/10 text-success font-semibold';
+});
+document.body.addEventListener('htmx:sseError', function() {
+    document.getElementById('sse-status').textContent = 'SSE DISCONNECTED';
+    document.getElementById('sse-status').className = 'text-xs font-mono px-3 py-1 rounded-full bg-error/10 text-error font-semibold';
+});
+document.body.addEventListener('sse:update', function(evt) {
+    try {
+        const data = JSON.parse(evt.detail.data);
+        const feed = document.getElementById('live-feed');
+        const ph = document.getElementById('live-placeholder');
+        if (ph) ph.remove();
+
+        const time = new Date().toLocaleTimeString('ko-KR');
+        let color = 'accent';
+        if (data.verdict === 'pass') color = 'success';
+        else if (data.verdict === 'fail' || data.verdict === 'error') color = 'error';
+        else if (data.verdict === 'conditional') color = 'warning';
+
+        const card = document.createElement('div');
+        card.className = 'mb-3 p-3 bg-surface-mid rounded-lg border-l-2 border-' + color;
+        card.style.animation = 'fadeIn 0.3s ease-in';
+        card.innerHTML = `
+            <div class="flex items-center justify-between mb-1">
+                <span class="font-mono text-[10px] text-on-surface-muted">${time}</span>
+                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-${color}/15 text-${color}">${(data.type || 'update').toUpperCase()}</span>
+            </div>
+            <p class="text-xs text-on-surface-dim">${data.summary || data.task || ''}</p>
+        `;
+        feed.prepend(card);
+
+        // Log
+        const log = document.getElementById('sse-log');
+        const logPh = log.querySelector('.text-on-surface-muted');
+        if (logPh && logPh.textContent === 'No events yet.') logPh.remove();
+        const entry = document.createElement('div');
+        entry.className = 'font-mono text-[10px] text-on-surface-muted';
+        entry.textContent = `[${time}] ${(data.summary || '').slice(0, 60)}`;
+        log.prepend(entry);
+
+        while (feed.children.length > 50) feed.lastChild.remove();
+        while (log.children.length > 50) log.lastChild.remove();
+    } catch(e) {}
+});
+</script>
+<style>
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+</style>
+{% endblock %}

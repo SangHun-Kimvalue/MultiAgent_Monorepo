@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ZTR Dashboard{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                surface: "#10141a",
+                "surface-low": "#181c22",
+                "surface-mid": "#1c2026",
+                "surface-high": "#262a31",
+                "surface-highest": "#31353c",
+                "surface-lowest": "#0a0e14",
+                accent: "#58a6ff",
+                "on-surface": "#dfe2eb",
+                "on-surface-dim": "#8b949e",
+                "on-surface-muted": "#6e7681",
+                "outline-v": "#414752",
+                success: "#3fb950",
+                warning: "#d29922",
+                error: "#f85149",
+                purple: "#a371f7",
+                blue: "#58a6ff",
+                green: "#3fb950",
+                orange: "#d29922",
+              },
+              fontFamily: {
+                sans: ["Inter", "system-ui", "sans-serif"],
+                mono: ["JetBrains Mono", "Fira Code", "Consolas", "monospace"],
+              },
+            },
+          },
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #10141a; color: #dfe2eb; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .pulsing-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #10141a; }
+        ::-webkit-scrollbar-thumb { background: #31353c; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-surface-low border-r border-outline-v/10 flex flex-col fixed top-0 left-0 bottom-0 z-10">
+        <div class="p-6 pb-8">
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-9 h-9 bg-accent rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-surface text-xl" style="font-variation-settings:'FILL' 1">terminal</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-accent tracking-tight">Orchestrator</h1>
+                    <p class="text-[10px] uppercase tracking-[0.15em] text-on-surface-muted">ZTR Dashboard v2.8</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-1">
+            <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm
+                {% if active_page == 'sessions' %}text-accent bg-surface-high font-semibold border-l-2 border-accent{% else %}text-on-surface-dim hover:text-on-surface hover:bg-surface-mid{% endif %}">
+                <span class="material-symbols-outlined text-xl">dashboard</span>
+                Dashboard
+            </a>
+            <a href="/live" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm
+                {% if active_page == 'live' %}text-accent bg-surface-high font-semibold border-l-2 border-accent{% else %}text-on-surface-dim hover:text-on-surface hover:bg-surface-mid{% endif %}">
+                <span class="material-symbols-outlined text-xl">monitor_heart</span>
+                Live Monitor
+            </a>
+            <a href="/agents" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm
+                {% if active_page == 'agents' %}text-accent bg-surface-high font-semibold border-l-2 border-accent{% else %}text-on-surface-dim hover:text-on-surface hover:bg-surface-mid{% endif %}">
+                <span class="material-symbols-outlined text-xl">smart_toy</span>
+                Agent Stats
+            </a>
+        </nav>
+        <div class="p-4 border-t border-outline-v/10">
+            <div class="flex items-center gap-2 px-2">
+                <div class="w-2 h-2 rounded-full bg-success pulsing-dot"></div>
+                <span class="text-xs text-on-surface-muted">System Operational</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-6 overflow-y-auto min-h-screen">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% set active_page = "agents" %}
+{% block title %}Agent Stats - ZTR Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h2 class="text-xl font-bold tracking-tight">Agent Intelligence Portal</h2>
+        <p class="text-xs text-on-surface-muted mt-0.5">Performance analytics for multi-agent orchestration</p>
+    </div>
+</div>
+
+<!-- Agent Cards -->
+<div class="grid grid-cols-4 gap-4 mb-6">
+    {% for s in stats %}
+    {% set agent_color %}{% if 'gemini' in s.agent_id %}blue{% elif 'claude' in s.agent_id %}purple{% elif 'ollama' in s.agent_id %}green{% elif 'nitpicker' in s.agent_id %}orange{% else %}on-surface-muted{% endif %}{% endset %}
+    <div class="bg-surface-low rounded-lg p-5 border-l-2 border-{{ agent_color }}">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-{{ agent_color }}"></div>
+                <span class="font-semibold text-sm">{{ s.agent_id }}</span>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-mono">HEALTHY</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+                <div class="text-[10px] text-on-surface-muted uppercase">Calls</div>
+                <div class="text-xl font-extrabold font-mono">{{ s.total_calls }}</div>
+            </div>
+            <div>
+                <div class="text-[10px] text-on-surface-muted uppercase">Latency</div>
+                <div class="text-xl font-extrabold font-mono">{{ "%.1f"|format(s.avg_latency_ms / 1000) }}s</div>
+            </div>
+        </div>
+        <div class="text-[10px] text-on-surface-muted uppercase mb-1">Success Rate</div>
+        <div class="flex items-center gap-2">
+            <div class="flex-1 bg-surface-high rounded-sm h-2">
+                <div class="h-full rounded-sm {% if s.success_rate >= 90 %}bg-success{% elif s.success_rate >= 70 %}bg-warning{% else %}bg-error{% endif %}"
+                     style="width: {{ s.success_rate }}%"></div>
+            </div>
+            <span class="font-mono text-xs font-semibold">{{ s.success_rate }}%</span>
+        </div>
+        <div class="mt-2 flex items-center justify-between">
+            <span class="text-[10px] text-on-surface-muted uppercase">CircuitBreaker</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success font-mono">CLOSED</span>
+        </div>
+    </div>
+    {% endfor %}
+    {% if not stats %}
+    <div class="bg-surface-low rounded-lg p-12 text-center text-on-surface-muted col-span-4">
+        <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">smart_toy</span>
+        No agent metrics recorded yet.
+    </div>
+    {% endif %}
+</div>
+
+{% if stats %}
+<!-- Latency Comparison -->
+<div class="bg-surface-low rounded-lg p-5 mb-6">
+    <div class="text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold mb-4">Latency Comparison</div>
+    {% set max_lat = stats|map(attribute='avg_latency_ms')|max %}
+    {% for s in stats %}
+    {% set agent_color %}{% if 'gemini' in s.agent_id %}bg-blue{% elif 'claude' in s.agent_id %}bg-purple{% elif 'ollama' in s.agent_id %}bg-green{% elif 'nitpicker' in s.agent_id %}bg-orange{% else %}bg-on-surface-muted{% endif %}{% endset %}
+    <div class="flex items-center gap-3 mb-2">
+        <span class="font-mono text-xs text-on-surface-muted w-40 truncate">{{ s.agent_id }}</span>
+        <div class="flex-1 bg-surface-high rounded-sm h-5">
+            <div class="h-full {{ agent_color }} rounded-sm flex items-center pl-2 transition-all"
+                 style="width: {{ (s.avg_latency_ms / max_lat * 100) if max_lat else 0 }}%">
+                <span class="font-mono text-[10px] text-white font-bold">{{ "%.0f"|format(s.avg_latency_ms) }}ms</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

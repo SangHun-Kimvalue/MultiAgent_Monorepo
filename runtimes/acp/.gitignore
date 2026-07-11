@@ -1,0 +1,39 @@
+# AgentControlPlane .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.venv/
+venv/
+*.venv
+
+# ACP 런타임 데이터
+.acp/
+*.db
+*.db-shm
+*.db-wal
+events.jsonl
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 테스트 캐시
+.pytest_cache/
+.coverage
+htmlcov/

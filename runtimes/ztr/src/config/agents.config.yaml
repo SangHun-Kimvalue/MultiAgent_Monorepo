@@ -1,0 +1,39 @@
+# Zero-Token Roundtable — v2 역할 바인딩 + KEEP 에이전트 설정
+# ZRT v2는 Mechanical 역할로 검사만 수행하고 판단/편집은 호출 세션에 반납한다.
+
+roles:
+  implementer-reviewer:
+    backend: "claude_cli"
+    model: "sonnet"
+    call_type: "headless"
+    l2_model: "opus"
+
+  mechanical:
+    backend: "ollama"
+    model: "qwen2.5-coder:7b"
+    call_type: "local"
+
+agents:
+  - id: "nitpicker-prefilter"
+    type: "nitpicker"
+    enabled: true
+    priority: 200
+    roles: ["critic"]
+    config:
+      mode: "prefilter"
+      target_project_path: "."
+
+  - id: "ollama-local"
+    type: "ollama"
+    enabled: true
+    priority: 50
+    roles: ["manager", "summarizer"]
+    config:
+      endpoint: "http://localhost:11434"
+      model: "qwen2.5-coder:7b"
+      timeout_sec: 60
+
+session:
+  db_path: ".ztr/sessions.db"
+  enable_metrics: true
+  enable_session_log: true

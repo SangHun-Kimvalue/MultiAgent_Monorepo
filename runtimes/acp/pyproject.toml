@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acp"
+version = "0.1.0"
+description = "Agent Control Plane — 멀티 데스크톱 AI 앱 세션 통합 관제소"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "sse-starlette>=1.8",
+    "jinja2>=3.1",
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "mypy>=1.10",
+    "ruff>=0.8",
+    "types-PyYAML>=6.0",
+]
+e2e = [
+    "playwright>=1.44",
+    "pytest-playwright>=0.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["acp*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+# strict 승격 완료(2026-07-10, T5 후속): WIP 채택 후 launcher narrowing 4건 + strict 11건 해소.
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-p no:pytest_playwright -m 'not e2e'"
+markers = [
+    "e2e: browser-driven end-to-end dashboard tests",
+]

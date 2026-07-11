@@ -1,0 +1,343 @@
+/* ACP Dashboard — 최소 스타일 */
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+  --live: #3fb950;
+  --running: #58a6ff;
+  --idle: #d29922;
+  --holding: #f85149;
+  --stale: #6e7681;
+  --error: #f85149;
+  --done: #3fb950;
+  --unknown: #6e7681;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+  font-size: 14px;
+  padding: 1rem 2rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+header h1 { font-size: 1.4rem; }
+
+.stream-indicator { font-size: 0.85rem; }
+.stream-indicator.connected { color: var(--live); }
+.stream-indicator.disconnected { color: var(--error); }
+
+h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--muted); }
+[x-cloak] { display: none !important; }
+
+.inline-error {
+  color: #ff8f8f;
+  margin-bottom: 1rem;
+}
+
+#kpi-section { margin-bottom: 1.5rem; }
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.kpi-card,
+.kpi-state {
+  min-height: 52px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.kpi-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.kpi-card strong,
+.kpi-state strong {
+  font-size: 1.25rem;
+}
+.kpi-summary strong { color: var(--running); }
+.kpi-action strong { color: var(--live); }
+.kpi-strip.needs-action .kpi-action {
+  border-color: #74312f;
+  background: #261515;
+}
+.kpi-strip.needs-action .kpi-action strong { color: var(--error); }
+.kpi-state-action {
+  border-color: #3c2a2a;
+}
+
+#notifications-section { margin-bottom: 1.5rem; }
+
+/* Phase 2 구동 패널 — 기존 dark dense 스타일 유지, 장식 없음 */
+#orch-run-section { margin-bottom: 1.5rem; }
+.orch-run-note { font-size: 0.75rem; color: var(--muted); font-weight: 400; }
+.orch-run-panel {
+  display: grid;
+  gap: 0.6rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+}
+.orch-run-inputs {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 200px 200px;
+  gap: 0.5rem;
+}
+.orch-run-prompt,
+.orch-run-field {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+}
+.orch-run-prompt { resize: vertical; min-height: 38px; }
+.orch-run-actions { display: flex; gap: 0.5rem; }
+.orch-run-btn {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+.orch-run-btn:hover:not(:disabled) { border-color: #59636e; }
+.orch-run-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.orch-run-approve:not(:disabled) { border-color: #1a4a24; color: var(--done); }
+.orch-run-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  align-items: center;
+}
+.orch-run-stat { display: inline-flex; align-items: center; gap: 0.4rem; }
+.orch-run-key { color: var(--muted); font-size: 0.78rem; }
+@media (max-width: 700px) {
+  .orch-run-inputs { grid-template-columns: 1fr; }
+}
+.filter-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.filter-summary {
+  min-width: 92px;
+  color: var(--muted);
+}
+.filter-summary strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+.toggle-control,
+.filter-reset,
+.filter-menu summary {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.45rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.toggle-control input,
+.filter-options input {
+  accent-color: var(--running);
+}
+.filter-menu {
+  position: relative;
+}
+.filter-menu summary {
+  cursor: pointer;
+  list-style: none;
+}
+.filter-menu summary::-webkit-details-marker {
+  display: none;
+}
+.filter-options {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 180px;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  background: #0f1720;
+  padding: 0.5rem;
+  display: grid;
+  gap: 0.35rem;
+}
+.filter-menu-wide .filter-options {
+  min-width: min(520px, 80vw);
+}
+.filter-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text);
+  min-height: 26px;
+}
+.filter-options span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.filter-reset {
+  cursor: pointer;
+}
+.filter-reset:hover,
+.filter-menu summary:hover,
+.toggle-control:hover {
+  border-color: #59636e;
+}
+.notification-list {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+}
+.notification-item {
+  display: grid;
+  grid-template-columns: 92px minmax(120px, 180px) minmax(240px, 1fr) 170px;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 32px;
+}
+.notification-title { font-weight: 600; }
+.notification-detail {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notification-time {
+  color: var(--muted);
+  text-align: right;
+}
+.notification-empty { color: var(--muted); }
+.empty-row {
+  text-align: center;
+  color: var(--muted);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+th, td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th { color: var(--muted); font-weight: 600; background: var(--surface); }
+.sort-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sort-button.active {
+  color: var(--running);
+}
+tr:hover td { background: #21262d; }
+.group-row td {
+  background: #0f1720;
+  color: var(--muted);
+  font-weight: 600;
+  padding-top: 0.75rem;
+}
+.group-app { color: var(--text); text-transform: uppercase; margin-right: 0.75rem; }
+.group-path { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.78rem; }
+.group-count { margin-left: 0.75rem; font-size: 0.75rem; color: var(--muted); }
+
+.mono { font-family: 'Cascadia Code', 'Consolas', monospace; }
+.small { font-size: 0.78rem; }
+.project-path { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 상태 배지 */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-live     { background: #1a4a24; color: var(--live); }
+.badge-running  { background: #1a3a5c; color: var(--running); }
+.badge-idle     { background: #3d2e0a; color: var(--idle); }
+.badge-holding  { background: #4a1a1a; color: var(--holding); }
+.badge-stale    { background: #2a2a2a; color: var(--stale); }
+.badge-error    { background: #4a1a1a; color: var(--error); }
+.badge-done     { background: #1a4a24; color: var(--done); }
+.badge-unknown  { background: #2a2a2a; color: var(--unknown); }
+.badge-phase-ok       { background: #1a3a5c; color: #8cc9ff; }
+.badge-phase-stale    { background: #4a3210; color: #f0b849; }
+.badge-phase-missing  { background: #2a2a2a; color: #a6adb5; }
+.badge-phase-unknown  { background: #4a1a1a; color: #ff8f8f; }
+
+@media (max-width: 900px) {
+  .notification-item {
+    grid-template-columns: 92px 1fr;
+  }
+  .notification-detail,
+  .notification-time {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
+@media (max-width: 700px) {
+  body { padding: 0.75rem; }
+  .kpi-strip { grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); }
+  .filter-band { align-items: stretch; }
+  .filter-summary,
+  .toggle-control,
+  .filter-reset,
+  .filter-menu,
+  .filter-menu summary {
+    width: 100%;
+  }
+  .filter-options,
+  .filter-menu-wide .filter-options {
+    position: static;
+    min-width: 100%;
+    margin-top: 0.35rem;
+  }
+}

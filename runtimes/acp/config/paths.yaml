@@ -1,0 +1,18 @@
+liveness:
+  idle_threshold: 300    # 초: 활동 없으면 IDLE (5분)
+  hold_threshold: 900    # 초: 홀딩 판정 (15분)
+  stale_ttl: 3600        # 초: STALE(좀비) 판정 (60분)
+  poll_interval: 15      # 초: 수집 주기
+
+notify:
+  toast_enabled: true
+  webhook_url: ""        # 미설정 시 webhook은 명시 로그 후 skip
+  webhook_format: slack  # slack | discord | generic
+  notify_cooldown: 3600  # 초: 동일 (session_id, to_state) 재알림 억제
+
+app_paths:
+  codex_sessions: "%USERPROFILE%\\.codex\\sessions"
+  codex_processes: "%USERPROFILE%\\.codex\\process_manager\\chat_processes.json"
+  claude_sessions: "%APPDATA%\\Claude\\claude-code-sessions"
+  cursor_workspace: "%APPDATA%\\Cursor\\User\\workspaceStorage"
+  vscode_workspace: "%APPDATA%\\Code\\User\\workspaceStorage"

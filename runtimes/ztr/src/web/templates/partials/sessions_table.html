@@ -1,0 +1,74 @@
+<table class="w-full">
+    <thead>
+        <tr class="bg-surface-mid">
+            <th class="text-left px-4 py-3 text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold">ID</th>
+            <th class="text-left px-4 py-3 text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold">Status</th>
+            <th class="text-left px-4 py-3 text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold">Verdict</th>
+            <th class="text-left px-4 py-3 text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold">Agent Task</th>
+            <th class="text-left px-4 py-3 text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold">Target File</th>
+            <th class="text-left px-4 py-3 text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold">Rounds</th>
+            <th class="text-left px-4 py-3 text-[10px] uppercase tracking-widest text-on-surface-muted font-semibold">Elapsed</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in sessions %}
+        <tr class="border-t border-surface-high hover:bg-surface-mid/50 cursor-pointer transition-colors" onclick="location.href='/session/{{ s.id }}'">
+            <td class="px-4 py-3 font-mono text-sm text-on-surface-muted">#{{ "%03d"|format(s.id) }}</td>
+            <td class="px-4 py-3">
+                {% if s.status == 'running' %}
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold font-mono px-2.5 py-0.5 rounded-full bg-accent/10 text-accent">
+                    <span class="w-1.5 h-1.5 rounded-full bg-accent pulsing-dot"></span>RUNNING
+                </span>
+                {% elif s.status == 'completed' %}
+                <span class="text-xs font-semibold font-mono px-2.5 py-0.5 rounded-full bg-success/10 text-success">COMPLETED</span>
+                {% elif s.status == 'failed' %}
+                <span class="text-xs font-semibold font-mono px-2.5 py-0.5 rounded-full bg-error/10 text-error">FAILED</span>
+                {% else %}
+                <span class="text-xs font-semibold font-mono px-2.5 py-0.5 rounded-full bg-warning/10 text-warning">{{ s.status|upper }}</span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3">
+                {% if s.final_verdict in ('PASS', 'pass') %}
+                <span class="text-xs font-bold font-mono text-success">PASS</span>
+                {% elif s.final_verdict == 'CHANGES_REQUESTED' %}
+                <span class="text-xs font-bold font-mono text-warning">CHANGES_REQUESTED</span>
+                {% elif s.final_verdict == 'conditional' %}
+                <span class="text-xs font-bold font-mono text-warning">CONDITIONAL</span>
+                {% elif s.final_verdict == 'BLOCKED' %}
+                <span class="text-xs font-bold font-mono text-error">BLOCKED</span>
+                {% elif s.final_verdict == 'fail' %}
+                <span class="text-xs font-bold font-mono text-error">FAIL</span>
+                {% elif s.final_verdict == 'timeout' %}
+                <span class="text-xs font-bold font-mono text-on-surface-muted">TIMEOUT</span>
+                {% elif s.final_verdict == 'error' %}
+                <span class="text-xs font-bold font-mono text-error">ERROR</span>
+                {% else %}
+                <span class="text-xs text-on-surface-muted">-</span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 text-sm max-w-[300px] truncate" title="{{ s.task }}">{{ s.task }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-on-surface-muted">{{ s.target_file or '-' }}</td>
+            <td class="px-4 py-3">
+                {% if s.status == 'running' %}
+                <div class="flex items-center gap-1">
+                    {% for i in range(5) %}
+                    <div class="w-5 h-1.5 rounded-sm {% if i < (s.rounds or 0) %}bg-accent{% else %}bg-surface-high{% endif %}"></div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <span class="font-mono text-sm">{{ s.rounds or 0 }}</span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 font-mono text-xs text-on-surface-muted">{{ s.started_at[:19] if s.started_at else '-' }}</td>
+        </tr>
+        {% endfor %}
+        {% if not sessions %}
+        <tr>
+            <td colspan="7" class="text-center py-12 text-on-surface-muted">
+                <span class="material-symbols-outlined text-4xl mb-2 block opacity-30">inbox</span>
+                No sessions recorded yet.
+            </td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>

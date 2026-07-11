@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% set active_page = "sessions" %}
+{% block title %}Sessions - ZTR Dashboard{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-bold tracking-tight">Session Overview</h2>
+    <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-success pulsing-dot"></div>
+        <span class="text-xs font-mono px-3 py-1 rounded-full bg-success/10 text-success font-semibold">LIVE SYSTEM STATUS: OPTIMAL</span>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="bg-surface-low rounded-lg p-5">
+        <div class="text-[10px] uppercase tracking-widest text-on-surface-muted mb-1">Total Sessions</div>
+        <div class="text-3xl font-extrabold font-mono text-on-surface">{{ total_sessions }}</div>
+    </div>
+    <div class="bg-surface-low rounded-lg p-5">
+        <div class="text-[10px] uppercase tracking-widest text-on-surface-muted mb-1">Success Rate</div>
+        <div class="text-3xl font-extrabold font-mono {% if success_rate >= 80 %}text-success{% elif success_rate >= 50 %}text-warning{% else %}text-error{% endif %}">{{ success_rate }}%</div>
+    </div>
+    <div class="bg-surface-low rounded-lg p-5">
+        <div class="text-[10px] uppercase tracking-widest text-on-surface-muted mb-1">Average Rounds</div>
+        <div class="text-3xl font-extrabold font-mono text-on-surface">{{ avg_rounds }}</div>
+    </div>
+    <div class="bg-surface-low rounded-lg p-5">
+        <div class="text-[10px] uppercase tracking-widest text-on-surface-muted mb-1">Total Tokens</div>
+        <div class="text-3xl font-extrabold font-mono text-accent">{{ "{:,}".format(total_tokens) }}</div>
+    </div>
+</div>
+
+<!-- Session Table -->
+<div class="bg-surface-low rounded-lg overflow-hidden" hx-get="/htmx/sessions-table" hx-trigger="every 10s" hx-swap="innerHTML">
+    {% include "partials/sessions_table.html" %}
+</div>
+{% endblock %}
