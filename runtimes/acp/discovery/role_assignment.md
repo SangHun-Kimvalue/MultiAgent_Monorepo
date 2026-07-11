@@ -4,7 +4,7 @@
 
 - Project / feature: **Agent Control Plane (멀티 데스크톱 앱 세션 통합 관제소)**
 - Date: 2026-06-09
-- Owner: 상훈 (사령관 / Product Owner)
+- Owner: Product Owner
 
 ## Sessions
 

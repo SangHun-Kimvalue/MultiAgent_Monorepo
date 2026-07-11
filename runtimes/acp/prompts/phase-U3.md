@@ -8,7 +8,7 @@
 - `AgentControlPlane/PHASE.md` §0 결정 로그(신규 "세션 보존 컷오프"·"프로젝트 경로 표시" 행) + §4 불변 원칙
 - 부착 코드: `acp/poller.py`(per-record 루프), `acp/store.py`(upsert/init), `acp/config.py`+`config/paths.yaml`, `acp/web/static/dashboard.js`, `acp/web/templates/dashboard.html`
 
-[전략 리마인더] minimal-first. 컷오프는 **표시 필터가 아니라 수집 단계 제외 + DB prune**(상훈 확정 2026-06-12). 새 UI 기능 추가 아님 — 노이즈 정리 + 경로 표시만. LLM 0회.
+[전략 리마인더] minimal-first. 컷오프는 **표시 필터가 아니라 수집 단계 제외 + DB prune**(Owner 확정 2026-06-12). 새 UI 기능 추가 아님 — 노이즈 정리 + 경로 표시만. LLM 0회.
 
 [이번 범위]
 할 것:

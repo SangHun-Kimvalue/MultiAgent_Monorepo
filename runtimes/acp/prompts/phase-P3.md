@@ -40,7 +40,7 @@ LLM 호출 0 유지(알림 문구는 템플릿 문자열).
    | (선택) PHASE.md phase_status `→ done` | ⬜ | ✅ | 낮음(프로젝트 페이즈 완료 알림) |
    - LIVE/RUNNING/IDLE 진입은 알림 안 함. **Codex 세션 DONE 전이는 없음**(미적용) → 세션 완료 알림은 PHASE phase_status로만.
    - HOLDING→STALE 승급은 **별도 전이로 1회 더** 발사(우선순위 상승).
-3. `acp/dedupe.py` — **전이당 1회 발사**(상훈 확정: 홀딩 알림 1회, 반복 리마인드 없음, 무한대기 허용).
+3. `acp/dedupe.py` — **전이당 1회 발사**(Owner 확정: 홀딩 알림 1회, 반복 리마인드 없음, 무한대기 허용).
    동일 `(session_id, to_state)`는 쿨다운(`notify_cooldown` 기본 3600s) 내 재발사 금지. 복귀(HOLDING→LIVE 등)
    후 다시 같은 상태로 전이하면 **새 이벤트로 인정**(쿨다운 리셋). last_state/last_notified_at은 store에 기록.
 4. 알림 발행 이력 append-only: `./.acp/events.jsonl`(P0 append_event 재사용) + 대시보드에 최근 알림 패널.

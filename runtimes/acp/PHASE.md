@@ -43,7 +43,7 @@ blocking: "V1 코드/테스트/Reviewer는 PASS. P3/U1/U2 과거 페이즈 Nitpi
 
 작성일: 2026-06-09
 문서 성격: 다중 세션 협업용 진행 기준(SoT 보조). **이 PHASE.md가 곧 경량 로드맵**(옵션 A).
-대상/전제: 단일 PC(Windows), 상훈 1인. 상용 GUI 앱(Codex/Claude/Cursor) 세션을 **읽기 전용 폴링**으로 종합.
+대상/전제: 단일 PC(Windows), Owner 1인. 상용 GUI 앱(Codex/Claude/Cursor) 세션을 **읽기 전용 폴링**으로 종합.
 상위 SoT: `discovery/requirements.md` · `discovery/design.md` · `discovery/validation_plan.md` ·
           `discovery/phase_md_format.md` · `discovery/open_items.md` · `discovery/risk_register.md`
 방법론 캐논: `../cubi-skills/METHODOLOGY.md` (C1~C7), `../cubi-skills/DOC_TAXONOMY.md`.
@@ -71,10 +71,10 @@ blocking: "V1 코드/테스트/Reviewer는 PASS. P3/U1/U2 과거 페이즈 Nitpi
 | 홀딩 판정 | **jsonl 마지막 이벤트(last_evt) + 경과시간 조합**. task_complete+age>hold(턴간 망각) 또는 approval_request/턴중단(승인대기) → HOLDING | 실측 2026-06-09. osPid는 툴콜 서브프로세스라 휴지 시 항상 부재(판별불가). R-003 |
 | osPid 용도 | **RUNNING 확인 전용 양성 신호**(살아있으면 능동 실행중). 부재=중립, orphan 가능 → 단독 판정 금지 | chat_processes.json osPid 실측: 9개 중 8개 죽음, 1개 hung ssh |
 | 완료/에러 신호 | jsonl `event_msg.payload.type` 화이트리스트(`task_complete`/`task_aborted`/`error`)만. raw_status 부분문자열 매칭 폐기 | 문자열매칭 오탐. 명시 이벤트만(C3) |
-| 임계값(기본, config 조정) | idle=300s(5분) / hold=900s(15분) / stale_ttl=3600s(60분) / poll=15s | 장시간 작업 위주. 상훈 확정 2026-06-09 |
+| 임계값(기본, config 조정) | idle=300s(5분) / hold=900s(15분) / stale_ttl=3600s(60분) / poll=15s | 장시간 작업 위주. Owner 확정 2026-06-09 |
 | DONE 상태 | Codex 세션엔 **미적용**(task_complete는 턴 단위). PHASE.md `phase_status=done` 표시에만 사용 | 세션은 완료 없이 STALE로 늙음 |
 | 좀비 판정 | HOLDING이 stale_ttl 초과 → STALE | 홀딩 한계 초과 |
-| 홀딩 알림 | 전이당 **1회**(dedupe 단순). 무한대기 허용 | 상훈 확정: 1회면 충분 |
+| 홀딩 알림 | 전이당 **1회**(dedupe 단순). 무한대기 허용 | Owner 확정: 1회면 충분 |
 | last_activity 출처 | jsonl 마지막 이벤트 ts(정확) > chat_processes updatedAtMs(툴콜·지연). jsonl mtime 변동 시만 re-tail | I/O 절감 |
 | 세션 식별 id | 앱 네이티브: Codex=conversationId, Claude=sessionId, Cursor=wsHash+folder | OI-007 |
 | 페이즈 SSOT | 각 프로젝트 `PHASE.md` frontmatter(옵션 A) | phase_md_format.md |
@@ -87,13 +87,13 @@ blocking: "V1 코드/테스트/Reviewer는 PASS. P3/U1/U2 과거 페이즈 Nitpi
 | 브랜치/경계 | 단일 `acp-v1`. **태그 미생성**(사용자 명시 요청 시에만). 페이즈 경계는 HANDOFF·커밋 메시지·결정 로그로 기록 | 스킬 §9 |
 | 빌드/검증 | `pip install -e ".[dev]"` → `pytest -q` | ZTR 관례 |
 | Nitpicker | 로컬 LLM 모드(`jemmin_cli.py --provider ollama`) 또는 repo 래퍼(있으면 우선). Gemini/API 키 경로는 기본값 아님 | 스킬 §8 |
-| UI 기술스택 | 서버렌더(FastAPI+Jinja) 유지 + **Alpine.js 벤더링**(무빌드 reactive). 풀 SPA(React/Vue) 미도입 | KPI+필터/정렬엔 SPA 과설계. 무빌드·토큰0 철학 유지. 상훈 확정 2026-06-11 |
+| UI 기술스택 | 서버렌더(FastAPI+Jinja) 유지 + **Alpine.js 벤더링**(무빌드 reactive). 풀 SPA(React/Vue) 미도입 | KPI+필터/정렬엔 SPA 과설계. 무빌드·토큰0 철학 유지. Owner 확정 2026-06-11 |
 | 실시간 일관성 모델 | **하이브리드**: `/api/sessions` 주기 스냅샷(poll_interval) 재fetch + SSE 델타 패치. KPI·테이블은 단일 모델의 파생뷰 | 스냅샷=신규/필드변경 진실원천, SSE=즉시성. 단독 사용 시 누락/지연 |
 | 브라우저 테스트 | **Playwright e2e**(`[e2e]` optional-deps, dev 전용). 헤드리스 chromium, `--fake` 임시포트 기동 | 렌더·KPI·SSE 갱신 자동검증. 런타임 의존 아님 |
 | 테스트 게이트 | `pytest -q`는 `-m "not e2e"`로 단위/비브라우저만, e2e는 `pytest -m e2e tests/e2e -q`로 별도 실행 | V1에서 U1 Reviewer MAJOR 해소. 수치 과대주장 방지 |
 | KPI 프로젝트 수 | `no-project`도 프로젝트 버킷 1개로 센다 | 그룹/필터의 `no-project` 처리와 KPI 일관성 유지 |
-| 세션 보존 컷오프 | last_activity 없음(None) **또는** last_activity/updated_at가 `max_age_days`(기본 7일) 초과 → **수집 단계 제외 + DB prune**(보드 미표시). 감사로그(events)는 보존 | 실데이터에서 오래된 STALE·활동시각없는 UNKNOWN 노이즈 폭주. **C3 UNKNOWN 표시를 보드 한정 의도적 우회**(사유 로깅 유지). 상훈 확정 2026-06-12 |
-| 프로젝트 경로 표시 | **마지막 2개 세그먼트**만(`…\Todo\AgentControlPlane`), full path는 title 툴팁. 필터/그룹 키는 full 유지(표시 전용) | 경로가 길어 가독성 저하. 상훈 확정 2026-06-12 |
+| 세션 보존 컷오프 | last_activity 없음(None) **또는** last_activity/updated_at가 `max_age_days`(기본 7일) 초과 → **수집 단계 제외 + DB prune**(보드 미표시). 감사로그(events)는 보존 | 실데이터에서 오래된 STALE·활동시각없는 UNKNOWN 노이즈 폭주. **C3 UNKNOWN 표시를 보드 한정 의도적 우회**(사유 로깅 유지). Owner 확정 2026-06-12 |
+| 프로젝트 경로 표시 | **마지막 2개 세그먼트**만(`…\Todo\AgentControlPlane`), full path는 title 툴팁. 필터/그룹 키는 full 유지(표시 전용) | 경로가 길어 가독성 저하. Owner 확정 2026-06-12 |
 | 태그 | **미생성**(스킬 §9). 페이즈 경계는 커밋/HANDOFF/결정로그로 기록 | 사용자 명시 요청 시에만 |
 
 ### 앱별 아티팩트 부착점 (실측 2026-06-09, 경로 이동 가능 → 재확인 후 사용)
@@ -108,7 +108,7 @@ blocking: "V1 코드/테스트/Reviewer는 PASS. P3/U1/U2 과거 페이즈 Nitpi
 > **Cursor 실측 보강(2026-06-10, P2 계획):** ① `workspace.json`은 `{"folder": "<uri>"}` 단일 키. uri는
 > `file:///c:/...`(로컬) **또는 `vscode-remote://ssh-remote%2B<host>/...`(원격 SSH)** 일 수 있음 → 원격은 이 PC에
 > cwd 부재 → `no-phase-file`. ② `state.vscdb` 테이블은 `ItemTable` 1개뿐, 시간성 키는 `history.entries`/`scm.history`로
-> 단일 "마지막 활동시각" 추출 불가 → **DB 미오픈, state.vscdb 파일 mtime을 last_activity로 채택**(상훈 확정 2026-06-10).
+> 단일 "마지막 활동시각" 추출 불가 → **DB 미오픈, state.vscdb 파일 mtime을 last_activity로 채택**(Owner 확정 2026-06-10).
 > 이로써 R-002(state.vscdb 잠금) 리스크는 P2에서 **회피**(temp-copy read-only는 YAGNI로 보류).
 
 ---

@@ -13,7 +13,7 @@
 | OI-009 | Decision | GPT 계열 = **Codex Desktop**으로 커버(ChatGPT 채팅앱 미설치) | 정찰: `~/.codex/` 존재·실행중, ChatGPT 부재 | 확정됨 | Closed |
 | OI-010 | Decision | **Codex Collector 1순위 구현** | 가장 풍부(jsonl+osPid). 홀딩 PoC 최단 | 확정됨 | Closed |
 | OI-011 | Evidence Required | 홀딩(HOLDING) 판정 임계·신호 조합 검증 | ZTR형 입력대기 정확 탐지 | **Closed(2026-06-09)**: last_evt(jsonl)+age 결정테이블 확정. 임계 idle=5분/hold=15분/stale=60분. osPid는 RUNNING 전용. 잔여 검증=P1 Live smoke(턴중단 승인대기 케이스) | Closed |
-| OI-012 | Decision | PHASE.md=옵션A(경량 로드맵), 갱신=이중방어 | 상훈 확정. 노후경고+스킬 Exit Checklist | `phase_md_format.md` §5~6 + 스킬 수정 완료 | Closed |
+| OI-012 | Decision | PHASE.md=옵션A(경량 로드맵), 갱신=이중방어 | Owner 확정. 노후경고+스킬 Exit Checklist | `phase_md_format.md` §5~6 + 스킬 수정 완료 | Closed |
 
 ## Gate Rule
 

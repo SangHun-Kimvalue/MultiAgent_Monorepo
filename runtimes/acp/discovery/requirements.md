@@ -2,7 +2,7 @@
 
 ## Problem
 
-상훈은 여러 **상용 GUI AI 데스크톱 앱**(Claude Desktop, Cursor, **Codex Desktop**)에서 동시에 여러
+사용자는 여러 **상용 GUI AI 데스크톱 앱**(Claude Desktop, Cursor, **Codex Desktop**)에서 동시에 여러
 세션을 띄워 서로 다른 프로젝트를 병렬로 진행한다. 현재는 어떤 앱의 어떤 세션이 **어느 프로젝트에
 묶여**, **어떤 페이즈를** 진행 중이며, **살아있는지/멈췄는지(특히 입력 대기로 '홀딩'됐는지)**를 한눈에
 볼 방법이 없다. 머릿속 관제가 프로젝트 3개를 넘어가는 순간 한계에 도달한다.
@@ -12,7 +12,7 @@
 **ZTR(ZeroTokenRoundtable)가 무한 홀딩 상태에 빠졌다.** 멀티에이전트 오케스트레이션이 상용 GUI 앱
 세션에 의존하는 구간에서, 그 세션이 *입력 대기/멈춤*에 들어가도 ZTR은 그 사실을 알 길이 없어 **영원히
 기다린다.** 즉 이 관제소의 **킬러 기능은 단순 모니터링이 아니라 "GUI 세션이 홀딩/멈춤에 빠진 순간을
-외부에서 탐지"** 하는 것이다. 상훈이 떠올린 "주기적 polling SW"는 바로 이 사각지대를 뚫는 처방이다.
+외부에서 탐지"** 하는 것이다. 사용자가 제안한 "주기적 polling SW"는 바로 이 사각지대를 뚫는 처방이다.
 
 ## Root Cause
 
@@ -22,7 +22,7 @@
 - 따라서 "현황"이 (a) 앱의 로컬 흔적 (b) 프로젝트의 페이즈 문서 두 곳에 분리 저장되어, 종합된 단일
   뷰가 존재하지 않는다.
 - **수집 방식의 정답:** 앱을 바꿀 수 없으므로 **외부에서 로컬 아티팩트를 주기적으로 polling**하는 것이
-  유일·안전·0토큰 경로다(상훈의 최초 직관이 이 도메인에선 정답).
+  유일·안전·0토큰 경로다(사용자의 최초 제안이 이 도메인에선 정답).
 
 ## Goals
 
@@ -60,9 +60,9 @@
   - Codex: `~/.codex/sessions/**/rollout-*.jsonl`(`session_meta`,`event_msg`) + `process_manager/chat_processes.json`(`cwd`,`command`,`osPid`,`updatedAtMs`)
   - Cursor/VSCode: `workspaceStorage/<hash>/workspace.json` + `state.vscdb`
 - A2. 사용자는 관제 대상 프로젝트에 `PHASE.md`를 cubi-skills 캐논에 정렬된 형식으로 유지한다.
-- A3. v1은 상훈 본인 PC 단일 사용자 환경.
+- A3. v1은 Owner의 단일 PC·단일 사용자 환경.
 
 ## Stakeholders / Audience
 
-- 1차: 상훈(사령관, 유일 사용자).
+- 1차: Owner(유일 사용자).
 - 2차: 향후 Planner/Implementer 세션(본 문서를 입력으로 사용).

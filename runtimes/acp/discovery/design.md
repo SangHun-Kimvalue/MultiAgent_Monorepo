@@ -52,7 +52,7 @@
 
 | Value / state / artifact | Owner | Source of truth | Writer rule |
 |---|---|---|---|
-| 페이즈 계획 + 현재 페이즈 | 사용자(상훈) | 각 프로젝트 `PHASE.md` (cubi-skills 캐논 정렬) | 사람만 수정. 관제소는 read-only |
+| 페이즈 계획 + 현재 페이즈 | Owner | 각 프로젝트 `PHASE.md` (cubi-skills 캐논 정렬) | 사람만 수정. 관제소는 read-only |
 | 세션↔프로젝트 바인딩, 활동시각, 모델, 실행명령 | 데스크톱 앱 | 앱 로컬 파일(Codex jsonl+chat_processes / Claude JSON / Cursor workspaceStorage) | 앱만 기록. 관제소는 read-only 파싱. Cursor state.vscdb는 DB 미오픈, mtime만 |
 | 실행 프로세스 생존(osPid) | OS | `chat_processes.json`의 osPid + OS 프로세스 테이블 | 관제소는 조회만 |
 | 집계 상태(LIVE/HOLDING/STALE 등) | 관제소 코어 | SQLite(파생 데이터, 비권위) | 코어만 기록. 원본 아님 — 언제든 재생성 가능 |

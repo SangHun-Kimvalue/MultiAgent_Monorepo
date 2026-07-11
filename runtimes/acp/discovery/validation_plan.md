@@ -27,5 +27,5 @@
 |---|---|---|---|
 | Claude 세션 JSON 전체 필드 스키마 | 파서 안정성/스키마 드리프트 대비 | Implementer | P0 |
 | Cursor `state.vscdb` 내부 테이블 구조(세션/활동) | 활동시각 신뢰 소스 확정 | Implementer | P1 |
-| `PHASE.md` 표준 포맷 확정(frontmatter 등) | 결정적 파싱 가능 여부 | Planner+상훈 | P0 |
+| `PHASE.md` 표준 포맷 확정(frontmatter 등) | 결정적 파싱 가능 여부 | Planner+Owner | P0 |
 | 프로세스 부재 판정 신뢰성(앱 다중 프로세스) | 좀비 오탐 방지 | Implementer | P1 |
