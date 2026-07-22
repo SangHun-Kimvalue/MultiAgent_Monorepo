@@ -39,7 +39,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-live-001",
-                project_path="C:/Users/shkim/Desktop/Todo/AgentControlPlane",
+                project_path="C:/workspace/project",
                 model="gpt-5-fake",
                 last_activity=_dt(live_age),    # 30초 전 활동 → LIVE, e2e 전이 옵션 시 HOLDING
                 running_pid=12345,
@@ -50,7 +50,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-idle-002",
-                project_path="C:/Users/shkim/Desktop/Todo/ZeroTokenRoundtable",
+                project_path="C:/workspace/project",
                 model="claude-fake",
                 last_activity=_dt(360),          # 6분 전 활동 → IDLE
                 last_event="task_complete",
@@ -77,7 +77,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-stale-005",
-                project_path="C:/Users/shkim/Desktop/Todo/AgentControlPlane",
+                project_path="C:/workspace/project",
                 model="gpt-5-fake",
                 last_activity=_dt(3900),         # stale_ttl 초과 → STALE
                 last_event="task_complete",
@@ -86,7 +86,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-error-006",
-                project_path="C:/Users/shkim/Desktop/Todo/AgentControlPlane",
+                project_path="C:/workspace/project",
                 model="gpt-5-fake",
                 last_activity=_dt(10),
                 last_event="error",

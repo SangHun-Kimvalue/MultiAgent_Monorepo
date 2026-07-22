@@ -60,9 +60,9 @@
   - Codex: `~/.codex/sessions/**/rollout-*.jsonl`(`session_meta`,`event_msg`) + `process_manager/chat_processes.json`(`cwd`,`command`,`osPid`,`updatedAtMs`)
   - Cursor/VSCode: `workspaceStorage/<hash>/workspace.json` + `state.vscdb`
 - A2. 사용자는 관제 대상 프로젝트에 `PHASE.md`를 cubi-skills 캐논에 정렬된 형식으로 유지한다.
-- A3. v1은 Owner의 단일 PC·단일 사용자 환경.
+- A3. v1은 Owner 본인 PC 단일 사용자 환경.
 
 ## Stakeholders / Audience
 
-- 1차: Owner(유일 사용자).
+- 1차: Owner(사령관, 유일 사용자).
 - 2차: 향후 Planner/Implementer 세션(본 문서를 입력으로 사용).

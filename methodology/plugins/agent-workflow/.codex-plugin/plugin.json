@@ -1,7 +1,7 @@
 {
   "name": "agent-workflow",
-  "version": "1.1.0+codex.20260613",
-  "description": "Role-based multi-agent workflow skills for discovery, phased handoff, phase-cycle orchestration, cross-session review, local Nitpicker review, and ZRT phase commit closeout.",
+  "version": "1.2.3+codex.20260722020851",
+  "description": "Role-based multi-agent workflow skills for discovery, phased handoff, cross-lineage implementation review plus Nitpicker hard gates, phase-cycle orchestration, ZRT commit closeout, and compaction resume with explicit reviewer provenance and raw evidence.",
   "author": {
     "name": "shkim",
     "email": "gkstkqnsla@gmail.com"
@@ -15,27 +15,31 @@
     "nitpicker",
     "ollama",
     "korean",
-    "commit"
+    "commit",
+    "compaction",
+    "resume",
+    "sync-out"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Agent Workflow",
-    "shortDescription": "Multi-agent workflow skills for phased implementation, orchestration, and commit closeout.",
-    "longDescription": "Use role-based Discovery, Planner, Implementer, Reviewer, Nitpicker, phase-cycle orchestration, and ZRT phase commit closeout workflows across Codex, Claude, and other coding-agent sessions.",
+    "shortDescription": "Multi-agent workflow skills for phased implementation, orchestration, commit closeout, and compaction-resume.",
+    "longDescription": "Use role-based Discovery, Planner, Implementer, cross-lineage Reviewer, Nitpicker, phase-cycle orchestration, ZRT commit closeout, and compaction-resume workflows across Codex and Claude. Reviewer tool, CLI version, lineage, model, reviewed SHA and paths, enum verdict, exit code, and raw output remain auditable. A shared SessionStart(compact) hook injects live git facts and boot context after compaction.",
     "developerName": "shkim",
     "category": "Productivity",
     "capabilities": [
       "Planning",
       "Review",
       "LocalWorkflow",
-      "Git"
+      "Git",
+      "LifecycleHook",
+      "ContextResume"
     ],
     "defaultPrompt": [
       "Use phased implementation handoff for the next phase.",
       "Use phase-cycle-orchestrator to run the next phase loop.",
-      "Run cross-session plan review on this prompt.",
-      "Run local Nitpicker review for the changed files.",
-      "Use zrt-phase-commit to verify and commit this phase."
+      "\uc555\ucd95 \uc900\ube44\ud574. \ubb38\uc11c\uc640 \ud5c8\uc6a9\ub41c \uba54\ubaa8\ub9ac\ub97c \ub3d9\uae30\ud654\ud558\uace0 \uc555\ucd95 \ud6c4 \uc7ac\uac1c \ud504\ub86c\ud504\ud2b8\ub97c \ub9cc\ub4e4\uc5b4\uc918."
     ]
   }
 }

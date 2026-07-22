@@ -19,6 +19,11 @@
 - 미통합 골격(런타임 영향 0)은 버전 bump 보류, 실제 동작 변경 시 부여(선택 규칙).
 - 커밋은 리뷰 통과 후 **사용자 확인** 받고 진행.
 
+## Corrective round 정책 (phase-cycle-orchestrator)
+- `fix_rounds_max: 3`
+- 키가 없으면 기본값은 `3`이다. 값은 bool/문자열이 아닌 exact integer `1..5`만 허용한다.
+- 중복·모호한 정의나 범위 밖 값은 fix-round 전에 `BLOCKED`한다. 최종 범위 검증 권위는 ztr runtime validator다.
+
 ## 문서·형상관리 파일 위치 (Sync-In/Sync-Out 대상)
 - HANDOFF: `<docs/HANDOFF.md 등>` (없으면 생성). 다중 세션이면 필수.
 - lessons: `<docs/lessons/<module>.md 등>` (append-only, WHY/LESSON).
@@ -34,6 +39,16 @@
   # <리뷰 도구의 단일 파일 실행 명령>. 신규 파일이면 git diff --no-index -- /dev/null <파일>
   ```
   REJECT→수정→재실행 ALL PASS까지.
+
+## 독립 Reviewer(cross-lineage 하드 게이트)
+- active executor: `<도구/CLI version/모델 계열>` (예: `codex / 0.x / OpenAI`)
+- reviewer: `<도구/CLI version/모델 계열>` (예: `claude / 2.x / Anthropic`)
+- 기본 매핑: active executor가 Codex/OpenAI면 Claude CLI, Claude/Anthropic이면 Codex CLI. 같은 계열 서브에이전트는 자동 대체가 아니라 최후의 `same-lineage` 열화 모드다.
+- reviewer argv shape: `<긴 diff 본문이 아닌 review artifact 경로만 받는 argv 배열>`
+- review artifact / raw output: `<repo 내부 evidence 경로>` / `<raw stdout·stderr 경로>`
+- verdict 계약: `PASS | CHANGES_REQUESTED | BLOCKED` enum + process exit code를 별도 기록. prose만으로 PASS를 재해석하지 않는다.
+- 증거 형식: 스킬 `assets/review-verdict.schema.json` 필수 필드와 review 시각(UTC), review base SHA/reviewed paths를 기록한다.
+- 폴백: `cross-lineage CLI → cross-lineage session → same-lineage independent context(degraded)`. 대체·열화는 완료 보고에 명시하며 리뷰를 생략하지 않는다.
 
 ## 코드 컨벤션 (프로젝트 언어/스택)
 - 객체/모듈 패턴: `<예: 싱글톤 GetInstance/Init/UnInit, 또는 DI/factory>`

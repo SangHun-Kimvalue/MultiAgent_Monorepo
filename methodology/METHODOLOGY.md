@@ -37,11 +37,14 @@ Sync-In → Decide → Implement → Verify → Review → Sync-Out
 ```
 - **Sync-In(시작 전, MUST):** 로드맵 + `HANDOFF`의 현재 상태 + 대상 모듈 `lessons` + 관련 코드/테스트를 읽는다.
   문서가 stale이면 코드·테스트를 먼저 믿고 문서를 함께 갱신. (AI: 응답에 "재독 완료" 명시 — `MULTI_AGENT.md`)
+- **역할 재판정 checkpoint(Decide 전 + 요청 의도 변경 시, MUST):** 현재 의도가 세션에 부여된 역할의 허용 범위 안인지 다시 확인한다.
+  범위를 넘으면 작업과 tool call을 `STOP`하고 같은 세션에서 역할을 바꾸지 않는다. [`MULTI_AGENT.md`의 Role Transition Checkpoint](MULTI_AGENT.md#role-transition-checkpoint)에 따라 `ORCHESTRATOR_HANDOFF`로 제어권을 넘긴다.
 - **Decide:** 이번 작업의 "할 것 / 안 할 것 / 채택 / 폐기 / 검증 기준"을 고정. 작은 건 HANDOFF, 큰 결정은 로드맵 결정로그 또는 ADR.
 - **Implement:** 결정 범위 안에서만. 범위 밖 확장·미허용 인프라 도입 금지. 과설계 제안은 "검토했으나 보류"로 기록.
 - **Verify:** 정적 diff가 아니라 **실행 증거**(명령 + 결과 + artifact 경로). 못 돌린 검증은 이유를 남긴다.
 - **Review:** C4. 결정 준수·범위·fail-fast·테스트/artifact 충족·과설계 무비판 수용 여부 감사. finding은 정형(§아래).
 - **Sync-Out(종료, MUST):** `HANDOFF` 갱신(현재 상태/가정/미완/다음 단계, **PASS는 어디까지·NOT CLAIMED 분리**) + `lessons` append(WHY/LESSON).
+  phase 작업이면 각 checkpoint에서 phase ledger를 갱신·보고하되, 스키마를 다시 정의하지 않고 [`MULTI_AGENT.md#phase-ledger-canon`](MULTI_AGENT.md#phase-ledger-canon)을 따른다.
 
 **리뷰 finding 정형** (근거 없는 blocker 금지): `severity / finding / evidence_or_repro / impact / recommendation`.
 **리뷰 bundle 최소**: 변경 파일 + 핵심 diff + 관련 문서 발췌 + 검증 출력 + artifact 경로 + 남은 질문. 전체 리포 병합 금지.

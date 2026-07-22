@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "timeout_seconds": 30,
+  "repo_root": "D:\\MultiAgent_Monorepo",
+  "mechanical": {
+    "interpreter": "runtimes/ztr/.venv/Scripts/python.exe",
+    "entrypoint": "methodology/nitpicker/run_nit.py",
+    "args": [
+      "--repo",
+      "D:\\MultiAgent_Monorepo",
+      "--provider",
+      "ollama",
+      "--model",
+      "qwen2.5-coder:7b",
+      "--include-all"
+    ],
+    "process_mode": "direct",
+    "daemon": false,
+    "visible_console": false,
+    "start_process": false,
+    "provider": "ollama",
+    "model": "qwen2.5-coder:7b",
+    "working_directory": ".",
+    "artifact_root": "methodology/docs",
+    "artifact_probe_file": "methodology/docs/MAM_ZTR_P2_EXECUTION_PREFLIGHT_PROMPT.md"
+  },
+  "providers": [
+    {
+      "id": "codex",
+      "executable": "C:\\Users\\user\\AppData\\Roaming\\npm\\codex.cmd",
+      "version_expected_substring": "codex-cli 0.144.1",
+      "model": "gpt-5.6-sol",
+      "model_binding_kind": "exact_pin",
+      "planned_argv": [
+        "C:\\Users\\user\\AppData\\Roaming\\npm\\codex.cmd",
+        "exec",
+        "--json",
+        "--ignore-user-config",
+        "--dangerously-bypass-approvals-and-sandbox",
+        "-m",
+        "gpt-5.6-sol",
+        "-c",
+        "model_reasoning_effort=\"high\"",
+        "--cd",
+        "D:\\MultiAgent_Monorepo",
+        "-"
+      ],
+      "working_directory": ".",
+      "artifact_root": "methodology/docs",
+      "artifact_probe_file": "methodology/docs/MAM_ZTR_P2_EXECUTION_PREFLIGHT_PROMPT.md",
+      "approval_policy": "dogfood-bypass",
+      "sandbox_policy": "danger-full-access",
+      "dangerous_bypass_required_for_dogfood": true,
+      "required_env": []
+    },
+    {
+      "id": "claude",
+      "executable": "C:\\Users\\user\\.local\\bin\\claude.exe",
+      "version_expected_substring": "2.1.206 (Claude Code)",
+      "model": "sonnet",
+      "model_binding_kind": "moving_profile",
+      "planned_argv": [
+        "C:\\Users\\user\\.local\\bin\\claude.exe",
+        "-p",
+        "--model",
+        "sonnet",
+        "--effort",
+        "medium",
+        "--no-session-persistence"
+      ],
+      "working_directory": ".",
+      "artifact_root": "methodology/docs",
+      "artifact_probe_file": "methodology/docs/MAM_ZTR_P2_EXECUTION_PREFLIGHT_PROMPT.md",
+      "approval_policy": "not-applicable",
+      "sandbox_policy": "external",
+      "dangerous_bypass_required_for_dogfood": false,
+      "required_env": []
+    }
+  ]
+}

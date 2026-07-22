@@ -12,12 +12,17 @@ if command -v zip >/dev/null 2>&1; then
   (cd "$ROOT_DIR" && zip -r "$OUT_DIR/$NAME.zip" \
     README.md METHODOLOGY.md MULTI_AGENT.md DOC_TAXONOMY.md \
     .agents adapters config docs plugins nitpicker install.sh package.sh \
-    -x "*/.git/*" "dist/*" "cubi-deploy/*" "nitpicker/nitpicker.config.json")
+    -x "*/.git/*" "dist/*" "cubi-deploy/*" "nitpicker/nitpicker.config.json" \
+       "*/__pycache__/*" "*/__pycache__/" "*.pyc" "*.pyo")
   echo "$OUT_DIR/$NAME.zip"
 else
   tar -czf "$OUT_DIR/$NAME.tar.gz" \
     -C "$ROOT_DIR" \
     --exclude='nitpicker/nitpicker.config.json' \
+    --exclude='*/__pycache__' \
+    --exclude='*/__pycache__/*' \
+    --exclude='*.pyc' \
+    --exclude='*.pyo' \
     README.md METHODOLOGY.md MULTI_AGENT.md DOC_TAXONOMY.md \
     .agents adapters config docs plugins nitpicker install.sh package.sh
   echo "$OUT_DIR/$NAME.tar.gz"

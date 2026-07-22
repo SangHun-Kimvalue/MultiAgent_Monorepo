@@ -21,6 +21,7 @@ description: >
 불변:
 - R5: 코드나 스킬이 LLM 산출물의 의미를 판정하지 않는다. 분기는 `status`, `exit_code`, `not_claimed`만 사용한다.
 - 오케스트레이터는 설계리뷰 권위를 재정의하지 않는다. 설계+프롬프트 저작의 게이트는 `phased-implementation-handoff` §8을 호출해 상속한다.
+- 오케스트레이터는 바깥 루프 운전자다. 직접 구현하거나 자기 설계·구현을 승인하지 않고, Reviewer 산문의 의미를 코드/스킬로 판정하지 않는다.
 - 구현리뷰 기준은 "이미 캐논에 완결되어 있다"고 주장하지 않는다. ASM-3 상세 체크리스트는 임시 기술부채다.
 - 구현리뷰 leg에는 `MULTI_AGENT.md`의 역할 독립성 + `phased-implementation-handoff` §8 체크리스트 + M2 5필드를 **review artifact 파일**로 주입한다.
 - 큰 diff, 파일 본문, 리뷰 요청, 다중 문서 컨텍스트를 argv에 직접 싣지 않는다.
@@ -66,16 +67,36 @@ description: >
    - dogfood 전용 위험 bypass가 필요하면 capability에 `dangerous_bypass_required_for_dogfood: true`로 명시하고 보고서에 범위를 남긴다. 범용 기본값처럼 숨기지 않는다.
 
 6. Run Inner Loop
-   - 기본 backend는 `ztr run-phase`다.
-   - implementer, reviewer, mechanical/preen leg를 config의 argv JSON으로 전달한다.
+   - **구현 위임의 본질 = 독립 Implementer 컨텍스트에 넘기는 것.** 아래 backend는 그 본질을 실현하는 *수단*이며, backend 하나가 막혀도 "구현 위임 자체가 불가"가 아니라 다음 backend로 내려간다(리뷰 leg 폴백 §5.5/§8과 **대칭**). relay는 backend 1종일 뿐 위임의 정의가 아니다.
+   - **폴백 허용 사유 = "구현 시작 전 transport/capability 실패"에 한정**(classifier 거부·실행권한/sandbox 충돌·CLI 시작 불가). **Implementer가 실제 실행된 뒤의 코드·검증·리뷰 실패**(테스트 red·`CHANGES_REQUESTED`·repo 오류)는 backend 장애가 아니라 **기존 verdict대로 중단**한다 — 다른 backend에서 같은 구현을 반복해 fail-fast·timebox를 우회하지 않는다.
+   - **Implementer backend 폴백 위계(4단계 — 계약 §3.1과 동일 번호, 막히면 한 칸씩만 내려간다)**:
+     - ① `ztr run-phase` relay 기본 — config argv JSON으로 implementer/reviewer/mechanical leg 구동.
+     - ② relay **안전 모드 재시도** — bypass가 classifier에 막히면 `workspace-write`로(파일편집만; self-verify 셸은 `--test-cmd` leg가 대행).
+     - ③ ②도 transport로 막히면 **Agent 툴 subagent를 독립 Implementer 세션으로 구동** + **명시 어댑터로 완주**: subagent는 ztr Envelope을 내지 않으므로 **subagent 결과 자체는 PASS가 아니라 "구현 산출 대기"**다. 반드시 `[Implementer 산출 → 독립 Reviewer leg → Mechanical leg → 표준 verdict(enum/exit)]`를 완주해야 Step 7/Human Gate 2로 갈 수 있다. **Planner가 subagent의 자연어 완료 보고를 의미 판정해 PASS로 바꾸지 않는다(R5).**
+     - ④ ①②③이 모두 불가할 때만 사용자 수동 Implementer 세션 위임(최후). ③(subagent+어댑터)를 건너뛰고 곧장 수동으로 후퇴하지 않는다.
+   - **cross-lineage 검증(형식적 swap 금지, 캐논 §8 상속)**: 기본 요구는 **실제 reviewer 계열 ≠ 실제 implementer 계열** AND **reviewer 컨텍스트 ≠ implementer 컨텍스트**다. 이를 절차가 아니라 **실행 전·후 실측**으로 확인하고 — 완료 보고 evidence에 **양쪽 실제 계열·컨텍스트/session id와 비교 결과**를 필수 기록한다("계열이 안 바뀌었다"는 이유로 교차검증을 건너뛰지 않는다). cross-lineage를 확보할 수 없을 때만 §8 폴백 위계의 ③(같은 계열 독립 컨텍스트)로 내려가되, 이는 **예외 없는 불변식이 아니라 캐논 §8이 정의한 열화 모드**이므로 review 기록에 `same-lineage(계열 독립성 미확보)`를 명시한다(오케스트레이터는 §8 권위를 재정의하지 않는다). **Planner의 Reviewer 겸임 금지 = 컨텍스트 분리는 예외 없는 조건**(계열과 별개).
+   - relay 경로에서: implementer, reviewer, mechanical/preen leg를 config의 argv JSON으로 전달한다.
    - resume는 `--session-map`, `--implementer-resume`, `--reviewer-resume`, `--*-resume-profile` 정책을 따른다.
    - `auto` resume 실패는 새 세션 폴백 + 맥락 손실 경고로 보고한다.
    - 명시 session id 실패 또는 다른 id 캡처는 `BLOCKED`로 보고한다.
+   - Reviewer leg가 종료되면 verdict와 무관하게 Orchestrator가 제어권을 회수한다. Reviewer가 수정이나 다음 역할을 이어서 수행하게 두지 않는다.
 
 7. Route Envelope
    - stdout의 단일 Envelope JSON을 읽는다.
    - `PASS`: 휴먼 게이트 2로 이동한다.
-   - `CHANGES_REQUESTED`: finding과 artifact 경로를 보고하고 멈춘다. 자동 수정 루프를 돌리지 않는다.
+   - `CHANGES_REQUESTED`는 Envelope의 exact `status`/`exit_code` 조합으로만 route한다. 자연어 완료 보고나 finding 본문을 PASS로 재분류하지 않는다.
+   - 자동 수정은 시작하지 않고 현재 run을 멈춘 뒤, Orchestrator가 모든 finding을 기존 four-way `methodology/artifacts/finding-disposition.md`에 기록한다.
+     - 허용값은 `ACCEPT`, `REJECT_FALSE_POSITIVE`, `DEFER_OUT_OF_SCOPE`, `REJECT_OVERENGINEERING`이다. evidence·rationale·owner가 누락되면 corrective round는 `BLOCKED`다.
+     - `REJECT_FALSE_POSITIVE`와 `REJECT_OVERENGINEERING`에는 반증 evidence가 필수다. `DEFER_OUT_OF_SCOPE`는 결함 부정이 아니며 owner와 후속 위치가 필수다.
+     - disposition은 수정 대상 선별일 뿐 phase 승인이나 자기 구현 승인이 아니다.
+     - 사람의 명시 trigger와 필수 evidence가 없으면 `BLOCKED`다. 이 workflow gate는 human-presence의 암호학적 증명이 아니며 B-3은 **NOT CLAIMED**다.
+     - 기존 `methodology/tools/remediation_adapter.py --human-triggered`를 호출하고 stdout의 structured `PASS/0`만 수용한다. `--accept-leg orchestrator-accepted-review`는 adapter가 만든 accepted-only synthetic report를 선택할 뿐 새 disposition 권위가 아니다.
+     - project config의 `fix_rounds_max`를 읽는다. 키가 없으면 기본 `3`; 값은 bool/문자열이 아닌 exact integer `1..5`여야 한다. 범위 밖·중복·모호한 정의는 fix-round 호출 전에 `BLOCKED`다. 최종 범위 권위는 runtime validator다.
+     - `reapply-status`로 원장을 먼저 읽는다. terminal이면 새 round를 발행하지 않고 사람에게 에스컬레이션한다.
+     - accepted findings, 다음 round index, max, input digest, NOT CLAIMED를 사람에게 제시하고 그 round에 대한 trigger를 한 번 받는다.
+     - 다음 명령 shape로 정확히 1회만 실행한다: `ztr fix-round ... --accept-leg orchestrator-accepted-review --record --max-rounds <N>`. 별도 while/retry/autofix는 금지한다.
+     - fix-round Envelope `PASS/0`이면 Human Gate 2로 간다. `CHANGES_REQUESTED/1`이면 제어권을 회수해 새 disposition부터 다시 사람에게 맡긴다. `BLOCKED/2`, operational `70/124`, terminal 상태는 artifact와 함께 사람에게 에스컬레이션한다.
+     - 수정 뒤 원 페이즈와 동일한 결정론 검증 및 독립 Reviewer/Mechanical gate가 모두 구조화 PASS여야 한다. Reviewer 종료 뒤 Orchestrator가 제어권을 회수하며, natural-language completion은 PASS가 아니다.
    - `BLOCKED`: blocker, stderr 요약, artifact 경로, 재현 명령을 보고하고 멈춘다.
    - `not_claimed`는 PASS처럼 말하지 않는다.
    - PASS라도 driver evidence를 별도 기록한다: changed paths 또는 diff artifact 존재 여부, session-map 경로/id, prompt/review artifact 경로, run dir, 각 leg envelope 경로.
@@ -153,10 +174,13 @@ verdict=BLOCKED여도 exit 0). 근거: `EXECUTION_ADAPTER_CONTRACT.md §2.1`.
 
 ## Reporting
 
+각 checkpoint와 페이즈 종료 때 프로젝트 roadmap/PHASES의 전체 phase ledger를 갱신·보고한다. 필드 스키마는 이 스킬에서 재정의하지 않고 [`MULTI_AGENT.md#phase-ledger-canon`](../../../../MULTI_AGENT.md#phase-ledger-canon)을 따른다.
+
 각 페이즈 종료 보고:
 
 ```text
 Phase:
+Phase ledger: MULTI_AGENT.md#phase-ledger-canon 기준 현재 인스턴스
 Design gate:
 Inner loop:
 Envelope:
@@ -189,6 +213,10 @@ Next:
 - dogfood 전용 dangerous bypass를 일반 실행 기본값처럼 숨긴다.
 - exit code 0만 보고 파일 변경 성공이나 요구사항 충족을 주장한다.
 - 미정의 `{token}`을 빈 문자열로 바꾼다.
-- `CHANGES_REQUESTED` 뒤 자동 수정 루프를 시작한다.
+- `CHANGES_REQUESTED` 뒤 disposition·Human trigger 없이 자동 수정 루프를 시작하거나 Reviewer가 직접 수정한다.
+- rejected/deferred finding을 `ztr fix-prompt`에 섞거나 corrective round의 독립 재리뷰를 생략한다.
 - 사람 승인 없이 커밋하거나 push한다.
 - `not_claimed`를 PASS처럼 요약한다.
+- **relay(ztr) 실행이 환경 제약(auto-mode bypass 거부 등)으로 막힌 것을 "구현 위임 자체가 불가"로 오판**하고, Step 6-③ 독립 subagent Implementer 폴백을 **건너뛴 채 곧장 사용자에게 "수동으로 하라"로 떠넘긴다.** (relay는 backend 1종일 뿐 위임의 정의가 아니다 — 위계를 한 칸 내려가라.)
+- **subagent Implementer 폴백(③)에서 독립 Reviewer·Mechanical 완주 없이** subagent의 자연어 완료 보고를 PASS로 의미 판정하거나 곧장 Human Gate 2(커밋)로 간다(R5·자기 구현 자기 승인 금지 위반 — subagent 결과는 "구현 산출 대기"이며 표준 verdict 전엔 PASS 아님).
+- **Implementer가 실제 실행된 뒤의 코드·검증·리뷰 실패를 backend 장애로 오분류**해 다른 backend에서 같은 구현을 반복한다(폴백은 구현 시작 전 transport/capability 실패에만).

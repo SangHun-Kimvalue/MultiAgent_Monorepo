@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "phase_id": "example-phase",
+  "human_trigger": {
+    "approved": true,
+    "actor": "human-operator",
+    "approved_at": "2026-07-20T12:00:00+09:00",
+    "scope": "corrective-round-1 accepted findings only",
+    "evidence_ref": "chat-approval/example-phase/continue-1"
+  },
+  "findings": [
+    {
+      "id": "EXAMPLE-R1",
+      "reviewer": "independent-reviewer",
+      "severity": "medium",
+      "finding": "Known token remains unchanged.",
+      "evidence_or_repro": "Inspect the throwaway target token.",
+      "impact": "The deterministic gate remains non-PASS.",
+      "recommendation": "Replace the accepted token.",
+      "disposition": "ACCEPT",
+      "disposition_evidence": "The deterministic fixture reproduces the mismatch.",
+      "rationale": "The finding is within the approved corrective scope.",
+      "owner": "separate-implementer",
+      "corrective_round": "corrective-round-1",
+      "fix_instruction": "Replace BAD_ACCEPTED with FIXED_ACCEPTED."
+    },
+    {
+      "id": "EXAMPLE-R2",
+      "reviewer": "independent-reviewer",
+      "severity": "low",
+      "finding": "A rejected example finding.",
+      "evidence_or_repro": "Original review artifact R2.",
+      "impact": "No accepted corrective impact.",
+      "recommendation": "Change the rejected token.",
+      "disposition": "REJECT_FALSE_POSITIVE",
+      "disposition_evidence": "The deterministic contract requires the token unchanged.",
+      "rationale": "The recommendation conflicts with the fixture contract.",
+      "owner": "orchestrator",
+      "corrective_round": null,
+      "fix_instruction": null
+    }
+  ]
+}

@@ -1,7 +1,9 @@
 """Tests for the local run_nit wrapper."""
 from __future__ import annotations
 
+import argparse
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -125,3 +127,72 @@ def test_run_nit_defaults_to_current_working_directory(tmp_path: Path) -> None:
     assert "===== mod.py =====" in result.stdout
     assert "Mock provider checked mod.py" in result.stdout
     assert result.stderr == ""
+
+
+def test_model_option_overrides_only_loaded_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    original = {
+        "provider": "ollama",
+        "model": "configured-model",
+        "timeout_seconds": 12,
+    }
+    observed: dict[str, object] = {}
+
+    monkeypatch.setattr(run_nit, "load_config", lambda: dict(original))
+    monkeypatch.setattr(
+        run_nit,
+        "parse_args",
+        lambda: argparse.Namespace(
+            repo=None,
+            model="exact-model",
+            provider=None,
+            self_test=True,
+            staged=False,
+            files=[],
+            include_all=False,
+            keep_going=False,
+            changed=False,
+        ),
+    )
+
+    def fake_self_test(config: dict[str, object]) -> int:
+        observed.update(config)
+        return 0
+
+    monkeypatch.setattr(run_nit, "self_test", fake_self_test)
+
+    assert run_nit.main() == 0
+    assert observed == {
+        "provider": "ollama",
+        "model": "exact-model",
+        "timeout_seconds": 12,
+    }
+    assert original["model"] == "configured-model"
+
+
+def test_cp949_subprocess_preserves_non_cp949_path_as_utf8(tmp_path: Path) -> None:
+    repo = tmp_path / "cp949-output"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.invalid")
+    _git(repo, "config", "user.name", "Test User")
+    module_file = repo / "check_✅.py"
+    module_file.write_text("value = 1\n", encoding="utf-8")
+    _git(repo, "add", module_file.name)
+    _git(repo, "commit", "-m", "seed")
+    module_file.write_text("value = 2\n", encoding="utf-8")
+    env = dict(os.environ)
+    env["PYTHONIOENCODING"] = "cp949"
+
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--provider", "mock", module_file.name],
+        cwd=repo,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+
+    assert result.returncode == 0
+    stdout = result.stdout.decode("utf-8")
+    assert "check_✅.py" in stdout
+    assert b"UnicodeEncodeError" not in result.stderr

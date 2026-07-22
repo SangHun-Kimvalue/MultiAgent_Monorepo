@@ -19,6 +19,11 @@
 - 미통합 골격(런타임 영향 0)은 버전 bump 보류, 실제 동작 변경 시 부여(선택 규칙).
 - 커밋은 리뷰 통과 후 **사용자 확인** 받고 진행.
 
+## Corrective round 정책 (phase-cycle-orchestrator)
+- `fix_rounds_max: 3`
+- 키가 없으면 기본값은 `3`이다. 값은 bool/문자열이 아닌 exact integer `1..5`만 허용한다.
+- 중복·모호한 정의나 범위 밖 값은 fix-round 전에 `BLOCKED`한다. 최종 범위 검증 권위는 ztr runtime validator다.
+
 ## 문서·형상관리 파일 위치 (Sync-In/Sync-Out 대상)
 - HANDOFF: `<docs/HANDOFF.md 등>` (없으면 생성). 다중 세션이면 필수.
 - lessons: `<docs/lessons/<module>.md 등>` (append-only, WHY/LESSON).
@@ -43,6 +48,8 @@
 
 ### 실행 계약
 - 계약 문서: `methodology/docs/EXECUTION_ADAPTER_CONTRACT.md`
+- exact binding 정형 입력: repo 내부의 `execution-preflight.json` 같은 JSON 파일을 두고, 예시는 `methodology/config/execution-preflight.example.json`을 참조한다. 이 Markdown에 JSON schema를 복제하지 않는다.
+- expensive Implementer/Reviewer/Mechanical leg를 시작하기 전에 `methodology/tools/execution_preflight.py`로 선택된 정형 binding의 deterministic preflight를 통과해야 한다. provider version/auth까지 요구하는 실행은 `--live` PASS를 선행한다.
 - 기본 런타임: `<예: ztr>`
 - relay envelope 계약: `status`/`exit_code`/`not_claimed`만 분기 조건으로 사용한다.
 - R5 경계: 세션 id·payload·review body는 불투명 사실로 전달하며, 코드가 의미를 파싱하지 않는다.

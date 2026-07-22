@@ -12,6 +12,22 @@ ResumeProfile = Literal["none", "claude", "codex"]
 _POLICY_AUTO = "auto"
 _POLICY_NEW = "new"
 
+# codex-cli 0.144.6, 2026-07-20 `codex exec resume --help` 실측 기준.
+# allowlist가 아니라 resume이 거부하는 exec 전용 표면만 제거해 미지 플래그는 시끄럽게 실패시킨다.
+_CODEX_EXEC_ONLY_VALUE_FLAGS = (
+    "-C",
+    "--cd",
+    "-s",
+    "--sandbox",
+    "--add-dir",
+    "-p",
+    "--profile",
+    "--local-provider",
+    "--color",
+)
+_CODEX_EXEC_ONLY_BOOLEAN_FLAGS = ("--oss", "-V", "--version")
+_CODEX_EXEC_ONLY_SHORT_VALUE_FLAGS = ("-C", "-s", "-p")
+
 
 class ResumePolicyError(ValueError):
     """resume 정책 위반으로 leg를 BLOCKED 처리해야 하는 오류."""
@@ -46,12 +62,19 @@ class SessionMap:
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = self.path.with_name(f".{self.path.name}.{os.getpid()}.tmp")
-        tmp_path.write_text(
-            json.dumps(self.values, ensure_ascii=False, indent=2, sort_keys=True)
-            + "\n",
-            encoding="utf-8",
-        )
-        os.replace(tmp_path, self.path)
+        try:
+            tmp_path.write_text(
+                json.dumps(self.values, ensure_ascii=False, indent=2, sort_keys=True)
+                + "\n",
+                encoding="utf-8",
+            )
+            os.replace(tmp_path, self.path)
+        finally:
+            # ReapplyLedger와 같은 원자 저장 책임: 실패 tmp를 남기지 않는다.
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     def get(self, role: str) -> str | None:
         return self.values.get(role)
@@ -72,6 +95,9 @@ class ResumeAttempt:
     resumed: bool
     fallback_from: str | None = None
     context_loss_warning: str | None = None
+    working_dir: str | None = None
+    stripped_flags: tuple[str, ...] = ()
+    block_reason: str | None = None
 
     def as_payload(self) -> dict[str, Any]:
         return {
@@ -82,7 +108,20 @@ class ResumeAttempt:
             "resumed": self.resumed,
             "fallback_from": self.fallback_from,
             "context_loss_warning": self.context_loss_warning,
+            "working_dir": self.working_dir,
+            "stripped_flags": list(self.stripped_flags),
+            "block_reason": self.block_reason,
         }
+
+
+@dataclass(frozen=True)
+class ResumeArgvPlan:
+    """resume argv 변환과 leg 실행 위치/차단 사실을 함께 운반한다."""
+
+    argv: list[str]
+    working_dir: str | None = None
+    stripped_flags: tuple[str, ...] = ()
+    block_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -117,17 +156,28 @@ class ResumeCoordinator:
     def prepare(self, argv: list[str], *, role: str) -> tuple[list[str], ResumeAttempt]:
         spec = self._specs.get(role, ResumeSpec(role=role))
         requested_id = self._requested_id(spec)
-        transformed = build_resume_argv(
+        plan = build_resume_argv_plan(
             argv,
             profile=spec.profile,
             session_id=requested_id,
         )
-        return transformed, ResumeAttempt(
+        if plan.stripped_flags:
+            warning = (
+                f"{role} codex resume이 거부하는 exec 전용 플래그를 제거했습니다: "
+                f"{', '.join(plan.stripped_flags)}."
+            )
+            if any(flag in {"-s", "--sandbox"} for flag in plan.stripped_flags):
+                warning += " resume 기본 sandbox 등급은 NOT CLAIMED입니다."
+            self.warnings.append(warning)
+        return plan.argv, ResumeAttempt(
             role=role,
             profile=spec.profile,
             policy=spec.policy,
             requested_id=requested_id,
             resumed=requested_id is not None,
+            working_dir=plan.working_dir,
+            stripped_flags=plan.stripped_flags,
+            block_reason=plan.block_reason,
         )
 
     def should_fallback(self, attempt: ResumeAttempt) -> bool:
@@ -217,12 +267,24 @@ def build_resume_argv(
     session_id: str | None,
 ) -> list[str]:
     """profile에 맞게 JSON 출력과 resume id를 결정론적으로 주입한다."""
+    return build_resume_argv_plan(
+        argv, profile=profile, session_id=session_id
+    ).argv
+
+
+def build_resume_argv_plan(
+    argv: list[str],
+    *,
+    profile: ResumeProfile,
+    session_id: str | None,
+) -> ResumeArgvPlan:
+    """argv와 resume leg 전용 cwd/표면화/차단 계획을 산출한다."""
     if profile == "none":
-        return list(argv)
+        return ResumeArgvPlan(argv=list(argv))
     if profile == "claude":
-        return _build_claude_argv(argv, session_id=session_id)
+        return ResumeArgvPlan(argv=_build_claude_argv(argv, session_id=session_id))
     if profile == "codex":
-        return _build_codex_argv(argv, session_id=session_id)
+        return _build_codex_plan(argv, session_id=session_id)
     raise ValueError(f"지원하지 않는 resume profile입니다: {profile}")
 
 
@@ -247,17 +309,88 @@ def _build_claude_argv(argv: list[str], *, session_id: str | None) -> list[str]:
 
 
 def _build_codex_argv(argv: list[str], *, session_id: str | None) -> list[str]:
+    return _build_codex_plan(argv, session_id=session_id).argv
+
+
+def _build_codex_plan(argv: list[str], *, session_id: str | None) -> ResumeArgvPlan:
     result = list(argv)
+    working_dir: str | None = None
+    stripped_flags: list[str] = []
+    block_reason: str | None = None
     if session_id is not None and "resume" not in result[1:3]:
         if len(result) < 2 or result[1] != "exec":
             raise ValueError("codex resume profile은 'codex exec ...' argv가 필요합니다")
         result[2:2] = ["resume", session_id]
+        result, working_dir, stripped_flags, block_reason = _strip_codex_exec_only_flags(
+            result
+        )
     if "--json" not in result:
         insert_at = 2
         if len(result) >= 4 and result[1] == "exec" and result[2] == "resume":
             insert_at = 4
         result.insert(insert_at, "--json")
-    return result
+    return ResumeArgvPlan(
+        argv=result,
+        working_dir=working_dir,
+        stripped_flags=tuple(stripped_flags),
+        block_reason=block_reason,
+    )
+
+
+def _strip_codex_exec_only_flags(
+    argv: list[str],
+) -> tuple[list[str], str | None, list[str], str | None]:
+    result: list[str] = []
+    stripped: list[str] = []
+    working_dir: str | None = None
+    block_reason: str | None = None
+    index = 0
+    while index < len(argv):
+        token = argv[index]
+        if token in _CODEX_EXEC_ONLY_BOOLEAN_FLAGS:
+            stripped.append(token)
+            index += 1
+            continue
+
+        flag: str | None = None
+        value: str | None = None
+        if token in _CODEX_EXEC_ONLY_VALUE_FLAGS:
+            flag = token
+            nxt = argv[index + 1] if index + 1 < len(argv) else None
+            if nxt is not None and not nxt.startswith("-"):
+                value = nxt
+                index += 2
+            else:
+                index += 1
+        else:
+            for candidate in _CODEX_EXEC_ONLY_VALUE_FLAGS:
+                prefix = f"{candidate}="
+                if token.startswith(prefix):
+                    flag = candidate
+                    value = token[len(prefix) :]
+                    index += 1
+                    break
+            if flag is None:
+                for candidate in _CODEX_EXEC_ONLY_SHORT_VALUE_FLAGS:
+                    if token.startswith(candidate) and token != candidate:
+                        flag = candidate
+                        value = token[len(candidate) :]
+                        index += 1
+                        break
+
+        if flag is None:
+            result.append(token)
+            index += 1
+            continue
+
+        stripped.append(flag)
+        if not value:
+            block_reason = f"codex resume argv: {flag} 값 누락"
+            continue
+        if flag in {"-C", "--cd"}:
+            working_dir = value
+
+    return result, working_dir, stripped, block_reason
 
 
 def _ensure_option_value(argv: list[str], option: str, value: str) -> list[str]:

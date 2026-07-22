@@ -1,0 +1,15 @@
+{
+  "marketplace_path": "../../../.agents/plugins/marketplace.json",
+  "plugin_path": "../../../plugins/agent-workflow",
+  "version": "1.2.3+codex.20260722020851",
+  "skills": [
+    "cross-session-plan-review",
+    "design-review-leg",
+    "nitpicker-review",
+    "phase-cycle-orchestrator",
+    "phase0-discovery-interview",
+    "phased-implementation-handoff",
+    "prepare-session-compaction",
+    "zrt-phase-commit"
+  ]
+}

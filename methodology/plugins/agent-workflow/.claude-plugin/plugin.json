@@ -1,10 +1,10 @@
 {
   "name": "agent-workflow",
-  "version": "1.1.0",
-  "description": "Role-based workflow skills — Phase 0 Discovery gate, phased handoff, phase-cycle orchestration, local Nitpicker review, ZRT phase commit closeout. 지정 세션이 Discovery/Planner/Implementer/Reviewer 역할을 맡고, 현재 작업 브랜치 유지, HANDOFF/lessons 문서 규약, 프로젝트 전략 주입을 지원한다.",
+  "version": "1.2.3",
+  "description": "Role-based workflow skills — Phase 0 Discovery, phased handoff, cross-lineage implementation review + Nitpicker hard gates, phase-cycle orchestration, ZRT commit closeout, and compaction resume. Reviewer CLI provenance, enum verdict, raw evidence, HANDOFF/lessons, and SessionStart(compact) boot context are preserved across Claude and Codex surfaces.",
   "author": {
     "name": "shkim",
     "email": "gkstkqnsla@gmail.com"
   },
-  "keywords": ["workflow", "discovery", "handoff", "phased", "orchestrator", "nitpicker", "ollama", "commit", "korean"]
+  "keywords": ["workflow", "discovery", "handoff", "phased", "orchestrator", "nitpicker", "ollama", "commit", "korean", "compaction", "resume", "sync-out"]
 }

@@ -170,7 +170,10 @@ async def run_static_review(
     timeout_s: float = 60.0,
     runner: ToolRunner | None = None,
 ) -> StaticReviewReport:
-    """ruff 대상과 전체 src mypy를 실행하고 deterministic verdict를 만든다."""
+    """ruff 대상과 전체 src mypy를 실행하고 deterministic verdict를 만든다.
+
+    ``cwd``는 ruff subprocess의 실행 위치이자 ``targets``의 해석 base다.
+    """
     start = time.monotonic()
     effective_runner = runner or run_subprocess_tool
     effective_mypy_cwd = mypy_cwd or cwd
@@ -292,24 +295,112 @@ async def run_subprocess_tool(
     )
 
 
+async def resolve_repo_root(
+    *,
+    cwd: Path,
+    runner: ToolRunner | None = None,
+) -> Path:
+    """git repo toplevel을 해석한다. 실패 시 fail-closed(RuntimeError)."""
+    effective_runner = runner or run_subprocess_tool
+    run = await effective_runner(
+        ("git", "rev-parse", "--show-toplevel"), cwd=cwd, timeout_s=10.0
+    )
+    toplevel = run.stdout.strip()
+    if run.exit_code != 0 or not toplevel:
+        raise RuntimeError(
+            run.stderr_sanitized or "git repository root resolution failed"
+        )
+    return Path(toplevel).resolve()
+
+
+def _split_nul_fields(stdout: str) -> list[str]:
+    """git ``-z`` 출력을 NUL 필드로 분리하되 합법적인 공백은 보존한다."""
+    return [field for field in stdout.split("\0") if field != ""]
+
+
 async def collect_changed_paths(
     *,
     cwd: Path,
     runner: ToolRunner | None = None,
+    include_deleted: bool = False,
 ) -> list[str]:
-    """worktree와 index의 변경 파일을 deterministic 순서로 수집한다."""
+    """worktree와 index의 변경 파일을 deterministic 순서로 수집한다.
+
+    반환 = repo toplevel 상대 POSIX 경로. ``cwd``는 repo 앵커일 뿐 base가 아니다.
+
+    수집 완전성 4요소 — 각 요소가 막는 우회:
+
+    1. ``--diff-filter=ACMRD`` + ``-M --name-status``: 금지 파일 삭제나
+       rename 반출을 잡고, rename 원본·대상을 모두 보존한다.
+    2. 세 커맨드를 ``cwd=repo_root``에서 실행: 서브디렉터리 cwd 밖의
+       untracked 금지 파일도 수집한다(``--full-name``은 출력 base만 통일).
+    3. ``-c core.quotepath=false`` + ``-z`` NUL 파싱: 비-ASCII·인용·개행·
+       공백 경로의 C-style 인용/행 파싱 우회를 막는다. ``-z``가 1차 방어,
+       ``quotepath=false``는 특정 커맨드에서 ``-z``가 유실될 때의 2차 방어다.
+    4. base 통일(diff/ls-files 모두 repo-root 상대): 존재 필터와 소비처의
+       base 불일치로 경로가 조용히 탈락하는 것을 막는다.
+
+    알려진 잔여 한계: POSIX의 비-UTF8 파일명은 bytes 경계 API가 없어
+    ``_decode(errors="replace")``에서 실제 경로와 달라질 수 있다. 백슬래시가
+    든 POSIX 파일명은 여기서는 보존하지만 범위 밖인
+    ``phase_relay._normalize_repo_path``가 ``/``로 치환한다.
+
+    ``include_deleted``는 범위 가드용 additive 모드다. 삭제 경로와 rename의
+    원본/대상을 모두 보존하며, 기본값에서는 기존 ACM+존재 파일 계약을 유지한다.
+    """
     effective_runner = runner or run_subprocess_tool
-    commands = [
-        ("git", "diff", "--name-only", "--diff-filter=ACM"),
-        ("git", "diff", "--cached", "--name-only", "--diff-filter=ACM"),
-        ("git", "ls-files", "--others", "--exclude-standard"),
-    ]
+    repo_root = await resolve_repo_root(cwd=cwd, runner=effective_runner)
+    if include_deleted:
+        commands = [
+            (
+                "git", "-c", "core.quotepath=false", "diff", "--name-status",
+                "-M", "--diff-filter=ACMRD", "-z",
+            ),
+            (
+                "git", "-c", "core.quotepath=false", "diff", "--cached",
+                "--name-status", "-M", "--diff-filter=ACMRD", "-z",
+            ),
+            (
+                "git", "-c", "core.quotepath=false", "ls-files", "--full-name",
+                "--others", "--exclude-standard", "-z",
+            ),
+        ]
+    else:
+        commands = [
+            (
+                "git", "-c", "core.quotepath=false", "diff", "--name-only",
+                "--diff-filter=ACM", "-z",
+            ),
+            (
+                "git", "-c", "core.quotepath=false", "diff", "--cached",
+                "--name-only", "--diff-filter=ACM", "-z",
+            ),
+            (
+                "git", "-c", "core.quotepath=false", "ls-files", "--others",
+                "--exclude-standard", "-z",
+            ),
+        ]
+    # 세 명령을 repo root에서 실행해 출력 base뿐 아니라 untracked 수집 스코프도 통일한다.
     paths: list[str] = []
     for command in commands:
-        run = await effective_runner(command, cwd=cwd, timeout_s=10.0)
+        run = await effective_runner(command, cwd=repo_root, timeout_s=10.0)
         if run.exit_code != 0:
             raise RuntimeError(run.stderr_sanitized or "git diff failed")
-        paths.extend(line.strip() for line in run.stdout.splitlines() if line.strip())
+        fields = _split_nul_fields(run.stdout)
+        if include_deleted and "--name-status" in command:
+            cursor = 0
+            while cursor < len(fields):
+                status = fields[cursor]
+                cursor += 1
+                path_count = 2 if status.startswith(("R", "C")) else 1
+                if cursor + path_count > len(fields):
+                    raise RuntimeError(
+                        f"truncated git --name-status -z output after {status!r}"
+                    )
+                paths.extend(fields[cursor:cursor + path_count])
+                cursor += path_count
+        else:
+            paths.extend(fields)
 
     seen: set[str] = set()
     existing: list[str] = []
@@ -317,7 +408,7 @@ async def collect_changed_paths(
         if path in seen:
             continue
         seen.add(path)
-        if (cwd / path).exists():
+        if include_deleted or (repo_root / path).exists():
             existing.append(path)
     return existing
 

@@ -43,3 +43,6 @@ logs/
 .tmp.driveupload/
 .gdriveignore
 .ztr/_*.txt
+
+# 테스트가 만드는 repo 내부 임시 대상 — 범위 가드/--changed 오염 방지
+tests/_tmp/

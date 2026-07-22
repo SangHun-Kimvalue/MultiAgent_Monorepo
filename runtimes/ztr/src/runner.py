@@ -34,16 +34,26 @@ from src.engine.static_review import (
     StaticReviewReport,
     collect_changed_paths,
     collect_git_diff,
+    resolve_repo_root,
     run_static_review,
 )
 from src.engine.quality_gate import OutputQualityGate, QualityResult
 from src.engine.post_merge_verifier import PostMergeVerifier, VerifyResult
 from src.engine.invariants import InvariantEngine
-from src.engine.phase_relay import PhaseRelay, RelayCommand
+from src.engine.phase_relay import PhaseRelay, PhaseRelayReport, RelayCommand
 from src.engine.fix_feedback import (
     build_fix_resume_prompt,
     extract_findings,
     load_report_payload,
+    select_accepted_findings,
+)
+from src.engine.reapply_ledger import (
+    DEFAULT_MAX_ROUNDS,
+    ReapplyLedger,
+    decide_terminal_state,
+    findings_digest,
+    gate_check,
+    validate_max_rounds,
 )
 from src.engine.exec_adapter import RenderError, render_argv
 from src.engine.event_emit import EmitError, build_orch_event, write_orch_event
@@ -75,6 +85,10 @@ class RecordHandle(NamedTuple):
 
     store: SessionStore
     session_id: int
+
+
+class FixRoundBlockedError(ValueError):
+    """fix-round 입력/동일-thread 불변 위반으로 사람 에스컬레이션이 필요한 오류."""
 
 
 async def cmd_invoke(args: argparse.Namespace) -> None:
@@ -261,6 +275,7 @@ async def cmd_review(args: argparse.Namespace) -> None:
     try:
         config = load_config(getattr(args, "config", None))
         targets = await _resolve_review_targets(args, cwd=cwd)
+        repo_root = await resolve_repo_root(cwd=cwd)
         if args.verbose:
             print(f"review targets: {targets or ['<ruff-skip>']}", file=sys.stderr)
         record_handle = _start_recording(
@@ -273,11 +288,11 @@ async def cmd_review(args: argparse.Namespace) -> None:
 
         report = await run_static_review(
             targets,
-            cwd=cwd,
+            cwd=repo_root,
             mypy_cwd=_runtime_root(),
             timeout_s=float(args.timeout),
         )
-        diff_text = await collect_git_diff(targets, cwd=cwd) if targets else ""
+        diff_text = await collect_git_diff(targets, cwd=repo_root) if targets else ""
         review_text, not_claimed = await _invoke_optional_ollama_review(
             config,
             report=report,
@@ -398,6 +413,7 @@ async def cmd_verify(args: argparse.Namespace) -> None:
             raise ValueError("현재 verify는 --post-merge 모드만 지원합니다")
         cwd = Path.cwd()
         targets = await _resolve_verify_targets(args, cwd=cwd)
+        repo_root = await resolve_repo_root(cwd=cwd)
         if not targets:
             raise ValueError("verify 대상이 없습니다")
         rounds = len(targets)
@@ -412,7 +428,7 @@ async def cmd_verify(args: argparse.Namespace) -> None:
         verifier = PostMergeVerifier(timeout_s=float(args.timeout))
         results: list[tuple[str, VerifyResult]] = []
         for target in targets:
-            result = await verifier.verify(target)
+            result = await verifier.verify(str(repo_root / target))
             results.append((target, result))
 
         blocked = any(result.blocked or result.timed_out for _, result in results)
@@ -528,15 +544,11 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
                 },
             },
         )
-        relay = PhaseRelay(
-            prompt_path=Path(args.prompt_file),
+        report = await _run_phase_once(
+            args,
             commands=commands,
-            output_dir=Path(args.output_dir),
-            phase_id=args.phase_id,
-            timeout_s=float(args.timeout),
             resume_coordinator=resume_coordinator,
         )
-        report = await relay.run()
         rounds = len(report.steps)
         envelope = Envelope(
             status=report.status,
@@ -580,6 +592,346 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
     _finish_recording(record_handle, envelope, rounds=rounds)
     print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
     sys.exit(envelope.exit_code)
+
+
+async def _run_phase_once(
+    args: argparse.Namespace,
+    *,
+    commands: list[RelayCommand],
+    resume_coordinator: ResumeCoordinator | None,
+) -> PhaseRelayReport:
+    """run-phase와 fix-round가 공유하는 단일 relay 실행 부착점."""
+    relay = PhaseRelay(
+        prompt_path=Path(args.prompt_file),
+        commands=commands,
+        output_dir=Path(args.output_dir),
+        phase_id=args.phase_id,
+        timeout_s=float(args.timeout),
+        resume_coordinator=resume_coordinator,
+        forbidden_paths=getattr(args, "implementer_forbidden_path", None),
+    )
+    return await relay.run()
+
+
+async def cmd_fix_round(args: argparse.Namespace) -> None:
+    """CHANGES_REQUESTED finding을 같은 implementer thread에서 정확히 1회 재검증한다."""
+    start = time.monotonic()
+    ledger: ReapplyLedger | None = None
+    round_started = False
+    round_index = 0
+    input_digest = ""
+    fix_path: Path | None = None
+    report_payload: dict[str, Any] | None = None
+    report: PhaseRelayReport | None = None
+    envelope: Envelope | None = None
+    record_handle: RecordHandle | None = None
+    started_at = datetime.now().astimezone().isoformat()
+    try:
+        original_prompt_path = str(args.prompt_file)
+        config = load_config(getattr(args, "config", None))
+        record_handle = _start_recording(
+            args,
+            config=config,
+            task=f"ztr fix-round {args.phase_id}",
+            target_file=original_prompt_path,
+            metadata={
+                "command": "fix-round",
+                "phase_id": args.phase_id,
+                "prompt_file": original_prompt_path,
+                "report_file": str(args.report_file),
+                "ledger": str(args.ledger),
+                "max_rounds": args.max_rounds,
+                "accept_leg": getattr(args, "accept_leg", None),
+                "session_map": str(args.session_map),
+                "resume": {
+                    "implementer_profile": args.implementer_resume_profile,
+                    "reviewer_profile": args.reviewer_resume_profile,
+                },
+            },
+        )
+        original_prompt = Path(original_prompt_path).read_text(encoding="utf-8-sig")
+        report_payload = load_report_payload(Path(args.report_file))
+        summary = report_payload.get("summary")
+        if not isinstance(summary, dict):
+            raise ValueError("직전 report summary object가 없습니다")
+        try:
+            prior_verdict = Verdict(summary.get("verdict"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("직전 report summary.verdict가 없거나 알 수 없는 값입니다") from exc
+
+        if prior_verdict in {Verdict.PASS, Verdict.BLOCKED}:
+            ledger = ReapplyLedger.load(args.ledger)
+            if ledger.phase_id != args.phase_id:
+                raise FixRoundBlockedError("phase_id가 원장과 일치하지 않습니다")
+            if ledger.terminal_state is None:
+                ledger.terminal_state = (
+                    "CONVERGED" if prior_verdict == Verdict.PASS else "ESCALATED_BLOCKED"
+                )
+                ledger.save()
+        if prior_verdict == Verdict.PASS:
+            envelope = Envelope.from_verdict(
+                status=Verdict.PASS,
+                backend="phase-relay",
+                model="fix-round",
+                duration_s=time.monotonic() - start,
+                stderr="",
+                not_claimed=["full-e2e"],
+            )
+            print("[fix-round] 직전 verdict가 PASS — 고칠 것이 없어 실행하지 않습니다.", file=sys.stderr)
+            sys.exit(0)
+        if prior_verdict == Verdict.BLOCKED:
+            escalation_reason = (
+                "[fix-round] 직전 verdict가 BLOCKED — 코드 finding이 아니므로 "
+                "사람에게 에스컬레이션합니다."
+            )
+            envelope = Envelope.from_verdict(
+                status=Verdict.BLOCKED,
+                backend="phase-relay",
+                model="fix-round",
+                duration_s=time.monotonic() - start,
+                stderr=escalation_reason,
+                not_claimed=["full-e2e"],
+            )
+            print(escalation_reason, file=sys.stderr)
+            sys.exit(exit_code_for_verdict(Verdict.BLOCKED))
+
+        try:
+            findings = select_accepted_findings(
+                report_payload, getattr(args, "accept_leg", None)
+            )
+        except ValueError as exc:
+            raise FixRoundBlockedError(str(exc)) from exc
+        if not findings or any(f.status != Verdict.CHANGES_REQUESTED.value for f in findings):
+            raise FixRoundBlockedError(
+                "CHANGES_REQUESTED summary와 findings가 불일치합니다 "
+                "(빈 findings 또는 mixed/non-CHANGES finding)"
+            )
+
+        input_digest = findings_digest(findings)
+        validate_max_rounds(args.max_rounds)
+        ledger = ReapplyLedger.load_or_create(
+            args.ledger,
+            phase_id=args.phase_id,
+            max_rounds=args.max_rounds,
+        )
+        reason = gate_check(
+            ledger,
+            phase_id=args.phase_id,
+            approve_round=args.approve_round,
+            approve_findings=args.approve_findings,
+            input_digest=input_digest,
+            max_rounds=args.max_rounds,
+        )
+        if reason is not None:
+            raise FixRoundBlockedError(reason)
+
+        if not args.session_map:
+            raise FixRoundBlockedError("fix-round에는 implementer id가 든 --session-map이 필요합니다")
+        session_map = SessionMap.load(Path(args.session_map))
+        implementer_id = session_map.get("implementer")
+        if implementer_id is None:
+            raise FixRoundBlockedError("session-map에 implementer id가 없어 같은 thread resume을 보장할 수 없습니다")
+
+        round_index = ledger.next_round_index
+        fix_prompt = build_fix_resume_prompt(original_prompt, findings)
+        fix_path = Path(args.output_dir) / f"{args.phase_id}-round-{round_index}-fix-prompt.md"
+        fix_path.parent.mkdir(parents=True, exist_ok=True)
+        fix_path.write_text(fix_prompt, encoding="utf-8")
+
+        args.prompt_file = str(fix_path)
+        args.implementer_resume = implementer_id
+        commands = _relay_commands_from_args(args)
+        coordinator = _resume_coordinator_from_args(args)
+        round_started = True
+        report = await _run_phase_once(args, commands=commands, resume_coordinator=coordinator)
+        _validate_fix_round_resume(report, expected_id=implementer_id)
+        envelope = Envelope(
+            status=report.status,
+            exit_code=report.exit_code,
+            backend="phase-relay",
+            model="external-cli",
+            duration_s=time.monotonic() - start,
+            stdout=json.dumps(report.as_payload(), ensure_ascii=False),
+            stderr_sanitized="",
+            fallback_used=report.resume_fallback_used,
+            not_claimed=["full-e2e"],
+        )
+    except SystemExit as exc:
+        if envelope is None:
+            raw_code = exc.code
+            exit_code = raw_code if isinstance(raw_code, int) else 1
+            status = Verdict.PASS if exit_code == 0 else Verdict.BLOCKED
+            envelope = Envelope(
+                status=status,
+                exit_code=exit_code,
+                backend="phase-relay",
+                model="fix-round",
+                duration_s=time.monotonic() - start,
+                stdout="",
+                stderr_sanitized="fix-round exited before producing an envelope",
+                fallback_used=False,
+                not_claimed=["full-e2e"],
+            )
+        _finish_recording(record_handle, envelope, rounds=1 if round_started else 0)
+        raise
+    except FixRoundBlockedError as exc:
+        envelope = Envelope.from_verdict(
+            status=Verdict.BLOCKED,
+            backend="phase-relay",
+            model="fix-round",
+            duration_s=time.monotonic() - start,
+            stderr=str(exc),
+            not_claimed=["full-e2e"],
+        )
+    except Exception as exc:
+        envelope = Envelope(
+            status=Verdict.BLOCKED,
+            exit_code=INTERNAL_ERROR_EXIT_CODE,
+            backend="phase-relay",
+            model="fix-round",
+            duration_s=time.monotonic() - start,
+            stdout="",
+            stderr_sanitized=redact_stderr(str(exc)),
+            fallback_used=False,
+            not_claimed=["full-e2e"],
+        )
+    if round_started and ledger is not None and envelope is not None:
+        try:
+            result_payload = report.as_payload() if report is not None else None
+            result_digest = (
+                findings_digest(extract_findings(result_payload))
+                if result_payload is not None
+                else None
+            )
+        except Exception:
+            result_payload = None
+            result_digest = None
+        report_path = ""
+        if result_payload is not None:
+            report_file = Path(args.output_dir) / f"{args.phase_id}-round-{round_index}-report.json"
+            try:
+                report_file.parent.mkdir(parents=True, exist_ok=True)
+                report_file.write_text(
+                    json.dumps(result_payload, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                report_path = str(report_file)
+            except OSError:
+                report_path = ""
+        previous_digest = (
+            ledger.rounds[-1].get("result_digest") if ledger.rounds else None
+        )
+        ledger.rounds.append({
+            "index": round_index,
+            "verdict": envelope.status.value,
+            "exit_code": envelope.exit_code,
+            "input_digest": input_digest,
+            "result_digest": result_digest,
+            "report_path": report_path,
+            "fix_prompt_path": str(fix_path) if fix_path is not None else "",
+            "started_at": started_at,
+            "duration_s": time.monotonic() - start,
+            "note": "",
+        })
+        ledger.terminal_state = decide_terminal_state(
+            verdict=envelope.status,
+            rounds_used=len(ledger.rounds),
+            max_rounds=ledger.max_rounds,
+            prev_result_digest=previous_digest,
+            this_result_digest=result_digest,
+        )
+        if (
+            envelope.status == Verdict.CHANGES_REQUESTED
+            and ledger.terminal_state in {"NO_PROGRESS", "TIMEBOX_EXHAUSTED"}
+        ):
+            envelope = Envelope.from_verdict(
+                status=Verdict.BLOCKED,
+                backend=envelope.backend,
+                model=envelope.model,
+                duration_s=envelope.duration_s,
+                stdout=envelope.stdout,
+                stderr=envelope.stderr_sanitized,
+                fallback_used=envelope.fallback_used,
+                not_claimed=envelope.not_claimed,
+            )
+        outer_file = Path(args.output_dir) / f"{args.phase_id}-round-{round_index}-envelope.json"
+        try:
+            outer_file.parent.mkdir(parents=True, exist_ok=True)
+            outer_file.write_text(
+                json.dumps(envelope.as_stdout_payload(), ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
+        ledger.save()
+    if envelope is None:
+        envelope = Envelope(
+            status=Verdict.BLOCKED,
+            exit_code=INTERNAL_ERROR_EXIT_CODE,
+            backend="phase-relay",
+            model="fix-round",
+            duration_s=time.monotonic() - start,
+            stdout="",
+            stderr_sanitized="fix-round finished without envelope",
+            fallback_used=False,
+            not_claimed=["full-e2e"],
+        )
+    _finish_recording(record_handle, envelope, rounds=1 if round_started else 0)
+    print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
+    sys.exit(envelope.exit_code)
+
+
+def cmd_reapply_status(args: argparse.Namespace) -> None:
+    """재적용 원장을 변경하지 않고 기존 Envelope 계약으로 조회한다."""
+    start = time.monotonic()
+    try:
+        ledger = ReapplyLedger.load(args.ledger)
+        if ledger.terminal_state == "CONVERGED":
+            status = Verdict.PASS
+        elif ledger.terminal_state is None:
+            status = Verdict.CHANGES_REQUESTED
+        else:
+            status = Verdict.BLOCKED
+        payload = {
+            "phase_id": ledger.phase_id,
+            "max_rounds": ledger.max_rounds,
+            "rounds": ledger.rounds,
+            "terminal_state": ledger.terminal_state,
+        }
+        envelope = Envelope.from_verdict(
+            status=status,
+            backend="reapply-ledger",
+            model="deterministic",
+            duration_s=time.monotonic() - start,
+            stdout=json.dumps(payload, ensure_ascii=False),
+        )
+    except Exception as exc:
+        envelope = Envelope(
+            status=Verdict.BLOCKED,
+            exit_code=INTERNAL_ERROR_EXIT_CODE,
+            backend="reapply-ledger",
+            model="deterministic",
+            duration_s=time.monotonic() - start,
+            stderr_sanitized=redact_stderr(str(exc)),
+        )
+    print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
+    sys.exit(envelope.exit_code)
+
+
+def _validate_fix_round_resume(report: PhaseRelayReport, *, expected_id: str) -> None:
+    """D1 네 조건을 구조화 resume 메타데이터로 fail-closed 검증한다."""
+    if report.resume_fallback_used:
+        raise FixRoundBlockedError("resume fallback이 사용되어 같은 thread 보장이 깨졌습니다")
+    implementer = next((step for step in report.steps if step.name == "implementer"), None)
+    resume = implementer.resume if implementer is not None else None
+    if not isinstance(resume, dict):
+        raise FixRoundBlockedError("implementer resume 메타데이터가 없습니다")
+    if not (
+        resume.get("resumed") is True
+        and resume.get("requested_id") == expected_id
+        and resume.get("captured_session_id") == expected_id
+    ):
+        raise FixRoundBlockedError("implementer resume D1 검증(resumed/requested/captured id)에 실패했습니다")
 
 
 def cmd_fix_prompt(args: argparse.Namespace) -> None:
@@ -627,7 +979,8 @@ async def _resolve_review_targets(args: argparse.Namespace, *, cwd: Path) -> lis
     missing = [path for path in paths if not (cwd / path).exists()]
     if missing:
         raise FileNotFoundError(f"리뷰 대상 경로를 찾을 수 없습니다: {missing}")
-    return paths
+    repo_root = await resolve_repo_root(cwd=cwd)
+    return [_to_repo_relative_path(path, cwd=cwd, repo_root=repo_root) for path in paths]
 
 
 async def _resolve_verify_targets(args: argparse.Namespace, *, cwd: Path) -> list[str]:
@@ -636,7 +989,17 @@ async def _resolve_verify_targets(args: argparse.Namespace, *, cwd: Path) -> lis
     paths = [str(path) for path in args.paths]
     if not paths:
         raise ValueError("verify에는 --changed 또는 하나 이상의 경로가 필요합니다")
-    return paths
+    repo_root = await resolve_repo_root(cwd=cwd)
+    return [_to_repo_relative_path(path, cwd=cwd, repo_root=repo_root) for path in paths]
+
+
+def _to_repo_relative_path(path: str, *, cwd: Path, repo_root: Path) -> str:
+    """사용자 cwd 기준 경로를 repo-relative POSIX 내부 통화로 바꾼다."""
+    resolved = (cwd / path).resolve()
+    try:
+        return resolved.relative_to(repo_root).as_posix()
+    except ValueError as exc:
+        raise ValueError(f"repo 밖 경로는 대상이 될 수 없습니다: {path}") from exc
 
 
 def _load_gate_input(path: Path) -> dict[str, Any]:
@@ -1255,6 +1618,71 @@ def main() -> None:
         action="store_true",
         help="SessionStore에 v2 run-phase 결과를 관측 기록",
     )
+    p_run_phase.add_argument(
+        "--implementer-forbidden-path",
+        action="append",
+        default=None,
+        help=(
+            "implementer 완료 직후 현재 변경 집합에서 차단할 repo 상대 경로/glob. "
+            "여러 번 지정 가능하며 미지정 시 범위 가드는 비활성"
+        ),
+    )
+
+    # fix-round — T10-A 결정론 1라운드 fix→재검증 프리미티브
+    p_fix_round = sub.add_parser(
+        "fix-round",
+        help="CHANGES_REQUESTED findings를 같은 implementer thread에서 정확히 1회 재검증",
+    )
+    p_fix_round.add_argument("--report-file", required=True, help="직전 run-phase 결과 JSON")
+    p_fix_round.add_argument("--prompt-file", required=True, help="원본 구현 프롬프트 파일")
+    p_fix_round.add_argument("--out", default="", help="fix-resume 프롬프트 출력 경로")
+    p_fix_round.add_argument("--ledger", required=True, help="호출자가 소유하는 재적용 원장 경로")
+    p_fix_round.add_argument("--max-rounds", type=int, default=DEFAULT_MAX_ROUNDS)
+    p_fix_round.add_argument("--approve-round", type=int, default=None)
+    p_fix_round.add_argument("--approve-findings", default=None)
+    p_fix_round.add_argument(
+        "--accept-leg",
+        action="append",
+        default=None,
+        help="exact CHANGES_REQUESTED gating leg 선택(대소문자 구분, 반복 가능)",
+    )
+    p_fix_round.add_argument(
+        "--record",
+        action="store_true",
+        help="SessionStore에 v2 fix-round 결과를 관측 기록",
+    )
+    p_fix_round.add_argument("--phase-id", default="fix-round", help="캡처 디렉터리 식별자")
+    p_fix_round.add_argument("--timeout", type=float, default=600.0, help="각 relay leg 타임아웃 초")
+    p_fix_round.add_argument("--output-dir", default=".ztr/run-phase", help="relay 캡처 디렉터리")
+    p_fix_round.add_argument("--implementer-cmd", required=True, help="구현 leg 명령")
+    p_fix_round.add_argument("--reviewer-cmd", default="", help="구현 리뷰 leg 명령")
+    p_fix_round.add_argument("--autofix-cmd", action="append", default=None, help="non-gating autofix leg")
+    p_fix_round.add_argument("--mechanical-cmd", default="", help="기계 리뷰 leg 명령")
+    p_fix_round.add_argument("--test-cmd", default="", help="테스트 leg 명령")
+    p_fix_round.add_argument("--session-map", required=True, help="implementer id가 든 session map")
+    p_fix_round.add_argument("--implementer-resume", default="new", help="호환 인자; session-map id로 강제됨")
+    p_fix_round.add_argument("--reviewer-resume", default="new", help="reviewer resume 정책")
+    p_fix_round.add_argument(
+        "--implementer-resume-profile",
+        choices=["claude", "codex"],
+        required=True,
+        help="같은 thread resume을 위한 implementer profile",
+    )
+
+    p_reapply_status = sub.add_parser("reapply-status", help="재적용 원장 상태를 읽기 전용으로 조회")
+    p_reapply_status.add_argument("--ledger", required=True, help="조회할 재적용 원장 경로")
+    p_fix_round.add_argument(
+        "--reviewer-resume-profile",
+        choices=["none", "claude", "codex"],
+        default="none",
+        help="reviewer argv resume 변형 profile",
+    )
+    p_fix_round.add_argument(
+        "--reviewer-verdict-source",
+        choices=["stdout_token", "exit_code"],
+        default="stdout_token",
+        help="reviewer leg verdict 소스",
+    )
 
     # fix-prompt — (ㄱ) 휴먼-게이트 fix-resume 프롬프트 빌더(사람 트리거, 자동 루프 아님)
     p_fix_prompt = sub.add_parser(
@@ -1355,6 +1783,10 @@ def main() -> None:
         asyncio.run(cmd_invariants(args))
     elif args.command == "run-phase":
         asyncio.run(cmd_run_phase(args))
+    elif args.command == "fix-round":
+        asyncio.run(cmd_fix_round(args))
+    elif args.command == "reapply-status":
+        cmd_reapply_status(args)
     elif args.command == "fix-prompt":
         cmd_fix_prompt(args)
     elif args.command == "render-argv":

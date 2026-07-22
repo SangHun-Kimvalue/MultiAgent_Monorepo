@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "reviewed_at_utc": "2026-07-20T05:20:00Z",
+  "executor": {
+    "tool": "codex-cli",
+    "cli_version": "0.144.6",
+    "lineage": "openai",
+    "model": "gpt-5",
+    "session_id": "implementer-session"
+  },
+  "reviewer": {
+    "tool": "claude-cli",
+    "cli_version": "2.1.215",
+    "lineage": "anthropic",
+    "model": "claude-model-from-runtime-output",
+    "session_id": "reviewer-session"
+  },
+  "independence_mode": "cross-lineage-cli",
+  "fallback_level": 1,
+  "review_base_sha": "0123456789abcdef0123456789abcdef01234567",
+  "reviewed_paths": [
+    "src/example.cpp",
+    "tests/test_example.cpp"
+  ],
+  "command_shape": [
+    "claude",
+    "-p",
+    "Review artifact: <artifact-path>",
+    "--output-format",
+    "json"
+  ],
+  "review_artifact_path": "artifacts/reviews/example-review-input.md",
+  "raw_output_path": "artifacts/reviews/example-review-raw.json",
+  "verdict": "PASS",
+  "exit_code": 0,
+  "findings": [],
+  "dispositions": []
+}

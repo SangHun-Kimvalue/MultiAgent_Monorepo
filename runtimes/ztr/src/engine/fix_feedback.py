@@ -107,6 +107,51 @@ def extract_findings(report_payload: dict[str, Any]) -> list[Finding]:
     return findings
 
 
+def select_accepted_findings(
+    report_payload: dict[str, Any],
+    accept_legs: list[str] | None,
+) -> list[Finding]:
+    """명시된 exact leg의 eligible CHANGES finding만 report 순서로 반환한다.
+
+    ``None``은 기존 ``extract_findings`` 동작을 그대로 보존한다. 옵션이 있으면
+    값의 의미를 해석하지 않고 step의 구조화 필드와 exact name만 검사한다.
+    """
+    if accept_legs is None:
+        return extract_findings(report_payload)
+    if not accept_legs or any(not leg for leg in accept_legs):
+        raise ValueError("--accept-leg에는 비어 있지 않은 leg 이름이 필요합니다")
+    if len(set(accept_legs)) != len(accept_legs):
+        raise ValueError("--accept-leg는 중복 지정할 수 없습니다")
+
+    requested = set(accept_legs)
+    eligible_names: set[str] = set()
+    selected: list[Finding] = []
+    for step in report_payload.get("steps", []):
+        if not isinstance(step, dict):
+            continue
+        name = step.get("name")
+        if not isinstance(name, str) or name not in requested:
+            continue
+        if (
+            step.get("gating", True) is True
+            and step.get("skipped", False) is False
+            and step.get("status") == "CHANGES_REQUESTED"
+        ):
+            eligible_names.add(name)
+            selected.append(
+                Finding(leg=name, status="CHANGES_REQUESTED", text=_step_findings_text(step))
+            )
+    invalid = [leg for leg in accept_legs if leg not in eligible_names]
+    if invalid:
+        raise ValueError(
+            "--accept-leg가 unknown 또는 non-eligible leg를 지정했습니다: "
+            + ", ".join(invalid)
+        )
+    if not selected:
+        raise ValueError("--accept-leg 선택 결과가 비어 있습니다")
+    return selected
+
+
 def build_fix_resume_prompt(original_prompt: str, findings: list[Finding]) -> str:
     """원본 프롬프트 + 직전 라운드 findings를 합친 fix-resume 프롬프트를 만든다.
 

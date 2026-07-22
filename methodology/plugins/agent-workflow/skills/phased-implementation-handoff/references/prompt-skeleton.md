@@ -35,9 +35,12 @@
 2) 빌드: <프로젝트 빌드 명령> (+ 가능하면 독립 test 컴파일/실행) — 검증은 실행 증거(명령+결과+artifact 경로)로.
 3) (가능 시) 실장비/실환경 1회 확인 — 정밀 검증은 후속 페이즈
 4) 리뷰 ALL PASS(둘 다, 하드 게이트):
+   ★ **모드 분기(필수 — LESSON-039)**: **릴레이/오케스트레이터(`ztr run-phase`)로 구동될 프롬프트면** 출력 게이트는 **릴레이 leg가 소유** → implementer는 **구현만** 하고 자기 게이트 실행·SoT 문서 편집 **금지**(implementer blind, D6). 아래 2갈래는 **수동 핸드오프 모드**(implementer 세션이 자기 diff 게이트 자체집행, §8)에만 적는다. 모드 안 맞으면 implementer가 릴레이 leg와 중복 실행하다 타임아웃·가짜 SoT-PASS 편집을 한다.
+   — 아래는 **수동 모드** [검증·DoD] (**이 출력 게이트는 Implementer 세션이 소유·집행**, §8):
    - B. **Nitpicker(local, repo 래퍼 우선)** — 수정 파일마다 **Implementer가 실행**, REJECT→수정→재실행해 PASS.
-   - A. **별도 Reviewer(설계)** — **Planner가 집행**, **다른 계열(cross-lineage) 독립 에이전트 CLI 우선**(예: Implementer=Claude → Reviewer=Codex/Gemini CLI). 폴백 위계: ① 다른 계열 CLI → ② 다른 계열 세션 → ③ 다른 계열 부재 시에만 같은 계열 독립 컨텍스트 서브에이전트(review 기록에 `same-lineage` 명시). Implementer는 **최소 review bundle**(변경파일+핵심diff+검증출력 요약+남은질문)을 완료 보고에 첨부만 하고, **`NOT CLAIMED`로 닫지 말 것**(리뷰는 항상 실행 가능).
+   - A. **별도 Reviewer(설계)** — **Implementer 세션이 자기 diff에 대해 다른 계열(cross-lineage) 독립 에이전트 CLI로 집행**(예: Implementer=Claude → Reviewer=Codex/Gemini CLI). 폴백 위계: ① 다른 계열 CLI → ② 다른 계열 세션 → ③ 다른 계열 부재 시에만 같은 계열 독립 컨텍스트 서브에이전트(review 기록에 `same-lineage` 명시). **`NOT CLAIMED`로 닫지 말 것**(리뷰는 항상 실행 가능).
    - 두 레그 PASS 전 페이즈 미완료. 커밋도 보류.
+   - **가짜 PASS 차단 — 완료 보고에 리뷰 증적 첨부:** active executor CLI/계열, reviewer tool/CLI version/계열/모델·집행 방식, command shape, review 시각(UTC), review base SHA와 reviewed paths, 폴백 단계, review artifact 경로, **verdict(enum)·exit code**, raw output 경로, **모든 P1/P2 finding의 disposition**(반영 커밋 or Planner에 올릴 거부 사유). 스킬 `assets/review-verdict.schema.json` 필수 필드를 채우고 `scripts/validate_review_verdict.py` exit 0을 받아야 한다. unresolved P1/P2가 남으면 페이즈 완료·커밋 금지.
 5) <버전/RC 갱신 규칙>. 커밋은 사용자 확인 후. 페이즈 경계는 HANDOFF/로드맵/커밋 메시지에 기록.
 
 [완료 보고] 변경 파일 / 핵심 결정·부착 위치 / 검증 결과(통과 명령) / **PASS는 어디까지·NOT CLAIMED·가정** / 버전 번호.

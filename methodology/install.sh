@@ -159,6 +159,8 @@ copy_dir() {
     echo "+ rm -rf $dst"
   fi
   run cp -R "$src" "$dst"
+  run find "$dst" -type d -name __pycache__ -prune -exec rm -rf -- '{}' '+'
+  run find "$dst" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
 }
 
 backup_path() {

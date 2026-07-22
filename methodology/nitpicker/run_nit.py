@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -217,7 +216,15 @@ def call_ollama(config: dict[str, Any], prompt: str) -> str:
             data = json.loads(response.read().decode("utf-8", errors="replace"))
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Ollama request failed: {exc}") from exc
-    return data.get("message", {}).get("content", "").strip()
+    if not isinstance(data, dict):
+        raise RuntimeError("Ollama response root must be an object")
+    message = data.get("message")
+    if not isinstance(message, dict):
+        raise RuntimeError("Ollama response.message must be an object")
+    content = message.get("content")
+    if not isinstance(content, str):
+        raise RuntimeError("Ollama response.message.content must be a string")
+    return content.strip()
 
 
 def mock_review(path: str, diff: str) -> str:
@@ -302,16 +309,33 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-all", action="store_true", help="Include docs and non-default extensions")
     parser.add_argument("--keep-going", action="store_true", help="Continue after a file returns findings")
     parser.add_argument("--provider", choices=["ollama", "mock"], help="Override configured provider")
+    parser.add_argument("--model", help="Override configured model for this invocation")
     parser.add_argument("--self-test", action="store_true", help="Validate local wrapper setup without calling Ollama")
     return parser.parse_args()
 
 
+def _configure_utf8_streams() -> None:
+    """Use fail-safe UTF-8 for real text streams while preserving captured streams."""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if not callable(reconfigure):
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="backslashreplace")
+        except (OSError, ValueError):
+            continue
+
+
 def main() -> int:
     global REPO
+    _configure_utf8_streams()
     args = parse_args()
     if args.repo:
         REPO = Path(args.repo).resolve()
     config = load_config()
+    if args.model:
+        config["model"] = args.model
     provider = args.provider or str(config["provider"])
 
     if args.self_test:

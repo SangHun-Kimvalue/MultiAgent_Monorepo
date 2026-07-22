@@ -20,4 +20,9 @@
 
 - Same-session role overlap:
 - Explicitly separated roles:
+- Active executor CLI / version / lineage:
+- Reviewer CLI / version / lineage:
+- Cross-lineage check (`reviewer lineage != executor lineage`):
+- Reviewer fallback level (`1 cross-lineage CLI / 2 cross-lineage session / 3 same-lineage degraded`):
+- Review artifact / raw output path:
 - Commit authority:

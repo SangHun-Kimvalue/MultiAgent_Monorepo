@@ -12,6 +12,8 @@
 | HANDOFF 템플릿 + lessons 블록 + ADR 포인터 | `…/references/doc-management.md` | Sync-Out 인수인계·교훈 |
 | 계획·실측 방법 | `…/references/planning-method.md` | Planner 계획 절차 |
 | 리뷰 finding 정형 | `METHODOLOGY.md` §2 + `MULTI_AGENT.md` §4 | Reviewer 출력 |
+| finding disposition 양식 | `artifacts/finding-disposition.md` | Reviewer finding 선별·근거·corrective round·재리뷰 기록 |
+| 구현 리뷰 verdict 스키마/예시 | `plugins/agent-workflow/skills/phased-implementation-handoff/assets/review-verdict.schema.json`, `review-verdict.example.json` | 설치 surface에도 동봉되는 cross-lineage provenance·enum verdict 계약 |
 | 문서 체계(최소셋/풀셋) | `DOC_TAXONOMY.md` | 어떤 문서를 둘지 |
 | 프로젝트 config 템플릿 | `config/project.config.example.md` | 프로젝트 특화값(PARAM) |
 

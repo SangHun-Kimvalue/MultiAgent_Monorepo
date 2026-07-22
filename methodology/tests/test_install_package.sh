@@ -122,9 +122,207 @@ elif artifact.name.endswith(".tar.gz"):
 else:
     raise SystemExit(f"unsupported artifact type: {artifact}")
 
-blocked = [name for name in names if name.endswith("nitpicker/nitpicker.config.json")]
+blocked = [
+    name
+    for name in names
+    if name.endswith("nitpicker/nitpicker.config.json")
+    or "__pycache__" in Path(name).parts
+    or name.endswith((".pyc", ".pyo"))
+]
 if blocked:
-    raise SystemExit("live nitpicker config leaked into package: " + ", ".join(blocked))
+    raise SystemExit("private or generated file leaked into package: " + ", ".join(blocked))
+PY
+}
+
+assert_files_identical() {
+  local a="$1"
+  local b="$2"
+  if [[ ! -f "$b" ]]; then
+    echo "expected installed file missing: $b" >&2
+    exit 1
+  fi
+  if ! cmp -s "$a" "$b"; then
+    echo "installed file differs from source: $b" >&2
+    exit 1
+  fi
+}
+
+assert_tree_excludes_python_cache() {
+  local root="$1"
+  "${PYTHON_CMD[@]}" - "$root" <<'PY'
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+blocked = [
+    str(path)
+    for path in root.rglob("*")
+    if "__pycache__" in path.parts or path.suffix in {".pyc", ".pyo"}
+]
+if blocked:
+    raise SystemExit("Python cache leaked into installed tree: " + ", ".join(blocked))
+PY
+}
+
+assert_yaml_interface() {
+  local path="$1"
+  "${PYTHON_CMD[@]}" - "$path" <<'PY'
+import sys
+
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as fh:
+    text = fh.read()
+required = ("interface:", "display_name:", "short_description:", "default_prompt:")
+missing = [k for k in required if k not in text]
+if missing:
+    raise SystemExit(f"openai.yaml missing keys {missing} in {path}")
+PY
+}
+
+assert_openai_yaml_contracts() {
+  local plugin_root="$1"
+  "${PYTHON_CMD[@]}" - "$plugin_root" <<'PY'
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+paths = sorted(root.glob("skills/*/agents/openai.yaml"))
+if len(paths) != 4:
+    raise SystemExit(f"expected 4 openai.yaml files, observed {len(paths)}")
+required = ("interface:", "display_name:", "short_description:", "default_prompt:")
+for path in paths:
+    text = path.read_text(encoding="utf-8")
+    missing = [key for key in required if key not in text]
+    if missing:
+        raise SystemExit(f"openai.yaml missing keys {missing} in {path}")
+phased = root / "skills" / "phased-implementation-handoff" / "agents" / "openai.yaml"
+if "$phased-implementation-handoff" not in phased.read_text(encoding="utf-8"):
+    raise SystemExit("phased handoff openai.yaml lacks required skill invocation token")
+PY
+}
+
+assert_codex_hook_bundle() {
+  local plugin_root="$1"
+  "${PYTHON_CMD[@]}" - "$plugin_root" <<'PY'
+import json
+import os
+import sys
+
+root = sys.argv[1]
+manifest = os.path.join(root, ".codex-plugin", "plugin.json")
+with open(manifest, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+hooks = data.get("hooks")
+if hooks != "./hooks/hooks.json":
+    raise SystemExit(f"codex manifest hooks path unexpected: {hooks!r}")
+norm = os.path.normpath(hooks)
+if norm.startswith("..") or os.path.isabs(norm):
+    raise SystemExit(f"codex hooks path escapes plugin root: {hooks!r}")
+for rel in ("hooks/hooks.json", "scripts/emit_compaction_boot_context.py"):
+    if not os.path.isfile(os.path.join(root, rel)):
+        raise SystemExit(f"missing installed hook asset: {rel}")
+with open(os.path.join(root, "hooks", "hooks.json"), "r", encoding="utf-8") as fh:
+    hj = json.load(fh)
+session_start = hj["hooks"]["SessionStart"][0]
+if session_start.get("matcher") != "compact":
+    raise SystemExit("SessionStart matcher is not 'compact'")
+handler = session_start["hooks"][0]
+extra = set(handler) - {"type", "command", "timeout"}
+if extra:
+    raise SystemExit(f"hook handler has non-common keys: {sorted(extra)}")
+PY
+}
+
+assert_orchestrator_contract() {
+  local skill_path="$1"
+  local config_path="$2"
+  "${PYTHON_CMD[@]}" - "$skill_path" "$config_path" <<'PY'
+import sys
+from pathlib import Path
+
+skill = Path(sys.argv[1]).read_text(encoding="utf-8")
+config = Path(sys.argv[2]).read_text(encoding="utf-8")
+skill_tokens = (
+    "remediation_adapter.py --human-triggered",
+    "--accept-leg orchestrator-accepted-review",
+    "--record --max-rounds <N>",
+    "reapply-status",
+    "exact integer `1..5`",
+    "while/retry/autofix",
+)
+missing = [token for token in skill_tokens if token not in skill]
+if missing:
+    raise SystemExit(f"phase-cycle Step 7 contract missing tokens: {missing}")
+if config.count("fix_rounds_max: 3") != 1:
+    raise SystemExit("installed project config must contain exactly one fix_rounds_max: 3")
+for token in ("기본값은 `3`", "exact integer `1..5`", "runtime validator"):
+    if token not in config:
+        raise SystemExit(f"project config corrective-round contract missing: {token}")
+PY
+}
+
+assert_protected_current_config_anchors() {
+  local config_path="$1"
+  "${PYTHON_CMD[@]}" - "$config_path" <<'PY'
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8")
+protected = (
+    'verified_cli_version: "codex-cli 0.142.2"',
+    'model: "default (무pin — 0.142.2에서 무pin exec 정상, 2026-07-10 세션 다수 실측)"',
+    'verified_cli_version: "2.1.176 (Claude Code)"',
+    'result: "(superseded 2026-07-10) 구버전 0.130 실측: 무pin 시 gpt-5.3-codex unsupported-model 오류 → -m gpt-5.5 pin. npm 0.142.2 재바인딩 후 무pin exec 정상(세션 다수 실측)이라 pin 제거."',
+)
+for anchor in protected:
+    if text.count(anchor) != 1:
+        raise SystemExit(f"protected capability/historical anchor changed or duplicated: {anchor}")
+current = (
+    "- Codex version: `codex-cli 0.145.0`",
+    "- Claude version: `2.1.215 (Claude Code)`",
+    "> ✅ **재바인딩 완료(2026-07-22)**",
+)
+for anchor in current:
+    if text.count(anchor) != 1:
+        raise SystemExit(f"current-version anchor missing or duplicated: {anchor}")
+PY
+}
+
+assert_package_orchestrator_contract() {
+  local artifact="$1"
+  "${PYTHON_CMD[@]}" - "$artifact" <<'PY'
+import sys
+import tarfile
+import zipfile
+from pathlib import Path
+
+artifact = Path(sys.argv[1])
+required_suffixes = {
+    "skill": "plugins/agent-workflow/skills/phase-cycle-orchestrator/SKILL.md",
+    "config": "config/project.config.example.md",
+}
+if artifact.suffix == ".zip":
+    with zipfile.ZipFile(artifact) as archive:
+        members = {name: archive.read(name).decode("utf-8") for name in archive.namelist()}
+elif artifact.name.endswith(".tar.gz"):
+    with tarfile.open(artifact, "r:gz") as archive:
+        members = {
+            member.name: archive.extractfile(member).read().decode("utf-8")
+            for member in archive.getmembers()
+            if member.isfile()
+        }
+else:
+    raise SystemExit(f"unsupported artifact type: {artifact}")
+resolved = {}
+for label, suffix in required_suffixes.items():
+    matches = [text for name, text in members.items() if name.endswith(suffix)]
+    if len(matches) != 1:
+        raise SystemExit(f"expected exactly one packaged {label} ending {suffix}, found {len(matches)}")
+    resolved[label] = matches[0]
+if "--accept-leg orchestrator-accepted-review" not in resolved["skill"]:
+    raise SystemExit("packaged Step 7 lacks accepted-only fix-round binding")
+if resolved["config"].count("fix_rounds_max: 3") != 1:
+    raise SystemExit("packaged project config lacks unique fix_rounds_max: 3")
 PY
 }
 
@@ -207,6 +405,12 @@ SH
 
 echo "SMOKE_ROOT=$TMP_ROOT"
 
+assert_orchestrator_contract \
+  "$ROOT_DIR/plugins/agent-workflow/skills/phase-cycle-orchestrator/SKILL.md" \
+  "$ROOT_DIR/config/project.config.example.md"
+assert_protected_current_config_anchors "$ROOT_DIR/../.claude/phased-handoff.config.md"
+echo "PASS source phase-cycle Step 7, corrective-round config, and protected anchors"
+
 # (a) load-bearing: ignored source live config must not override --provider.
 write_config "$SOURCE_CONFIG" "ollama" "source-live"
 target_a="$TMP_ROOT/fresh-source-live"
@@ -248,6 +452,7 @@ package_output="$(PACKAGE_ZTR=0 "$ROOT_DIR/package.sh")"
 echo "$package_output" >/tmp/mam_package_e.log
 artifact="$(printf "%s\n" "$package_output" | tail -n 1)"
 assert_package_excludes_live_config "$artifact"
+assert_package_orchestrator_contract "$artifact"
 echo "PACKAGE_ARTIFACT=$artifact"
 fake_bin="$TMP_ROOT/fake-bin"
 install_fake_zip "$fake_bin"
@@ -255,5 +460,33 @@ zip_package_output="$(PATH="$fake_bin:$PATH" PACKAGE_ZTR=0 "$ROOT_DIR/package.sh
 echo "$zip_package_output" >/tmp/mam_package_e_zip.log
 zip_artifact="$(printf "%s\n" "$zip_package_output" | tail -n 1)"
 assert_package_excludes_live_config "$zip_artifact"
+assert_package_orchestrator_contract "$zip_artifact"
 echo "PACKAGE_ZIP_ARTIFACT=$zip_artifact"
-echo "PASS e package excludes nitpicker.config.json from tar and zip paths"
+echo "PASS e package excludes nitpicker.config.json and Python caches from tar and zip paths"
+
+# (f) claude surface installs prepare-session-compaction skill identical to source.
+skill_src="$ROOT_DIR/plugins/agent-workflow/skills/prepare-session-compaction/SKILL.md"
+orchestrator_skill_src="$ROOT_DIR/plugins/agent-workflow/skills/phase-cycle-orchestrator/SKILL.md"
+target_f="$TMP_ROOT/surface-claude"
+mkdir -p "$target_f"
+"$ROOT_DIR/install.sh" --target "$target_f" --provider mock >/tmp/mam_install_f.log
+assert_files_identical "$skill_src" "$target_f/.claude/skills/prepare-session-compaction/SKILL.md"
+assert_files_identical "$orchestrator_skill_src" "$target_f/.claude/skills/phase-cycle-orchestrator/SKILL.md"
+assert_tree_excludes_python_cache "$target_f/.claude/skills"
+assert_orchestrator_contract \
+  "$target_f/.claude/skills/phase-cycle-orchestrator/SKILL.md" \
+  "$target_f/.claude/phased-handoff.config.md"
+echo "PASS f claude surface installs prepare-session-compaction SKILL.md (identical to source)"
+
+# (g) codex surface installs skill + shared compaction hook bundle.
+target_g="$TMP_ROOT/surface-codex"
+mkdir -p "$target_g"
+"$ROOT_DIR/install.sh" --target "$target_g" --surface codex --provider mock >/tmp/mam_install_g.log
+assert_files_identical "$skill_src" "$target_g/.codex/skills/prepare-session-compaction/SKILL.md"
+assert_files_identical "$orchestrator_skill_src" "$target_g/plugins/agent-workflow/skills/phase-cycle-orchestrator/SKILL.md"
+assert_yaml_interface "$target_g/.codex/skills/prepare-session-compaction/agents/openai.yaml"
+assert_codex_hook_bundle "$target_g/plugins/agent-workflow"
+assert_openai_yaml_contracts "$target_g/plugins/agent-workflow"
+assert_tree_excludes_python_cache "$target_g/.codex/skills"
+assert_tree_excludes_python_cache "$target_g/plugins/agent-workflow"
+echo "PASS g codex surface installs skill + hook bundle + manifest hooks path"

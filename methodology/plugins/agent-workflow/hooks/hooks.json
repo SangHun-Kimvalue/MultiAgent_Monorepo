@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import os,runpy;root=os.environ.get('CLAUDE_PLUGIN_ROOT') or os.environ['PLUGIN_ROOT'];runpy.run_path(os.path.join(root,'scripts','emit_compaction_boot_context.py'),run_name='__main__')\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

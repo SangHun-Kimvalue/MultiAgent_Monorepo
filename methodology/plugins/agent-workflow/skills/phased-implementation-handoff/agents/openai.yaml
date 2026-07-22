@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phased Implementation Handoff"
+  short_description: "단계별 구현 계획과 교차 리뷰 게이트 핸드오프"
+  default_prompt: "Use $phased-implementation-handoff to prepare the next phase prompt with cross-lineage review gates."

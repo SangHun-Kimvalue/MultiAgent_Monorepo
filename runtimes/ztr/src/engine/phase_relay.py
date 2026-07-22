@@ -24,6 +24,7 @@ from src.envelope import (
     redact_stderr,
 )
 from src.engine.resume_chain import ResumeAttempt, ResumeCoordinator, ResumePolicyError
+from src.engine.static_review import collect_changed_paths
 
 _STDOUT_PREVIEW_CHARS = 4000
 
@@ -52,6 +53,7 @@ class RelayCommand:
     argv: list[str]
     verdict_source: str = "exit_code"
     gating: bool = True
+    cwd: str | None = None
 
     def __post_init__(self) -> None:
         if self.verdict_source not in ("exit_code", "stdout_token"):
@@ -115,6 +117,7 @@ class RelayStepResult:
     stdout_preview: str = ""
     stderr_sanitized: str = ""
     resume: dict[str, Any] | None = None
+    scope_violations: list[dict[str, str]] | None = None
 
     def as_payload(self) -> dict[str, Any]:
         """Envelope stdout 내부에 넣을 JSON-safe payload를 반환한다."""
@@ -137,6 +140,8 @@ class RelayStepResult:
         }
         if self.resume is not None:
             payload["resume"] = self.resume
+        if self.scope_violations is not None:
+            payload["scope_violations"] = self.scope_violations
         return payload
 
 
@@ -207,17 +212,32 @@ class PhaseRelay:
         phase_id: str = "phase",
         timeout_s: float = 600.0,
         resume_coordinator: ResumeCoordinator | None = None,
+        forbidden_paths: list[str] | None = None,
+        cwd: Path | None = None,
     ) -> None:
         if timeout_s <= 0:
             raise ValueError("timeout은 0보다 커야 합니다")
         if not commands:
             raise ValueError("최소 하나의 relay command가 필요합니다")
+        invalid_forbidden_paths = [
+            raw for raw in forbidden_paths or [] if _normalize_repo_path(raw) is None
+        ]
+        if invalid_forbidden_paths:
+            invalid_patterns = ", ".join(repr(raw) for raw in invalid_forbidden_paths)
+            raise ValueError(
+                "implementer 금지 경로 패턴이 repo 상대 POSIX 경로가 아닙니다: "
+                f"{invalid_patterns}\n"
+                "(절대경로·드라이브 문자·'..' 불가. 예: 'methodology/docs', "
+                "'**/HANDOFF*.md')"
+            )
         self._prompt_path = prompt_path
         self._commands = commands
         self._output_dir = output_dir
         self._phase_id = phase_id
         self._timeout_s = timeout_s
         self._resume_coordinator = resume_coordinator
+        self._forbidden_paths = forbidden_paths
+        self._cwd = cwd or Path.cwd()
 
     async def run(self) -> PhaseRelayReport:
         """prompt를 첫 leg stdin으로 전달하고 순차 실행한다."""
@@ -249,6 +269,14 @@ class PhaseRelay:
                 continue
 
             run_command, attempt = self._prepare_resume(command)
+            if attempt is not None and attempt.block_reason is not None:
+                result = self._blocked_resume_step(command, attempt=attempt)
+                steps.append(result)
+                next_input = json.dumps(result.as_payload(), ensure_ascii=False)
+                should_stop = True
+                continue
+            if run_command is None:
+                raise AssertionError("차단 사유 없는 resume 명령이 누락되었습니다")
             result = await self._run_one(
                 index=index,
                 command=run_command,
@@ -292,7 +320,58 @@ class PhaseRelay:
 
             steps.append(result)
             next_input = json.dumps(result.as_payload(), ensure_ascii=False)
-            should_stop = result.status != Verdict.PASS
+            guard_blocked = False
+            if command.name == "implementer" and self._forbidden_paths:
+                try:
+                    changed = await collect_changed_paths(
+                        cwd=self._cwd, include_deleted=True
+                    )
+                # 수집 실패 = BLOCKED 강등(fail-closed)하고 implementer 증거는 보존한다.
+                except Exception as exc:
+                    guard_blocked = True
+                    guard_step = RelayStepResult(
+                        name="implementer-scope-guard",
+                        command=[],
+                        status=Verdict.BLOCKED,
+                        exit_code=INTERNAL_ERROR_EXIT_CODE,
+                        child_exit_code=None,
+                        duration_s=0.0,
+                        timed_out=False,
+                        skipped=False,
+                        gating=True,
+                        stderr_sanitized=(
+                            "post-implementer 범위 가드 수집 실패 → fail-closed BLOCKED.\n"
+                            f"{redact_stderr(str(exc))}"
+                        ),
+                        scope_violations=None,
+                    )
+                    steps.insert(len(steps) - 1, guard_step)
+                else:
+                    violations = _scope_violations(changed, self._forbidden_paths)
+                    if violations:
+                        guard_blocked = True
+                        summary = "\n".join(
+                            f"[scope-guard] {item['path']} <- {item['pattern']}"
+                            for item in violations
+                        )
+                        guard_step = RelayStepResult(
+                            name="implementer-scope-guard",
+                            command=[],
+                            status=Verdict.BLOCKED,
+                            exit_code=exit_code_for_verdict(Verdict.BLOCKED),
+                            child_exit_code=None,
+                            duration_s=0.0,
+                            timed_out=False,
+                            skipped=False,
+                            gating=True,
+                            stderr_sanitized=(
+                                "post-implementer 현재 변경 집합이 금지 경로와 일치합니다.\n"
+                                f"{summary}"
+                            ),
+                            scope_violations=violations,
+                        )
+                        steps.insert(len(steps) - 1, guard_step)
+            should_stop = guard_blocked or (result.status != Verdict.PASS)
 
         return PhaseRelayReport(
             phase_id=self._phase_id,
@@ -314,17 +393,20 @@ class PhaseRelay:
     def _prepare_resume(
         self,
         command: RelayCommand,
-    ) -> tuple[RelayCommand, ResumeAttempt | None]:
+    ) -> tuple[RelayCommand | None, ResumeAttempt | None]:
         if self._resume_coordinator is None:
             return command, None
         role = _resume_role_for_command(command.name)
         argv, attempt = self._resume_coordinator.prepare(command.argv, role=role)
+        if attempt.block_reason is not None:
+            return None, attempt
         return (
             RelayCommand(
                 name=command.name,
                 argv=argv,
                 verdict_source=command.verdict_source,
                 gating=command.gating,
+                cwd=attempt.working_dir,
             ),
             attempt,
         )
@@ -347,8 +429,29 @@ class PhaseRelay:
                 argv=argv,
                 verdict_source=command.verdict_source,
                 gating=command.gating,
+                # 신규 세션 폴백 argv에는 원래 --cd가 남으므로 cwd를 중복 지정하지 않는다.
+                cwd=None,
             ),
             attempt,
+        )
+
+    @staticmethod
+    def _blocked_resume_step(
+        command: RelayCommand, *, attempt: ResumeAttempt
+    ) -> RelayStepResult:
+        reason = attempt.block_reason or "codex resume argv 차단"
+        return RelayStepResult(
+            name=command.name,
+            command=command.argv,
+            status=Verdict.BLOCKED,
+            exit_code=exit_code_for_verdict(Verdict.BLOCKED),
+            child_exit_code=None,
+            duration_s=0.0,
+            timed_out=False,
+            skipped=False,
+            gating=command.gating,
+            stderr_sanitized=redact_stderr(reason),
+            resume=attempt.as_payload(),
         )
 
     def _capture_resume(
@@ -450,12 +553,21 @@ class PhaseRelay:
 
         try:
             resolved = command.resolved_argv()
-            proc = await asyncio.create_subprocess_exec(
-                *resolved,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
+            if command.cwd is None:
+                proc = await asyncio.create_subprocess_exec(
+                    *resolved,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+            else:
+                proc = await asyncio.create_subprocess_exec(
+                    *resolved,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    cwd=command.cwd,
+                )
             try:
                 stdout_b, stderr_b = await asyncio.wait_for(
                     proc.communicate(stdin_text.encode("utf-8")),
@@ -628,6 +740,69 @@ def _route_exit_code(child_exit_code: int | None, *, timed_out: bool) -> tuple[V
 
 def _path_or_none(path: Path | None) -> str | None:
     return str(path) if path is not None else None
+
+
+def _scope_violations(
+    changed: list[str], patterns: list[str]
+) -> list[dict[str, str]]:
+    """repo 상대 POSIX 경로를 exact/prefix/glob 규칙으로만 판정한다.
+
+    glob의 ``*``는 단일 경로 segment, ``**``는 여러 segment를 포함한다.
+    절대경로와 ``..`` 경로는 repo 변경 경로가 아니므로 매칭 대상에서 제외한다.
+    """
+    violations: list[dict[str, str]] = []
+    for raw_path in changed:
+        path = _normalize_repo_path(raw_path)
+        if path is None:
+            continue
+        for raw_pattern in patterns:
+            pattern = _normalize_repo_path(raw_pattern)
+            if pattern is None:
+                # 패턴 유효성은 PhaseRelay.__init__에서 fail-closed로 선검증된다
+                # (여기 도달 = 직접 호출 경로).
+                continue
+            has_glob = any(char in pattern for char in "*?")
+            matched = (
+                bool(re.fullmatch(_glob_regex(pattern), path))
+                if has_glob
+                else path == pattern or path.startswith(f"{pattern}/")
+            )
+            if matched:
+                violations.append({"path": path, "pattern": raw_pattern})
+    return violations
+
+
+def _normalize_repo_path(value: str) -> str | None:
+    raw = value.strip().replace("\\", "/")
+    if not raw or re.match(r"^[A-Za-z]:", raw) or raw.startswith("/"):
+        return None
+    parts = [part for part in raw.split("/") if part not in ("", ".")]
+    if ".." in parts:
+        return None
+    return "/".join(parts)
+
+
+def _glob_regex(pattern: str) -> str:
+    pieces: list[str] = []
+    index = 0
+    while index < len(pattern):
+        char = pattern[index]
+        if char == "*":
+            if index + 1 < len(pattern) and pattern[index + 1] == "*":
+                index += 1
+                if index + 1 < len(pattern) and pattern[index + 1] == "/":
+                    index += 1
+                    pieces.append("(?:.*/)?")
+                else:
+                    pieces.append(".*")
+            else:
+                pieces.append("[^/]*")
+        elif char == "?":
+            pieces.append("[^/]")
+        else:
+            pieces.append(re.escape(char))
+        index += 1
+    return "".join(pieces)
 
 
 def _resume_role_for_command(command_name: str) -> str:

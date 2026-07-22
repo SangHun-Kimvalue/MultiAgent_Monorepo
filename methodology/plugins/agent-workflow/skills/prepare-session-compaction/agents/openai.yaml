@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prepare Session Compaction"
+  short_description: "Sync out durable state and create a post-compaction resume prompt."
+  default_prompt: "압축 준비해. 문서와 허용된 메모리를 동기화하고 압축 후 재개 프롬프트를 만들어줘."
