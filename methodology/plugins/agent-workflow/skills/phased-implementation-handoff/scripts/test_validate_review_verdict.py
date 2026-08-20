@@ -99,3 +99,50 @@ def test_missing_jsonschema_dependency_is_blocked(
     assert _validate(tmp_path, _example()) == [
         "python dependency unavailable: jsonschema"
     ]
+
+
+# --- 리뷰 예산 (schema 2.0) -------------------------------------------------
+
+
+def test_budget_exhausted_is_blocked(tmp_path: Path) -> None:
+    value = _example()
+    value["work_grade"] = "L2"
+    value["budget_limit"] = 4
+    value["rounds_consumed"] = 5
+    diagnostics = _validate(tmp_path, value)
+    assert any("review budget exhausted" in item for item in diagnostics)
+
+
+def test_budget_limit_must_derive_from_work_grade(tmp_path: Path) -> None:
+    """등급-예산 위조 — L1(=3)인데 4를 신고하면 거부된다."""
+    value = _example()
+    value["work_grade"] = "L1"
+    value["budget_limit"] = 4
+    value["rounds_consumed"] = 4
+    diagnostics = _validate(tmp_path, value)
+    assert any("budget_limit must be derived from work_grade" in item for item in diagnostics)
+
+
+def test_budget_boundary_is_allowed(tmp_path: Path) -> None:
+    """소진 직전(=limit)은 통과한다. 초과만 막는다."""
+    value = _example()
+    value["work_grade"] = "L2"
+    value["budget_limit"] = 4
+    value["rounds_consumed"] = 4
+    assert _validate(tmp_path, value) == []
+
+
+def test_schema_version_1_0_artifact_is_rejected(tmp_path: Path) -> None:
+    """전환 후 1.0 신규 생성 거부 (D1)."""
+    value = _example()
+    value["schema_version"] = "1.0"
+    diagnostics = _validate(tmp_path, value)
+    assert any("schema_version" in item for item in diagnostics)
+
+
+def test_budget_fields_are_required(tmp_path: Path) -> None:
+    for field in ("slice_id", "work_grade", "budget_limit", "rounds_consumed"):
+        value = _example()
+        del value[field]
+        diagnostics = _validate(tmp_path, value)
+        assert any(field in item for item in diagnostics), f"{field} must be required"

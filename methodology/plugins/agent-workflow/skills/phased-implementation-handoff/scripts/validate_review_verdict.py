@@ -24,6 +24,10 @@ def _load_object(path: Path, label: str) -> dict[str, Any]:
     return value
 
 
+# 작업 등급에서 파생되는 리뷰 예산 (캐논 METHODOLOGY.md §3). 입력값으로 받지 않는다.
+BUDGET_BY_GRADE = {"L0": 2, "L1": 3, "L2": 4}
+
+
 def validate_artifact(artifact_path: Path, schema_path: Path) -> list[str]:
     try:
         from jsonschema import Draft202012Validator, FormatChecker
@@ -85,6 +89,22 @@ def validate_artifact(artifact_path: Path, schema_path: Path) -> list[str]:
     )
     if unresolved:
         diagnostics.append(f"P0/P1/P2 findings require dispositions: {unresolved}")
+    # --- 리뷰 예산 (schema 2.0) -------------------------------------------
+    # 주장 한정: 여기서 막는 것은 "등급-예산 불일치"와 "누적 초과"뿐이다.
+    # rounds_consumed 는 자기신고이며, 호출 승인권은 진행 문서를 읽는 preflight 에 있다.
+    work_grade = artifact["work_grade"]
+    expected_budget = BUDGET_BY_GRADE[work_grade]
+    if artifact["budget_limit"] != expected_budget:
+        diagnostics.append(
+            f"budget_limit must be derived from work_grade: {work_grade} -> {expected_budget}, "
+            f"got {artifact['budget_limit']}"
+        )
+    if artifact["rounds_consumed"] > artifact["budget_limit"]:
+        diagnostics.append(
+            "review budget exhausted: "
+            f"rounds_consumed={artifact['rounds_consumed']} > budget_limit={artifact['budget_limit']}"
+        )
+
     if artifact["verdict"] == PASS:
         blocking_findings = sorted(
             finding["id"]

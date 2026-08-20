@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "reviewed_at_utc": "2026-07-20T06:05:08Z",
+  "executor": {
+    "tool": "codex-cli",
+    "cli_version": "0.144.6",
+    "lineage": "openai",
+    "model": "gpt-5",
+    "session_id": "019f7de6-c736-7f12-afb2-c1057a352329"
+  },
+  "reviewer": {
+    "tool": "claude-cli",
+    "cli_version": "2.1.215",
+    "lineage": "anthropic",
+    "model": "claude-opus-4-8[1m]",
+    "session_id": "42d629b7-f5eb-4a52-b673-bf989b7cb10b"
+  },
+  "independence_mode": "cross-lineage-cli",
+  "fallback_level": 1,
+  "review_base_sha": "72aac78b3fdef42fa9979e4b6cdc79a3ad8855dc",
+  "reviewed_paths": [
+    "methodology/plugins/agent-workflow/skills/phased-implementation-handoff",
+    "methodology/plugins/agent-workflow/skills/phase0-discovery-interview/assets/templates/role_assignment.md",
+    "methodology/plugins/agent-workflow/.claude-plugin/plugin.json",
+    "methodology/plugins/agent-workflow/.codex-plugin/plugin.json",
+    "methodology/.claude-plugin/marketplace.json",
+    "methodology/tools/workflow_doctor.py",
+    "methodology/tests/test_workflow_doctor.py",
+    "methodology/tests/fixtures/workflow_doctor/current.json",
+    "methodology/package.sh",
+    "methodology/install.sh",
+    "methodology/tests/test_install_package.sh",
+    "methodology/INSTALL.md",
+    "methodology/README.md",
+    "methodology/artifacts/README.md",
+    "methodology/docs/lessons/mam-ztr-process.md",
+    "methodology/docs/HANDOFF.md"
+  ],
+  "command_shape": [
+    "claude",
+    "-p",
+    "<read-only scoped final closeout prompt>",
+    "--output-format",
+    "json"
+  ],
+  "review_artifact_path": "methodology/docs/HANDOFF.md",
+  "raw_output_path": "C:/Users/shkim/.claude/projects/C--Users-shkim-Desktop-Todo-MAM/42d629b7-f5eb-4a52-b673-bf989b7cb10b.jsonl",
+  "verdict": "PASS",
+  "exit_code": 0,
+  "findings": [],
+  "dispositions": []
+}

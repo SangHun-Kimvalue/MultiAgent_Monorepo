@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "reviewed_at_utc": "2026-07-20T05:20:00Z",
   "executor": {
     "tool": "codex-cli",
@@ -34,5 +34,9 @@
   "verdict": "PASS",
   "exit_code": 0,
   "findings": [],
-  "dispositions": []
+  "dispositions": [],
+  "slice_id": "review-budget-enforcement-20260813",
+  "work_grade": "L2",
+  "budget_limit": 4,
+  "rounds_consumed": 1
 }

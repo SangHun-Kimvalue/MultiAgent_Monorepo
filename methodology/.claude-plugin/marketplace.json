@@ -6,13 +6,18 @@
   },
   "metadata": {
     "description": "shkim 개인 Claude Code 스킬 마켓플레이스 (워크플로/개발 규약)",
-    "version": "1.1.1"
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "agent-workflow",
       "source": "./plugins/agent-workflow",
       "description": "Role-based workflow skills — Phase 0 Discovery, phased handoff, cross-lineage Reviewer + Nitpicker hard gates, cross-session plan review, ZRT commit closeout, and compaction resume with auditable reviewer provenance and SessionStart(compact) boot context."
+    },
+    {
+      "name": "ai-research",
+      "source": "./plugins/ai-research",
+      "description": "Evidence-first AI research skills for dated daily news and AI coding video benchmarking with isolated result contracts."
     }
   ]
 }

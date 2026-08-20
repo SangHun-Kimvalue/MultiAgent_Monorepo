@@ -17,10 +17,18 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from acp.collectors.base import BaseCollector
+from acp.collectors.base import (
+    CAPABILITY_UNSUPPORTED,
+    PROCESS_SIGNAL_NOT_APPLICABLE,
+    STATUS_FAILED,
+    STATUS_PARTIAL,
+    BaseCollector,
+    CollectCycle,
+)
 from acp.models import SessionRecord
 from acp.timeutil import mtime_to_dt
 
@@ -63,23 +71,65 @@ class CursorWorkspaceCollector(BaseCollector):
     def __init__(self, workspace_base: Path, app_name: str = "cursor") -> None:
         self._workspace_base = workspace_base
         self._app_name = app_name
+        self._last_cycle = CollectCycle(
+            app=app_name,
+            signal_quality="workspace-history",
+            process_signal_capability=CAPABILITY_UNSUPPORTED,
+            process_signal=PROCESS_SIGNAL_NOT_APPLICABLE,
+        )
 
     @property
     def app_name(self) -> str:
         return self._app_name
 
+    @property
+    def last_cycle(self) -> CollectCycle:
+        """직전 collect()의 완결성 사실(T14 S4b D2a)."""
+        return self._last_cycle
+
     def collect(self) -> list[SessionRecord]:
+        """워크스페이스를 읽고 **완결성을 선언**한다.
+
+        예전에는 소스 폴더 부재도 경고 후 빈 목록이라, 폴러 입장에서 "정상 0건"과
+        구분되지 않았다(T14 S4b D2 — failure-as-empty 교정).
+        """
+        cycle = CollectCycle(
+            app=self._app_name,
+            observed_at=datetime.now(timezone.utc),
+            signal_quality="workspace-history",
+            # 워크스페이스 파일만 읽으므로 실행 신호를 **구조적으로 줄 수 없다**.
+            # 관측 축은 무의미하므로 `not_applicable` — "이번엔 못 얻었다"(unavailable)와
+            # 다른 사실이다(T14 S4c-1 D1·D1b).
+            process_signal_capability=CAPABILITY_UNSUPPORTED,
+            process_signal=PROCESS_SIGNAL_NOT_APPLICABLE,
+        )
+        self._last_cycle = cycle
+        # 이 앱에는 보관·실행신호 조인 축이 없다 — "0건"이 아니라 "해당 없음".
+        cycle.mark_not_applicable(
+            "excluded_archived", "matched", "unmatched", "ambiguous", "malformed_uuid"
+        )
+
         if not self._workspace_base.exists():
             logger.warning("%s workspaceStorage 폴더 없음: %s", self._app_name, self._workspace_base)
+            cycle.status = STATUS_FAILED
             return []
 
         records: list[SessionRecord] = []
+        parse_failed = 0
         for wsjson in self._workspace_base.glob("*/workspace.json"):
             rec = self._parse_one(wsjson)
-            if rec is not None:
+            if rec is None:
+                parse_failed += 1
+            else:
                 records.append(rec)
 
-        logger.debug("%s Collector: %d 워크스페이스 수집", self._app_name, len(records))
+        cycle.declare(collected=len(records), failed=parse_failed)
+        if parse_failed:
+            cycle.status = STATUS_PARTIAL
+        logger.debug(
+            "%s Collector: %d 워크스페이스 수집(실패 %d)",
+            self._app_name, len(records), parse_failed,
+        )
         return records
 
     def _parse_one(self, wsjson: Path) -> SessionRecord | None:

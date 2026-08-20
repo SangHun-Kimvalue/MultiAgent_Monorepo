@@ -50,6 +50,7 @@
 - 계약 문서: `methodology/docs/EXECUTION_ADAPTER_CONTRACT.md`
 - exact binding 정형 입력: repo 내부의 `execution-preflight.json` 같은 JSON 파일을 두고, 예시는 `methodology/config/execution-preflight.example.json`을 참조한다. 이 Markdown에 JSON schema를 복제하지 않는다.
 - expensive Implementer/Reviewer/Mechanical leg를 시작하기 전에 `methodology/tools/execution_preflight.py`로 선택된 정형 binding의 deterministic preflight를 통과해야 한다. provider version/auth까지 요구하는 실행은 `--live` PASS를 선행한다.
+- **KNOWN CONFLICT**: 현재 execution-preflight v1은 Claude를 Sonnet moving profile로만 허용해 새 기본 Opus reviewer profile과 충돌한다. 따라서 preflight를 포함한 자동 end-to-end Opus 실행은 관련 schema/runtime/test/config를 함께 정렬하는 후속 Phase 전까지 불가하며, 이를 `NOT CLAIMED`로 낮추지 않는다.
 - 기본 런타임: `<예: ztr>`
 - relay envelope 계약: `status`/`exit_code`/`not_claimed`만 분기 조건으로 사용한다.
 - R5 경계: 세션 id·payload·review body는 불투명 사실로 전달하며, 코드가 의미를 파싱하지 않는다.
@@ -97,16 +98,18 @@
   "--implementer-resume-profile", "{implementer_resume_profile}",
   "--reviewer-resume-profile", "{reviewer_resume_profile}",
   "--output-dir", "{run_output_dir}",
+  "--timeout", "900",
   "--record"
 ]
 ```
 > 주: 위 템플릿은 `--record`를 **항상 켠다**. 조건부로 켜고 끄려면 `{record_flag}`를 쓰되, 고정 JSON 배열로는 "원소 생략"을 표현할 수 없으므로 — 계약 §5대로 **실행 어댑터가 argv 원소를 삽입/생략**한다(빈 문자열 치환 금지). `{record_flag}`는 그 조건부 메커니즘의 표준 변수다.
+> `--timeout 900`은 기본 L1/L2 run의 전역 per-leg 값으로 모든 leg 각각에 적용된다. 사람이 L0 run을 명시적으로 선택할 때만 run-level `--timeout 300`을 별도 선택하며, 이 역시 모든 leg에 각각 적용된다.
 
 ### leg 바인딩 예시
 - implementer provider: `<codex|claude|gemini-cli|custom>`
 - implementer argv JSON: `["codex", "exec", "--json"]`  (ztr가 `{prompt_file}` 내용을 첫 leg stdin으로 전달)
 - reviewer provider: `<claude|codex|custom>`
-- reviewer argv JSON: `["claude", "-p", "Review artifact: {review_artifact}", "--output-format", "json"]`
+- reviewer argv JSON: `["claude", "-p", "Review artifact: {review_artifact}", "--model", "opus", "--output-format", "json"]`
 - Mechanical(preen) argv JSON: `["ztr", "review", "--changed", "--record"]`
 
 ### resume 정책
@@ -150,8 +153,8 @@ providers:
         - "service_tier schema compatibility"
   claude:
     verified_cli_version: "<현 repo에서 실측한 버전>"
-    model: "<profile/model pin 또는 unverified>"
-    known_argv_shape: ["claude", "-p", "<short prompt with artifact path>", "--output-format", "json"]
+    model: "opus moving profile (독립 Reviewer 기본; 사람이 명시한 L0 run만 sonnet 예외)"
+    known_argv_shape: ["claude", "-p", "<short prompt with artifact path>", "--model", "opus", "--output-format", "json"]
     max_inline_prompt_chars: 2000
     supports_stdin_prompt: "unverified"
     supports_prompt_file: "adapter-file-reference"
@@ -169,7 +172,7 @@ providers:
     config_schema_smoke:
       status: "unverified"
       command:
-        argv: ["claude", "-p", "<short config-schema smoke prompt with artifact path>", "--output-format", "json"]
+        argv: ["claude", "-p", "<short config-schema smoke prompt with artifact path>", "--model", "opus", "--output-format", "json"]
         payload: "artifact-file"
       result: "unverified"
       not_claimed: []

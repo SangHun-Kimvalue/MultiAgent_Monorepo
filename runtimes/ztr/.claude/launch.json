@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ztr-dashboard",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "src.web.app"],
+      "port": 8000
+    }
+  ]
+}

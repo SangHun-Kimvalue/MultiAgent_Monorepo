@@ -20,6 +20,8 @@ description: >
 - 검증을 실행하지 못했거나 실패했으면 PASS처럼 말하지 않는다. `BLOCKED` 또는 `NOT CLAIMED`로 보고한다.
 - **구현(코드/스크립트) 변경은 독립 design-review 없이 커밋하지 않는다.** 커밋 범위에 코드·스크립트(예: `install.sh`/`package.sh`/모듈) 변경이 있으면 **author≠reviewer 독립 design-review leg(별도 컨텍스트 서브에이전트) PASS 증거**가 있어야 커밋한다. `pytest`/`ruff`/`mypy`/`bash -n`/`--dry-run` 같은 self-verify는 필요조건일 뿐 충분조건이 아니다(2-leg 하드게이트). 증거 없으면 커밋 중단 → 리뷰 먼저. 순수 docs/메모리 변경은 예외. **Planner/orchestrator 세션이 직접 구현했어도 면제되지 않는다**("tooling이라 사소함"도 면제 아님).
 - 커밋 메시지에 AI attribution을 넣지 않는다.
+- **멀티라인 커밋 메시지는 파일에 쓰고 `git commit -F <파일>`로 준다.** 셸 인용 문법으로 본문을 인라인 전달하지 않는다(아래 "메시지 전달 방식" 참조).
+- **커밋 후 subject를 반드시 재확인한다.** `git log -1 --format=%s`가 `<type>(<scope>)?: ` 로 시작하지 않으면 셸이 메시지를 파손한 것이다 — 즉시 `git commit --amend -F <파일>`로 정정한 뒤 보고한다(push 이후라면 정정 대신 사실을 보고한다).
 
 금지 문구:
 
@@ -72,13 +74,35 @@ python -m src invariants
 
 5. **Commit**
    - 제목은 한국어로 작성한다.
-   - 형식은 `<type>: <한글 요약>`을 쓴다.
+   - 형식은 `<type>: <한글 요약>` 또는 `<type>(<scope>): <한글 요약>`을 쓴다.
    - 허용 type: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`.
+   - `scope`는 프로젝트가 이미 쓰는 관행을 따른다(예: `fix(screen):`, `fix(macro):`, `feat(NFC):`). `git log --oneline -20`으로 실제 관행을 확인하고 새로 만들지 않는다.
    - 작은 커밋은 제목만 허용한다.
    - Phase/설계/운영 교훈이 있는 커밋은 아래 본문 포맷을 쓴다.
+   - 메시지 전달은 아래 "메시지 전달 방식"을 그대로 따른다.
 
-6. **Report**
+6. **Verify subject**
+   - `git log -1 --format=%s`를 실행해 subject가 `<type>(<scope>)?: `로 시작하는지 확인한다.
+   - `@`, 따옴표 잔재, 합쳐진 첫 두 줄 같은 파손이 보이면 `git commit --amend -F <파일>`로 정정한다.
+
+7. **Report**
    - commit hash, 브랜치, clean 여부, 실행한 검증, NOT CLAIMED를 짧게 보고한다.
+
+## 메시지 전달 방식 (셸 파손 방지)
+
+**규칙: 본문이 있는 커밋은 예외 없이 파일 경유.**
+
+1. 메시지를 UTF-8 파일로 쓴다(예: 스크래치패드의 `commitmsg.txt`). Write 도구를 쓰거나, 셸에서 쓸 때는 heredoc을 쓴다.
+2. `git commit -F <파일>`로 커밋한다.
+3. 위 6단계로 subject를 재확인한다.
+
+```bash
+git commit -F "$TMP/commitmsg.txt"
+```
+
+제목만 있는 작은 커밋은 `git commit -m "fix(screen): 한글 요약"`처럼 **한 줄 + 큰따옴표**까지만 허용한다.
+
+**금지 — 실제 파손 사례**: bash/Git Bash에서 PowerShell here-string 문법(`git commit -m @'` … `'@`)을 쓰면 안 된다. bash는 `@'…'@`를 "리터럴 `@` + 작은따옴표 문자열 + 리터럴 `@`"로 읽어, 메시지가 `@`로 시작하고 `@`로 끝나게 된다. 첫 줄이 `@`뿐이면 git이 다음 줄까지 subject로 접어 `@ fix(screen): …` 형태로 남는다(외부 프로젝트 릴리스 브랜치에서 10커밋 연속 발생). PowerShell here-string은 PowerShell 도구에서만 유효하고, 그때도 닫는 `'@`는 반드시 열 0에 와야 한다 — 이 조건을 매번 신경 쓰느니 파일 경유가 안전하다.
 
 ## Commit Message Format
 
@@ -86,6 +110,7 @@ python -m src invariants
 
 ```text
 <type>: <한글 요약>
+<type>(<scope>): <한글 요약>
 ```
 
 본문이 필요한 경우:
@@ -120,6 +145,12 @@ NOT CLAIMED:
 
 ```text
 feat: Phase 5 run-phase 구현
+```
+
+scope를 쓰는 프로젝트의 작은 커밋:
+
+```text
+fix(screen): 화면보호기 프레임 자산을 최종 렌더본으로 교체
 ```
 
 본문 있는 Phase 커밋:

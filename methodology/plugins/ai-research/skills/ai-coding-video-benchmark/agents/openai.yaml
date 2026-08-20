@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Coding Video Benchmark"
+  short_description: "Benchmark recent AI coding videos with evidence grades."
+  default_prompt: "Use $ai-coding-video-benchmark to evaluate recent AI coding videos with evidence grades."

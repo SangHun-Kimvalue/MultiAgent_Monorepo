@@ -12,7 +12,9 @@ Default:
 Rules:
   - Does not create branches or tags.
   - Does not commit.
-  - Backs up existing CLAUDE.md, AGENTS.md, .claude/skills, .codex/skills, Codex plugin assets, nitpicker, and phased-handoff.config.md before replacing them.
+  - Preflights both marketplace files before changing any target path.
+  - Backs up adapters, plugin-owned roots, and each replaced skill into a unique snapshot.
+  - Preserves unrelated flat skills and third-party marketplace entries.
   - Installs per-project .claude/phased-handoff.config.md from config/project.config.example.md (relay/orchestrator leg bindings; fill before use). Existing config is kept (backed up), not clobbered.
   - --with-ztr writes .claude/ztr-run-phase.sh wrapper pointing at this monorepo's runtimes/ztr (relay engine).
   - Strict mode is reserved for future hooks and currently behaves like lite.
@@ -108,7 +110,9 @@ fi
 
 TARGET="$(cd "$TARGET" && pwd)"
 STAMP="$(date +%Y%m%d_%H%M%S)"
-BACKUP_DIR="$TARGET/.agent-workflow-backup/$STAMP"
+BACKUP_PARENT="$TARGET/.agent-workflow-backup"
+BACKUP_DIR="$BACKUP_PARENT/$STAMP"
+PLUGIN_NAMES=(agent-workflow ai-research)
 # ztr relay runtime = monorepo sibling of methodology/ (this script's parent).
 ZTR_HOME="$(cd "$ROOT_DIR/.." 2>/dev/null && pwd)/runtimes/ztr"
 
@@ -120,12 +124,13 @@ PY
 }
 
 if [[ -n "$PYTHON_BIN" ]]; then
-  # Intentionally split so PYTHON="py -3" works in Windows Git Bash.
-  # shellcheck disable=SC2206
-  PYTHON_CMD=($PYTHON_BIN)
+  PYTHON_CMD=("$PYTHON_BIN")
   if ! python_works "${PYTHON_CMD[@]}"; then
-    echo "Configured PYTHON is not a usable Python 3 interpreter: $PYTHON_BIN" >&2
-    exit 2
+    read -r -a PYTHON_CMD <<<"$PYTHON_BIN"
+    if [[ "${#PYTHON_CMD[@]}" -eq 0 ]] || ! python_works "${PYTHON_CMD[@]}"; then
+      echo "Configured PYTHON is not a usable Python 3 interpreter: $PYTHON_BIN" >&2
+      exit 2
+    fi
   fi
 elif command -v python3 >/dev/null 2>&1 && python_works python3; then
   PYTHON_CMD=(python3)
@@ -167,68 +172,135 @@ backup_path() {
   local path="$1"
   local name="$2"
   if [[ -e "$path" ]]; then
-    run mkdir -p "$BACKUP_DIR"
+    run mkdir -p "$(dirname "$BACKUP_DIR/$name")"
     run cp -R "$path" "$BACKUP_DIR/$name"
   fi
 }
 
-install_codex_marketplace() {
-  local marketplace="$TARGET/.agents/plugins/marketplace.json"
-  run mkdir -p "$(dirname "$marketplace")"
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    echo "+ update marketplace entry in $marketplace"
-    return
-  fi
-  "${PYTHON_CMD[@]}" - "$marketplace" <<'PY'
+preflight_marketplace() {
+  local marketplace="$1"
+  local label="$2"
+  "${PYTHON_CMD[@]}" - "$marketplace" "$label" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 path = Path(sys.argv[1])
-if path.exists():
-    with path.open("r", encoding="utf-8") as fh:
-        data = json.load(fh)
-else:
-    data = {
-        "name": "local-repo",
-        "interface": {"displayName": "Local Repo"},
-        "plugins": [],
-    }
-
-data.setdefault("name", "local-repo")
-if not isinstance(data.get("interface"), dict):
-    data["interface"] = {}
-data["interface"].setdefault("displayName", data["name"])
+label = sys.argv[2]
+if not path.exists():
+    raise SystemExit(0)
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+    print(f"{label} marketplace is not valid UTF-8 JSON: {path}: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+if not isinstance(data, dict):
+    print(f"{label} marketplace root must be a JSON object: {path}", file=sys.stderr)
+    raise SystemExit(2)
 if not isinstance(data.get("plugins"), list):
-    data["plugins"] = []
-plugins = data["plugins"]
-entry = {
-    "name": "agent-workflow",
-    "source": {
-        "source": "local",
-        "path": "./plugins/agent-workflow",
-    },
-    "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL",
-    },
-    "category": "Productivity",
+    print(f"{label} marketplace plugins must be an array: {path}", file=sys.stderr)
+    raise SystemExit(2)
+PY
 }
 
-for index, item in enumerate(plugins):
-    if isinstance(item, dict) and item.get("name") == "agent-workflow":
-        plugins[index] = entry
-        break
-else:
-    plugins.append(entry)
+reserve_backup_dir() {
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "+ mkdir $BACKUP_DIR"
+    return
+  fi
+  if ! mkdir -p "$BACKUP_PARENT"; then
+    echo "Cannot create backup parent directory: $BACKUP_PARENT" >&2
+    return 2
+  fi
+  local candidate="$BACKUP_DIR"
+  local suffix=0
+  while ! mkdir "$candidate" 2>/dev/null; do
+    if [[ ! -e "$candidate" && ! -L "$candidate" ]]; then
+      echo "Cannot create backup directory: $candidate" >&2
+      return 2
+    fi
+    suffix=$((suffix + 1))
+    candidate="$BACKUP_PARENT/$STAMP.$suffix"
+  done
+  BACKUP_DIR="$candidate"
+}
 
-with path.open("w", encoding="utf-8") as fh:
+upsert_marketplace() {
+  local source_marketplace="$1"
+  local target_marketplace="$2"
+  run mkdir -p "$(dirname "$target_marketplace")"
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "+ merge canonical marketplace entries into $target_marketplace"
+    return
+  fi
+  "${PYTHON_CMD[@]}" - "$source_marketplace" "$target_marketplace" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+source_path = Path(sys.argv[1])
+target_path = Path(sys.argv[2])
+source = json.loads(source_path.read_text(encoding="utf-8"))
+if target_path.exists():
+    data = json.loads(target_path.read_text(encoding="utf-8"))
+else:
+    data = {key: value for key, value in source.items() if key != "plugins"}
+    data["plugins"] = []
+
+for key, value in source.items():
+    if key != "plugins":
+        data[key] = value
+canonical = {
+    item["name"]: item
+    for item in source["plugins"]
+    if isinstance(item, dict) and isinstance(item.get("name"), str)
+}
+plugins = [
+    item
+    for item in data["plugins"]
+    if not (isinstance(item, dict) and item.get("name") in canonical)
+]
+plugins.extend(canonical.values())
+data["plugins"] = plugins
+
+with target_path.open("w", encoding="utf-8") as fh:
     json.dump(data, fh, indent=2, ensure_ascii=False)
     fh.write("\n")
 PY
 }
 
-echo "Installing agent workflow beta"
+install_plugin_roots() {
+  local plugin
+  for plugin in "${PLUGIN_NAMES[@]}"; do
+    backup_path "$TARGET/plugins/$plugin" "plugins/$plugin"
+    copy_dir "$ROOT_DIR/plugins/$plugin" "$TARGET/plugins/$plugin"
+  done
+}
+
+merge_plugin_skills() {
+  local surface_name="$1"
+  local target_root="$2"
+  local plugin skill_dir skill
+  for plugin in "${PLUGIN_NAMES[@]}"; do
+    for skill_dir in "$ROOT_DIR/plugins/$plugin/skills"/*; do
+      [[ -d "$skill_dir" && -f "$skill_dir/SKILL.md" ]] || continue
+      skill="$(basename "$skill_dir")"
+      backup_path "$target_root/$skill" "$surface_name-skills/$plugin/$skill"
+      copy_dir "$skill_dir" "$target_root/$skill"
+    done
+  done
+}
+
+preflight_marketplace \
+  "$ROOT_DIR/.claude-plugin/marketplace.json" "source Claude"
+preflight_marketplace \
+  "$ROOT_DIR/.agents/plugins/marketplace.json" "source Codex"
+preflight_marketplace \
+  "$TARGET/.claude-plugin/marketplace.json" "target Claude"
+preflight_marketplace \
+  "$TARGET/.agents/plugins/marketplace.json" "target Codex"
+
+echo "Installing MultiAgent Methodology beta"
 echo "- target: $TARGET"
 echo "- surface: $SURFACE"
 echo "- mode: $MODE"
@@ -239,14 +311,20 @@ if [[ ! -d "$TARGET/.git" ]]; then
   echo "WARN: target is not a git repository: $TARGET" >&2
 fi
 
-run mkdir -p "$BACKUP_DIR"
+reserve_backup_dir
+
+install_plugin_roots
 
 if surface_has "claude"; then
   backup_path "$TARGET/CLAUDE.md" "CLAUDE.md"
   run cp "$ROOT_DIR/adapters/claude/CLAUDE.md" "$TARGET/CLAUDE.md"
 
-  backup_path "$TARGET/.claude/skills" "claude-skills"
-  copy_dir "$ROOT_DIR/plugins/agent-workflow/skills" "$TARGET/.claude/skills"
+  merge_plugin_skills "claude" "$TARGET/.claude/skills"
+
+  backup_path "$TARGET/.claude-plugin/marketplace.json" "claude-marketplace.json"
+  upsert_marketplace \
+    "$ROOT_DIR/.claude-plugin/marketplace.json" \
+    "$TARGET/.claude-plugin/marketplace.json"
 
   if [[ "$WITH_CONFIG" -eq 1 ]]; then
     cfg="$TARGET/.claude/phased-handoff.config.md"
@@ -265,14 +343,12 @@ if surface_has "codex"; then
   backup_path "$TARGET/AGENTS.md" "AGENTS.md"
   run cp "$ROOT_DIR/adapters/codex/AGENTS.md" "$TARGET/AGENTS.md"
 
-  backup_path "$TARGET/.codex/skills" "codex-skills"
-  copy_dir "$ROOT_DIR/plugins/agent-workflow/skills" "$TARGET/.codex/skills"
-
-  backup_path "$TARGET/plugins/agent-workflow" "codex-plugin-agent-workflow"
-  copy_dir "$ROOT_DIR/plugins/agent-workflow" "$TARGET/plugins/agent-workflow"
+  merge_plugin_skills "codex" "$TARGET/.codex/skills"
 
   backup_path "$TARGET/.agents/plugins/marketplace.json" "codex-marketplace.json"
-  install_codex_marketplace
+  upsert_marketplace \
+    "$ROOT_DIR/.agents/plugins/marketplace.json" \
+    "$TARGET/.agents/plugins/marketplace.json"
 fi
 
 if [[ "$WITH_NITPICKER" -eq 1 ]]; then

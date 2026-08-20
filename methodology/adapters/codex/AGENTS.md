@@ -1,10 +1,12 @@
 # AGENTS.md — Codex/GPT 어댑터 (작업 리포에 복사해서 사용)
 
-> Adapter-Version: `multiagent-methodology/agent-workflow 2026-07-19 role-router-v2`.
+> ⚠️ **범위 표시 — 중앙 원본에만 적용**: `methodology/adapters/codex/AGENTS.md` 경로의 중앙 원본을 편집·검토하는 세션은 이 파일을 활성 세션 지침으로 적용하지 말고 MAM 루트 `AGENTS.md`/`CLAUDE.md`와 methodology 캐논을 따른다. **작업 리포 루트에 복사된 사본은 그 리포의 정상적인 활성 지침이며, 이 문단은 무시한다.**
+> Adapter-Version: `multiagent-methodology/agent-workflow 2026-08-10 role-router-v3`.
 > 복사본이 오래됐는지 확인할 때는 이 버전 주석과 중앙 레포 `adapters/codex/AGENTS.md`를 비교한다.
 > 이 파일은 multiagent-methodology **개발 방법론의 Codex/GPT 어댑터**다. Codex는 현재 리포만 읽으므로 핵심을 자기완결로 담는다.
 > 전체 캐논(SSoT): multiagent-methodology 레포의 `METHODOLOGY.md` / `MULTI_AGENT.md` / `DOC_TAXONOMY.md`.
 > 한국어로 응답/주석. 프로젝트 특화값(빌드/RC/Nitpicker/컨벤션/전략/무수정 대상)은 `.claude/phased-handoff.config.md` 참조.
+> Claude가 **독립 Reviewer leg**로 실행될 때의 CLI·모델·무출력·timeout 규약은 `methodology/docs/EXECUTION_ADAPTER_CONTRACT.md`의 Claude reviewer 절을 정본으로 따른다.
 
 ## Role Resolution
 이 파일은 구현 전용 지침이 아니라 **역할 라우터 + 공통 방법론 어댑터**다. 역할은 모델명이나 프로젝트 폴더가 아니라 현재 세션의 사용자 지시와 작업 의도로 결정한다.

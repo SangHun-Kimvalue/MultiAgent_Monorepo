@@ -1,0 +1,10 @@
+{
+  "name": "ai-research",
+  "version": "0.1.0",
+  "description": "Evidence-first AI research skills for dated daily news and AI coding video benchmarking with isolated result contracts.",
+  "author": {
+    "name": "shkim",
+    "email": "gkstkqnsla@gmail.com"
+  },
+  "keywords": ["ai", "research", "news", "coding", "video", "benchmark", "korean"]
+}

@@ -1,6 +1,7 @@
 # Claude Code Project Adapter
 
-> Adapter-Version: `multiagent-methodology/agent-workflow 2026-07-19 role-router-v2`.
+> ⚠️ **Scope note — central source only**: a session editing or reviewing the central copy at `methodology/adapters/claude/CLAUDE.md` must not treat this file as its active session instruction; follow the MAM root `AGENTS.md`/`CLAUDE.md` and methodology canon instead. **A copy installed into a project root is that project's normal active instruction — ignore this paragraph there.**
+> Adapter-Version: `multiagent-methodology/agent-workflow 2026-08-10 role-router-v3`.
 > This file is a role router for Claude Code CLI. Keep project-specific build, hardware, and secret values in project docs or local config.
 
 ## Language And Tone

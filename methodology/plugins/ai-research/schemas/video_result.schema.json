@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam.local/schemas/video_result.schema.json",
+  "title": "VideoResult",
+  "type": "object",
+  "required": ["video_status", "selected_count", "items", "evidence"],
+  "additionalProperties": false,
+  "properties": {
+    "video_status": {"type": "string", "enum": ["READY", "PARTIAL", "EMPTY"]},
+    "selected_count": {"type": "integer", "minimum": 0, "maximum": 3},
+    "items": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "url", "title", "channel", "published_date", "evidence_grade", "creator_claim_ko", "confirmed_fact_ko", "task_ko", "environment_ko", "cross_checks", "failure_conditions_ko", "adoption_decision", "small_experiment_ko", "score_total"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "url": {"type": "string", "pattern": "^https://www\\.youtube\\.com/watch\\?v=[A-Za-z0-9_-]{11}$"},
+          "title": {"type": "string", "minLength": 1},
+          "channel": {"type": "string", "minLength": 1},
+          "published_date": {"type": "string", "format": "date"},
+          "evidence_grade": {"type": "string", "enum": ["M2", "X"]},
+          "creator_claim_ko": {"type": "string", "minLength": 1},
+          "confirmed_fact_ko": {"type": "string", "minLength": 1},
+          "task_ko": {"type": "string", "minLength": 1},
+          "environment_ko": {"type": "string", "minLength": 1},
+          "cross_checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "url"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {"type": "string", "enum": ["official_doc", "release_note", "public_repository"]},
+                "url": {"type": "string", "format": "uri", "pattern": "^https://(?!.*[\\u0000-\\u001F\\u007F \\\\])(?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*)(?:/[^?#]+)(?:\\?[^#]*)?(?:#.*)?$", "minLength": 1}
+              }
+            }
+          },
+          "failure_conditions_ko": {"type": "string", "minLength": 1},
+          "adoption_decision": {"type": "string", "enum": ["ADOPT", "PILOT", "WATCH", "REJECT"]},
+          "small_experiment_ko": {"type": "string", "minLength": 1},
+          "score_total": {"type": "integer", "minimum": 0, "maximum": 10}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"evidence_grade": {"const": "X"}}},
+            "then": {"properties": {"cross_checks": {"minItems": 1}}}
+          }
+        ]
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "reason_code"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {"type": "string", "enum": ["input_fallback", "machine_exclusion", "history_exclusion", "collection", "finalization"]},
+          "reason_code": {"type": "string", "minLength": 1},
+          "id": {"type": "string", "minLength": 1},
+          "url": {"type": "string", "pattern": "^https://www\\.youtube\\.com/watch\\?v=[A-Za-z0-9_-]{11}$"},
+          "detail_ko": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"video_status": {"const": "READY"}}}, "then": {"properties": {"selected_count": {"minimum": 1}}}},
+    {"if": {"properties": {"video_status": {"const": "EMPTY"}}}, "then": {"properties": {"selected_count": {"const": 0}, "items": {"maxItems": 0}}}},
+    {"oneOf": [
+      {"properties": {"selected_count": {"const": 0}, "items": {"maxItems": 0}}},
+      {"properties": {"selected_count": {"const": 1}, "items": {"minItems": 1, "maxItems": 1}}},
+      {"properties": {"selected_count": {"const": 2}, "items": {"minItems": 2, "maxItems": 2}}},
+      {"properties": {"selected_count": {"const": 3}, "items": {"minItems": 3, "maxItems": 3}}}
+    ]}
+  ]
+}

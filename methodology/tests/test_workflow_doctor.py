@@ -33,6 +33,11 @@ SOURCE_SKILLS = {
     "prepare-session-compaction",
     "zrt-phase-commit",
 }
+AI_RESEARCH_PLUGIN = METHODOLOGY_ROOT / "plugins" / "ai-research"
+AI_RESEARCH_VERSION = json.loads(
+    (AI_RESEARCH_PLUGIN / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+)["version"]
+AI_RESEARCH_SKILLS = {"ai-coding-video-benchmark", "daily-ai-news"}
 
 
 def test_plugin_manifest_respects_default_prompt_limit() -> None:
@@ -215,6 +220,116 @@ def test_matching_current_fixture_passes(tmp_path: Path) -> None:
     }
     assert payload["active_session"]["status"] == "NOT_CLAIMED"
     assert payload["mutations_performed"] is False
+    assert payload["plugin"] == "agent-workflow"
+
+
+def test_ai_research_matching_fixture_passes_with_plugin_selector(tmp_path: Path) -> None:
+    fixture = _make_installed_fixture(
+        tmp_path / "ai-research.json",
+        marketplace_path=METHODOLOGY_ROOT / ".agents" / "plugins" / "marketplace.json",
+        plugin_path=AI_RESEARCH_PLUGIN,
+        version=AI_RESEARCH_VERSION,
+        skills=AI_RESEARCH_SKILLS,
+    )
+
+    payload, exit_code = doctor.execute(
+        [
+            "--plugin",
+            "ai-research",
+            "--installed-fixture",
+            str(fixture),
+            "--legacy-skill-root",
+            str(tmp_path / "absent-global-skills"),
+        ]
+    )
+
+    assert exit_code == 0
+    assert payload["status"] == "PASS"
+    assert payload["plugin"] == "ai-research"
+    assert payload["source"]["version"] == AI_RESEARCH_VERSION
+    assert payload["source"]["skills"] == sorted(AI_RESEARCH_SKILLS)
+
+
+def test_ai_research_stale_fixture_blocks_exact_drift(tmp_path: Path) -> None:
+    stale_plugin = tmp_path / "stale" / "plugins" / "ai-research"
+    _write_skills(stale_plugin, {"daily-ai-news"})
+    stale_marketplace = tmp_path / "stale" / ".agents" / "plugins" / "marketplace.json"
+    _write_json(stale_marketplace, {"name": "stale"})
+    fixture = _make_installed_fixture(
+        tmp_path / "stale.json",
+        marketplace_path=stale_marketplace,
+        plugin_path=stale_plugin,
+        version="0.0.9",
+        skills={"daily-ai-news"},
+    )
+
+    payload, exit_code = doctor.execute(
+        ["--plugin", "ai-research", "--installed-fixture", str(fixture)]
+    )
+
+    assert exit_code == 2
+    assert payload["drift"]["version"] is True
+    assert payload["drift"]["missing_skills"] == ["ai-coding-video-benchmark"]
+
+
+@pytest.mark.parametrize("target_count", [0, 2])
+def test_ai_research_source_target_zero_or_duplicate_blocks(
+    tmp_path: Path, target_count: int
+) -> None:
+    source = tmp_path / "source"
+    marketplace = source / ".agents" / "plugins" / "marketplace.json"
+    plugin = source / "plugins" / "ai-research"
+    shutil.copytree(AI_RESEARCH_PLUGIN, plugin)
+    entry = {
+        "name": "ai-research",
+        "source": {"source": "local", "path": "./plugins/ai-research"},
+    }
+    _write_json(
+        marketplace,
+        {
+            "name": doctor.MARKETPLACE_NAME,
+            "plugins": [dict(entry) for _ in range(target_count)],
+        },
+    )
+    fixture = _make_installed_fixture(
+        tmp_path / "installed.json",
+        marketplace_path=marketplace,
+        plugin_path=plugin,
+        version=AI_RESEARCH_VERSION,
+        skills=AI_RESEARCH_SKILLS,
+    )
+
+    payload, exit_code = doctor.execute(
+        [
+            "--plugin",
+            "ai-research",
+            "--source-marketplace",
+            str(marketplace),
+            "--source-plugin",
+            str(plugin),
+            "--installed-fixture",
+            str(fixture),
+        ]
+    )
+
+    assert exit_code == 2
+    assert f"observed {target_count}" in payload["diagnostics"][0]
+
+
+def test_ai_research_plugin_list_parser_selects_only_requested_target(tmp_path: Path) -> None:
+    marketplace = tmp_path / ".agents" / "plugins" / "marketplace.json"
+    plugin = tmp_path / "plugins" / "ai-research"
+    output = _plugin_list_output(
+        marketplace,
+        plugin,
+        version=AI_RESEARCH_VERSION,
+        target="ai-research@multiagent-methodology",
+    )
+
+    parsed = doctor.parse_plugin_list(output, "ai-research")
+
+    assert parsed.plugin_path == str(plugin)
+    assert parsed.version == AI_RESEARCH_VERSION
 
 
 def test_stale_fixture_reports_exact_drift_and_missing_skills(tmp_path: Path) -> None:

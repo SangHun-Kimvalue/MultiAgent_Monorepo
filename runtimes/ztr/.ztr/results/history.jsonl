@@ -1,0 +1,9 @@
+{"timestamp": "2026-04-13T12:25:34.099072", "type": "session_complete", "task": "hello world 출력", "target_file": "", "verdict": "pass", "rounds": 1, "elapsed_ms": 0.7, "error": ""}
+{"timestamp": "2026-04-13T12:25:34.484301", "type": "session_complete", "task": "불가능한 태스크", "target_file": "", "verdict": "timeout", "rounds": 2, "elapsed_ms": 0.2, "error": "최대 라운드(2) 도달, 합의 실패"}
+{"timestamp": "2026-04-13T12:25:34.770723", "type": "session_complete", "task": "test", "target_file": "", "verdict": "error", "rounds": 0, "elapsed_ms": 0.0, "error": "Writer 에이전트 없음"}
+{"timestamp": "2026-04-13T13:42:07.276888", "type": "session_complete", "task": "hello world 출력", "target_file": "", "verdict": "pass", "rounds": 1, "elapsed_ms": 0.6, "error": ""}
+{"timestamp": "2026-04-13T13:42:07.683001", "type": "session_complete", "task": "불가능한 태스크", "target_file": "", "verdict": "timeout", "rounds": 2, "elapsed_ms": 0.2, "error": "최대 라운드(2) 도달, 합의 실패"}
+{"timestamp": "2026-04-13T13:42:07.960382", "type": "session_complete", "task": "test", "target_file": "", "verdict": "error", "rounds": 0, "elapsed_ms": 0.0, "error": "Writer 에이전트 없음"}
+{"timestamp": "2026-04-13T13:55:41.120582", "type": "session_complete", "task": "hello world 출력", "target_file": "", "verdict": "pass", "rounds": 1, "elapsed_ms": 0.9, "error": ""}
+{"timestamp": "2026-04-13T13:55:41.418147", "type": "session_complete", "task": "불가능한 태스크", "target_file": "", "verdict": "timeout", "rounds": 2, "elapsed_ms": 0.2, "error": "최대 라운드(2) 도달, 합의 실패"}
+{"timestamp": "2026-04-13T13:55:41.702494", "type": "session_complete", "task": "test", "target_file": "", "verdict": "error", "rounds": 0, "elapsed_ms": 0.0, "error": "Writer 에이전트 없음"}

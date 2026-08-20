@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZTR Dashboard - Session List (FHD Optimized)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#67df70",
+                      "on-tertiary-fixed-variant": "#005317",
+                      "surface-tint": "#a2c9ff",
+                      "surface-variant": "#31353c",
+                      "on-secondary-fixed-variant": "#5a21ab",
+                      "surface-container-high": "#262a31",
+                      "error": "#ffb4ab",
+                      "inverse-on-surface": "#2d3137",
+                      "secondary-fixed": "#ecdcff",
+                      "tertiary-fixed": "#83fc89",
+                      "on-tertiary-fixed": "#002105",
+                      "error-container": "#93000a",
+                      "outline": "#8b919d",
+                      "surface-container-lowest": "#0a0e14",
+                      "outline-variant": "#414752",
+                      "inverse-surface": "#dfe2eb",
+                      "background": "#10141a",
+                      "secondary-container": "#5a21ab",
+                      "primary-fixed-dim": "#a2c9ff",
+                      "on-surface": "#dfe2eb",
+                      "primary-container": "#58a6ff",
+                      "on-error": "#690005",
+                      "primary-fixed": "#d3e4ff",
+                      "surface-container-highest": "#31353c",
+                      "on-error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#d5bbff",
+                      "tertiary-fixed-dim": "#67df70",
+                      "tertiary-container": "#40ba51",
+                      "on-tertiary-container": "#004411",
+                      "secondary": "#d5bbff",
+                      "on-primary-container": "#003a6b",
+                      "inverse-primary": "#0060aa",
+                      "on-secondary-fixed": "#270058",
+                      "on-secondary-container": "#c6a5ff",
+                      "on-surface-variant": "#c0c7d4",
+                      "on-primary-fixed-variant": "#004882",
+                      "on-background": "#dfe2eb",
+                      "on-secondary": "#41008b",
+                      "on-tertiary": "#00390d",
+                      "on-primary-fixed": "#001c38",
+                      "on-primary": "#00315c",
+                      "primary": "#a2c9ff",
+                      "surface": "#10141a",
+                      "surface-bright": "#353940",
+                      "surface-dim": "#10141a",
+                      "surface-container": "#1c2026",
+                      "surface-container-low": "#181c22"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Inter"],
+                      "body": ["Inter"],
+                      "label": ["Inter"],
+                      "mono": ["JetBrains Mono"]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #10141a; 
+            color: #dfe2eb;
+            /* Force 16:9 Aspect Ratio Container logic for FHD visualization */
+            overflow: hidden; 
+        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .pulsing-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+        .agent-squircle { border-radius: 0.5rem; position: relative; }
+        .agent-squircle::after { content: ''; position: absolute; inset: 0; border: 1px solid rgba(255,255,255,0.05); border-radius: 0.5rem; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #10141a; }
+        ::-webkit-scrollbar-thumb { background: #31353c; border-radius: 10px; }
+        
+        /* 1920x1080 Optimization Wrapper */
+        .fhd-viewport {
+            width: 1920px;
+            height: 1080px;
+            margin: 0 auto;
+            display: flex;
+            position: relative;
+            background: #10141a;
+            /* In a real browser, we might use scale() if the screen is smaller, 
+               but for a design spec we treat it as literal size */
+        }
+    </style>
+</head>
+<body class="bg-black flex items-center justify-center overflow-hidden">
+<div class="fhd-viewport">
+<!-- SideNavBar Optimized -->
+<aside class="h-full w-72 flex flex-col bg-[#181c22] border-r border-outline-variant/10">
+<div class="flex flex-col gap-4 p-8 h-full">
+<div class="mb-12 px-2 flex items-center gap-4">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-2xl" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="text-2xl font-black text-[#58a6ff] tracking-tight">Orchestrator</h1>
+<p class="text-[11px] uppercase tracking-[0.2em] text-[#dfe2eb]/40 font-bold">v1.0.4 - Enterprise</p>
+</div>
+</div>
+<nav class="space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 text-[#58a6ff] bg-[#262a31] rounded-xl font-semibold transition-all duration-150 border-l-4 border-[#58a6ff]" href="#">
+<span class="material-symbols-outlined text-2xl">dashboard</span>
+<span class="text-base">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] rounded-xl transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">monitor_heart</span>
+<span class="text-base">Live Monitor</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] rounded-xl transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">analytics</span>
+<span class="text-base">Agent Stats</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] rounded-xl transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">history</span>
+<span class="text-base">Task History</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] rounded-xl transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">settings</span>
+<span class="text-base">Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<div class="p-6 bg-surface-container-lowest rounded-2xl border border-outline-variant/5">
+<div class="flex items-center gap-4 mb-4">
+<img alt="User Profile" class="w-12 h-12 rounded-xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrGMAWxHge3RVYeFS0HiV105cAjuZgJPAl0iLkQvsBlpJH6AcF0VUsr0k-3DUxmvqUZ1BHoqZctku3ApiEXAhFTdSfBA9w0CKP-MviNZxN0lb-pt3Wf7I2Mm4geESBE4khFbf9WI0qL9SLzIwAn6-7ndy1wlUwOo1nKwkRtDui_IBsp3pORoDmrHQywvfN-VmH16kvePZOlm6SN_SUEg-qJk4SpXaaLX6ae1zYN8X20D0zFFqjwLY7CDYswPySq6y0lE1EXl3aI-M"/>
+<div class="overflow-hidden">
+<p class="text-sm font-bold truncate">ZTR Admin</p>
+<p class="text-xs text-primary font-medium tracking-wide">PRO PLAN</p>
+</div>
+</div>
+<button class="w-full py-2 bg-surface-container-high rounded-lg text-xs font-bold text-outline hover:text-on-surface transition-colors">Sign Out</button>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-surface h-full">
+<!-- TopAppBar Optimized -->
+<header class="bg-[#10141a] border-b border-outline-variant/10 h-20 flex justify-between items-center px-10 w-full shrink-0">
+<div class="flex items-center gap-6">
+<span class="text-2xl font-bold tracking-tight text-[#dfe2eb]">Session Overview</span>
+<div class="flex items-center gap-3 px-3 py-1.5 bg-tertiary/10 rounded-full text-xs font-bold text-tertiary border border-tertiary/20">
+<span class="w-2 h-2 rounded-full bg-tertiary pulsing-dot"></span>
+                    LIVE SYSTEM STATUS: OPTIMAL
+                </div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-outline text-sm font-mono bg-surface-container-low px-4 py-2 rounded-xl border border-outline-variant/10">
+<span class="material-symbols-outlined text-lg">dns</span>
+<span class="tracking-tight">cluster-01.aws-us-east-1.production</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2.5 text-[#dfe2eb] hover:bg-[#262a31] transition-all rounded-xl relative">
+<span class="material-symbols-outlined text-2xl">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-[#10141a]"></span>
+</button>
+<button class="p-2.5 text-[#dfe2eb] hover:bg-[#262a31] transition-all rounded-xl">
+<span class="material-symbols-outlined text-2xl">sensors</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Optimized for FHD Density -->
+<div class="p-10 space-y-10 flex-1 overflow-y-auto">
+<!-- Summary Stats Grid -->
+<div class="grid grid-cols-4 gap-6">
+<div class="bg-surface-container-low p-8 rounded-3xl border border-outline-variant/5 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<p class="text-xs text-outline uppercase tracking-[0.15em] font-bold">Total Sessions</p>
+<span class="material-symbols-outlined text-outline text-xl">dataset</span>
+</div>
+<div class="flex items-baseline gap-4">
+<h2 class="text-5xl font-black tracking-tight text-on-surface">15</h2>
+<span class="text-sm font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-md">+2 today</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-8 rounded-3xl border border-outline-variant/5 shadow-sm flex items-center justify-between">
+<div>
+<p class="text-xs text-outline uppercase tracking-[0.15em] font-bold mb-4">Success Rate</p>
+<h2 class="text-5xl font-black tracking-tight text-on-surface">85%</h2>
+</div>
+<div class="relative w-20 h-20">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<circle class="text-surface-container-high" cx="18" cy="18" fill="none" r="16" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-tertiary" cx="18" cy="18" fill="none" r="16" stroke="currentColor" stroke-dasharray="85, 100" stroke-linecap="round" stroke-width="4"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-xl">check</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-8 rounded-3xl border border-outline-variant/5 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<p class="text-xs text-outline uppercase tracking-[0.15em] font-bold">Average Rounds</p>
+<span class="material-symbols-outlined text-outline text-xl">rebase_edit</span>
+</div>
+<div class="flex items-baseline gap-4">
+<h2 class="text-5xl font-black tracking-tight text-on-surface">2.4</h2>
+<span class="text-sm text-outline font-mono">iterations / task</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-8 rounded-3xl border border-outline-variant/5 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<p class="text-xs text-outline uppercase tracking-[0.15em] font-bold">Token Consumption</p>
+<span class="material-symbols-outlined text-primary text-xl">toll</span>
+</div>
+<div class="flex items-baseline gap-4">
+<h2 class="text-5xl font-black tracking-tight text-on-surface">125.4k</h2>
+<span class="text-sm text-primary font-bold">~ $4.12 cost</span>
+</div>
+</div>
+</div>
+<!-- Enhanced Filter Bar -->
+<div class="flex items-center justify-between gap-8 bg-surface-container-low/30 p-2 rounded-2xl border border-outline-variant/5">
+<div class="flex items-center gap-2 p-1 bg-surface-container-lowest rounded-xl">
+<button class="px-6 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-bold shadow-lg shadow-primary/20">All Sessions</button>
+<button class="px-6 py-2.5 rounded-lg text-on-surface/50 text-sm font-bold hover:text-on-surface hover:bg-surface-container-high transition-all">Pass</button>
+<button class="px-6 py-2.5 rounded-lg text-on-surface/50 text-sm font-bold hover:text-on-surface hover:bg-surface-container-high transition-all">Conditional</button>
+<button class="px-6 py-2.5 rounded-lg text-on-surface/50 text-sm font-bold hover:text-on-surface hover:bg-surface-container-high transition-all">Fail</button>
+<button class="px-6 py-2.5 rounded-lg text-on-surface/50 text-sm font-bold hover:text-on-surface hover:bg-surface-container-high transition-all">Error</button>
+</div>
+<div class="flex items-center gap-4 flex-1 max-w-2xl px-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-xl">search</span>
+<input class="w-full bg-surface-container-high/50 border-none rounded-xl pl-12 pr-4 py-3 text-base focus:ring-2 focus:ring-primary/40 placeholder-outline/40" placeholder="Search by task name, file, or agent ID..." type="text"/>
+</div>
+<button class="flex items-center gap-3 px-6 py-3 bg-surface-container-high rounded-xl text-sm font-bold text-on-surface hover:bg-surface-container-highest transition-all border border-outline-variant/10">
+<span class="material-symbols-outlined text-xl">calendar_month</span>
+<span>Oct 24 - Oct 31, 2023</span>
+</button>
+</div>
+</div>
+<!-- High Density Table -->
+<div class="bg-surface-container-low rounded-[2rem] overflow-hidden border border-outline-variant/10 shadow-2xl">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest/50 border-b border-outline-variant/10">
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">ID</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">Status</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">Verdict</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">Agent Task</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">Target File</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">Rounds</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em] text-right">Duration</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">Active Agents</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em]">Timestamp</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<!-- Session 15 (Active) -->
+<tr class="group hover:bg-primary/5 transition-all bg-primary/[0.02]">
+<td class="px-8 py-6 font-mono text-sm text-primary font-black">#0015</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary-container/20 text-secondary text-xs font-black uppercase tracking-widest border border-secondary/20">
+<span class="w-2 h-2 rounded-full bg-secondary pulsing-dot"></span>
+                                    Running
+                                </span>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center gap-3 text-outline/40">
+<span class="material-symbols-outlined text-lg">hourglass_empty</span>
+<span class="text-sm font-bold uppercase tracking-wide">Processing</span>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-base font-bold text-on-surface truncate max-w-[300px]">Implement JWT Refresh Logic</p>
+</td>
+<td class="px-8 py-6">
+<code class="text-sm font-mono text-outline-variant bg-surface-container-lowest px-2 py-1 rounded-lg border border-outline-variant/10">src/auth/service.py</code>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center gap-4">
+<div class="w-24 h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[40%]"></div>
+</div>
+<p class="text-xs font-mono text-outline font-bold">02 / 05</p>
+</div>
+</td>
+<td class="px-8 py-6 text-right">
+<p class="text-sm font-mono text-on-surface font-bold">45.242s</p>
+</td>
+<td class="px-8 py-6">
+<div class="flex -space-x-3">
+<div class="agent-squircle w-9 h-9 bg-surface-container-high flex items-center justify-center border-2 border-surface-container-low" style="outline: 2px solid #58a6ff; outline-offset: -2px;">
+<span class="text-xs font-black text-[#58a6ff]">GPT</span>
+</div>
+<div class="agent-squircle w-9 h-9 bg-surface-container-high flex items-center justify-center border-2 border-surface-container-low" style="outline: 2px solid #a371f7; outline-offset: -2px;">
+<span class="text-xs font-black text-[#a371f7]">CLD</span>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-xs font-bold text-primary">Just now</p>
+</td>
+</tr>
+<!-- Session 14 -->
+<tr class="group hover:bg-surface-container-high/50 transition-all">
+<td class="px-8 py-6 font-mono text-sm text-outline font-black">#0014</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-high text-outline text-xs font-black uppercase tracking-widest">
+                                    Completed
+                                </span>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center gap-3 text-tertiary">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-sm font-black uppercase tracking-wide">Pass</span>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-base font-bold text-on-surface truncate max-w-[300px]">Refactor greet() function</p>
+</td>
+<td class="px-8 py-6">
+<code class="text-sm font-mono text-outline-variant bg-surface-container-lowest px-2 py-1 rounded-lg border border-outline-variant/10">src/utils/__init__.py</code>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center gap-4">
+<div class="w-24 h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="bg-tertiary h-full w-[20%]"></div>
+</div>
+<p class="text-xs font-mono text-outline font-bold">01 / 05</p>
+</div>
+</td>
+<td class="px-8 py-6 text-right">
+<p class="text-sm font-mono text-on-surface font-bold">32.511s</p>
+</td>
+<td class="px-8 py-6">
+<div class="flex -space-x-3">
+<div class="agent-squircle w-9 h-9 bg-surface-container-high flex items-center justify-center border-2 border-surface-container-low" style="outline: 2px solid #58a6ff; outline-offset: -2px;">
+<span class="text-xs font-black text-[#58a6ff]">GPT</span>
+</div>
+<div class="agent-squircle w-9 h-9 bg-surface-container-high flex items-center justify-center border-2 border-surface-container-low" style="outline: 2px solid #d29922; outline-offset: -2px;">
+<span class="text-xs font-black text-[#d29922]">NSH</span>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-xs font-medium text-outline">1 hour ago</p>
+</td>
+</tr>
+<!-- Session 13 -->
+<tr class="group hover:bg-surface-container-high/50 transition-all">
+<td class="px-8 py-6 font-mono text-sm text-outline font-black">#0013</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-high text-outline text-xs font-black uppercase tracking-widest">
+                                    Completed
+                                </span>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-lg">warning</span>
+<span class="text-sm font-black uppercase tracking-wide">Conditional</span>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-base font-bold text-on-surface truncate max-w-[300px]">Add global error handlers</p>
+</td>
+<td class="px-8 py-6">
+<code class="text-sm font-mono text-outline-variant bg-surface-container-lowest px-2 py-1 rounded-lg border border-outline-variant/10">src/api/routes.py</code>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center gap-4">
+<div class="w-24 h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[60%]"></div>
+</div>
+<p class="text-xs font-mono text-outline font-bold">03 / 05</p>
+</div>
+</td>
+<td class="px-8 py-6 text-right">
+<p class="text-sm font-mono text-on-surface font-bold">89.092s</p>
+</td>
+<td class="px-8 py-6">
+<div class="flex -space-x-3">
+<div class="agent-squircle w-9 h-9 bg-surface-container-high flex items-center justify-center border-2 border-surface-container-low" style="outline: 2px solid #a371f7; outline-offset: -2px;">
+<span class="text-xs font-black text-[#a371f7]">CLD</span>
+</div>
+<div class="agent-squircle w-9 h-9 bg-surface-container-high flex items-center justify-center border-2 border-surface-container-low" style="outline: 2px solid #3fb950; outline-offset: -2px;">
+<span class="text-xs font-black text-[#3fb950]">OTH</span>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-xs font-medium text-outline">3 hours ago</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="px-10 py-6 bg-surface-container-lowest/30 border-t border-outline-variant/10 flex items-center justify-between">
+<p class="text-xs font-black text-outline uppercase tracking-widest">Showing 3 of 15 system sessions</p>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-outline">Rows per page:</span>
+<select class="bg-transparent border-none text-xs font-bold text-on-surface focus:ring-0 cursor-pointer">
+<option>15</option>
+<option>30</option>
+<option>50</option>
+</select>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-surface-container-high text-outline transition-colors border border-outline-variant/10">
+<span class="material-symbols-outlined text-xl">chevron_left</span>
+</button>
+<div class="flex items-center gap-2 px-2">
+<span class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center text-xs font-bold">1</span>
+<span class="w-8 h-8 rounded-lg hover:bg-surface-container-high flex items-center justify-center text-xs font-bold text-outline cursor-pointer">2</span>
+<span class="w-8 h-8 rounded-lg hover:bg-surface-container-high flex items-center justify-center text-xs font-bold text-outline cursor-pointer">3</span>
+</div>
+<button class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-surface-container-high text-outline transition-colors border border-outline-variant/10">
+<span class="material-symbols-outlined text-xl">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer / Credits -->
+<footer class="h-10 border-t border-outline-variant/5 px-10 flex items-center justify-between text-[10px] font-bold text-outline/30 uppercase tracking-[0.2em] bg-surface-container-lowest/20">
+<span>System Node: US-EAST-1A-PRD-042</span>
+<span>All rights reserved © 2023 Orchestrator AI</span>
+<div class="flex gap-4">
+<span class="text-tertiary/50">Ping: 12ms</span>
+<span>Uptime: 99.99%</span>
+</div>
+</footer>
+</main>
+<!-- Professional Floating Action Button -->
+<button class="fixed bottom-12 right-12 w-20 h-20 bg-primary text-on-primary rounded-3xl shadow-[0_20px_50px_rgba(88,166,255,0.3)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50 group border-b-4 border-primary-fixed-dim">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">add</span>
+<div class="absolute right-full mr-6 px-4 py-2 bg-surface-container-highest text-on-surface rounded-xl text-sm font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none translate-x-4 group-hover:translate-x-0 shadow-2xl border border-outline-variant/20">
+            START NEW SESSION
+        </div>
+</button>
+</div>
+</body></html>

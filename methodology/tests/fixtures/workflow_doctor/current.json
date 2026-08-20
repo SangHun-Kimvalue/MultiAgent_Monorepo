@@ -1,7 +1,7 @@
 {
   "marketplace_path": "../../../.agents/plugins/marketplace.json",
   "plugin_path": "../../../plugins/agent-workflow",
-  "version": "1.2.3+codex.20260722020851",
+  "version": "1.2.4+codex.20260804234535",
   "skills": [
     "cross-session-plan-review",
     "design-review-leg",

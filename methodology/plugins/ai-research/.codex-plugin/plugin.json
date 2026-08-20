@@ -1,0 +1,23 @@
+{
+  "name": "ai-research",
+  "version": "0.1.0",
+  "description": "Evidence-first AI research skills for dated daily news and AI coding video benchmarking with isolated result contracts.",
+  "author": {
+    "name": "shkim",
+    "email": "gkstkqnsla@gmail.com"
+  },
+  "keywords": ["ai", "research", "news", "coding", "video", "benchmark", "korean"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Research",
+    "shortDescription": "Evidence-first AI news and coding-video research skills.",
+    "longDescription": "Verify dated AI news and benchmark recent AI coding videos through separate, auditable result contracts. News status and verified counts remain isolated from video selection and evidence grades.",
+    "developerName": "shkim",
+    "category": "Productivity",
+    "capabilities": ["Research", "WebSearch", "EvidenceReview", "StructuredOutput"],
+    "defaultPrompt": [
+      "Use $daily-ai-news to prepare today's evidence-first AI news result.",
+      "Use $ai-coding-video-benchmark to benchmark recent AI coding videos."
+    ]
+  }
+}

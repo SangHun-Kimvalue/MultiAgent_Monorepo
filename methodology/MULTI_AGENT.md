@@ -43,6 +43,12 @@ Planner 세션은 구현·리뷰 루프에 들어가지 않고, Orchestrator 세
 
 **한 세션이 둘 이상 역할을 겸하지 않는다.** 특히 Planner(저작)와 설계 검토를 한 세션이 겸하면 자기 스펙 맹점이 생긴다 — 설계 검토 세션은 설계를 저작하지 않고, 저작 세션은 자기 산출을 자기 검토하지 않는다.
 
+**컨텍스트 독립성과 전체 이력 상속은 별개다.** Reviewer가 저자와 다른 컨텍스트여야 한다는
+계약은 전체 채팅 transcript를 복제하라는 뜻이 아니다. 독립 agent/session은 fresh context를 기본으로 하고,
+`canonical anchors + exact targets + unresolved findings + delta + verification summary`만 적은 bounded bundle로
+부팅한다. R2 이후에는 해결된 finding과 이전 산문을 재주입하지 않는다. 전체 이력이 꼭 필요하면 누락 사실,
+bounded bundle로 표현할 수 없는 이유, 예상 입력 크기를 handoff에 명시한다. 상세 상한은 `METHODOLOGY.md §3.1`이 정본이다.
+
 **집행(commit gate)**: Planner/orchestrator 세션은 **코드/스크립트(`install.sh` 등 tooling 포함)를 직접 구현하지 않는다.** 부득이 직접 구현했어도, 커밋 범위에 코드·스크립트 변경이 있으면 **author≠reviewer 독립 구현 리뷰(별도 컨텍스트/벤더 에이전트) PASS 증거 없이 커밋 금지.** `pytest`/`ruff`/`mypy`/`bash -n`/`--dry-run` 같은 self-verify는 필요조건일 뿐 **충분조건이 아니다.** "tooling/docs라 사소함"은 면제 사유가 아니다(순수 docs/메모리 변경만 예외). 이 게이트는 `zrt-phase-commit` Hard Gate로도 박혀 있다.
 
 **독립 에이전트 에스컬레이션 (조건부)** — 설계 검토 세션은 설계 저자와 다른 세션이므로 **기본은 직접 검토**한다. 다음일 때만 추가 독립 에이전트를 호출한다: ① 대형·복잡 diff ② R5/보안 등 크리티컬 경계 ③ 심층 코드 검증 필요 ④ 1차 판정 애매. 리뷰 집행은 항상 **현재 동작 중인 모델/CLI와 다른 계열의 독립 CLI**로 수행한다(예: Codex 실행 중이면 Claude CLI, Claude 실행 중이면 Codex CLI). cross-vendor 독립이 같은 벤더 서브에이전트보다 맹점이 덜 겹친다. 원칙: **reviewer CLI 계열 ≠ active executor CLI 계열**, 가능하면 **reviewer 벤더 ≠ author 벤더**. 다른 CLI가 없으면 same-lineage 독립 컨텍스트로 폴백하되 열화(same-lineage)를 보고하고, 리뷰 생략으로 PASS 처리하지 않는다.
@@ -78,9 +84,9 @@ Reviewer leg가 종료되면 결과가 PASS이든 finding이 있든 제어권은
                                                                                                       │ 결과 회수
                                                                                          [Orchestrator] disposition
                                                                                            │             │
-                                                                                  ALL PASS │             └── ACCEPT + Human trigger
+                                                                                  ALL PASS │             └── ACCEPT + 유효한 시작 승인 reference
                                                                                            ▼                         │
-                                                                                  [Human] 승인 → 커밋     별도 Implementer → 동일 gate 재리뷰
+                                                                                  [Human] 승인 → 커밋     별도 Implementer → 동일 독립 Reviewer/Mechanical 재검증
 ```
 - **프롬프트**는 채팅 전용 가능하지만 **로드맵·HANDOFF·lessons는 파일**(채팅은 세션을 못 넘는다).
 - 프롬프트 필수 요소·리뷰 양식은 `artifacts/prompt-skeleton.md`, `artifacts/review-finding.md`.
@@ -88,10 +94,10 @@ Reviewer leg가 종료되면 결과가 PASS이든 finding이 있든 제어권은
 
 Reviewer finding은 전건 자동 적용하지 않는다. Orchestrator는 각 finding을 `ACCEPT`, `REJECT_FALSE_POSITIVE`, `DEFER_OUT_OF_SCOPE`, `REJECT_OVERENGINEERING` 중 하나로 disposition하고 evidence·rationale·owner를 `artifacts/finding-disposition.md`에 기록한다.
 
-- `ACCEPT`만 Human trigger 뒤 기존 `ztr fix-prompt`의 수정 입력이 될 수 있다. 수정은 **separate Implementer**가 수행하고, 원래와 동일한 결정론 검증과 독립 Reviewer/Mechanical gate로 재검증한다.
+- `ACCEPT`만 유효한 페이즈 시작 승인 reference의 scope/timebox 안에서 기존 `ztr fix-prompt`의 수정 입력이 될 수 있다. 수정은 **separate Implementer**가 수행하고, 원래와 동일한 결정론 검증과 독립 Reviewer/Mechanical gate로 재검증한다.
 - `REJECT_FALSE_POSITIVE`와 `REJECT_OVERENGINEERING`은 원 finding을 반박하는 evidence가 필수다.
 - `DEFER_OUT_OF_SCOPE`는 결함 부정이 아니며 owner와 후속 위치가 필수다.
-- disposition은 수정 대상 선별이지 phase 승인이나 Orchestrator의 자기 구현 승인이 아니다. Human trigger와 독립 Reviewer 재검증을 대체하지 않는다.
+- disposition은 수정 대상 선별이지 phase 승인이나 Orchestrator의 자기 구현 승인이 아니다. round별 별도 승인을 요구하지 않으며, 유효한 페이즈 시작 승인 reference의 scope/timebox 안에서는 four-way disposition→separate Implementer→동일 독립 Reviewer/Mechanical 재검증을 자동 진행한다. `BLOCKED`, scope 확대, disposition 모호성, 운영 위험, timebox 소진만 중간 Human escalation이며, 페이즈 종료 Human Gate와 독립 역할/R5 재검증은 대체하지 않는다.
 
 ### Phase Ledger Canon
 

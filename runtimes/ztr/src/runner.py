@@ -12,6 +12,7 @@ import argparse
 import asyncio
 import json
 import logging
+import math
 import sys
 import time
 from datetime import datetime
@@ -57,6 +58,15 @@ from src.engine.reapply_ledger import (
 )
 from src.engine.exec_adapter import RenderError, render_argv
 from src.engine.event_emit import EmitError, build_orch_event, write_orch_event
+from src.engine.goal_intent_ledger import (
+    GoalIntentError,
+    GoalIntentPreflight,
+    canonical_json_line,
+    capture_fingerprints,
+    changed_fingerprints,
+    persist_and_append,
+    prepare_preflight,
+)
 from src.engine.resume_chain import (
     ResumeCoordinator,
     ResumeProfile,
@@ -89,6 +99,18 @@ class RecordHandle(NamedTuple):
 
 class FixRoundBlockedError(ValueError):
     """fix-round 입력/동일-thread 불변 위반으로 사람 에스컬레이션이 필요한 오류."""
+
+
+class TargetInputError(ValueError):
+    """review/verify target 선택 또는 사전조건 입력 오류."""
+
+
+class TargetSelection(NamedTuple):
+    """target 표현과 실행 기준을 입력 모드별로 함께 고정한다."""
+
+    paths: tuple[str, ...]
+    execution_root: Path
+    git_backed: bool
 
 
 async def cmd_invoke(args: argparse.Namespace) -> None:
@@ -274,8 +296,8 @@ async def cmd_review(args: argparse.Namespace) -> None:
     record_handle: RecordHandle | None = None
     try:
         config = load_config(getattr(args, "config", None))
-        targets = await _resolve_review_targets(args, cwd=cwd)
-        repo_root = await resolve_repo_root(cwd=cwd)
+        selection = await _resolve_review_targets(args, cwd=cwd)
+        targets = list(selection.paths)
         if args.verbose:
             print(f"review targets: {targets or ['<ruff-skip>']}", file=sys.stderr)
         record_handle = _start_recording(
@@ -288,11 +310,15 @@ async def cmd_review(args: argparse.Namespace) -> None:
 
         report = await run_static_review(
             targets,
-            cwd=repo_root,
+            cwd=selection.execution_root,
             mypy_cwd=_runtime_root(),
             timeout_s=float(args.timeout),
         )
-        diff_text = await collect_git_diff(targets, cwd=repo_root) if targets else ""
+        diff_text = (
+            await collect_git_diff(targets, cwd=selection.execution_root)
+            if selection.git_backed and targets
+            else ""
+        )
         review_text, not_claimed = await _invoke_optional_ollama_review(
             config,
             report=report,
@@ -310,26 +336,17 @@ async def cmd_review(args: argparse.Namespace) -> None:
             fallback_used=False,
             not_claimed=not_claimed,
         )
+    except TargetInputError as exc:
+        envelope = _review_blocked_envelope(
+            start=start,
+            exc=exc,
+            exit_code=exit_code_for_verdict(Verdict.BLOCKED),
+        )
     except Exception as exc:
-        payload: dict[str, Any] = {
-            "findings": [],
-            "tool_results": {"ruff": {}, "mypy": {}},
-            "review_text": None,
-            "summary": {
-                "verdict": Verdict.BLOCKED.value,
-                "counts": {"ruff": 0, "mypy": 0, "total": 0},
-            },
-        }
-        envelope = Envelope(
-            status=Verdict.BLOCKED,
+        envelope = _review_blocked_envelope(
+            start=start,
+            exc=exc,
             exit_code=INTERNAL_ERROR_EXIT_CODE,
-            backend="internal",
-            model="static-review",
-            duration_s=time.monotonic() - start,
-            stdout=json.dumps(payload, ensure_ascii=False),
-            stderr_sanitized=redact_stderr(str(exc)),
-            fallback_used=False,
-            not_claimed=["ollama-review"],
         )
 
     _finish_recording(record_handle, envelope, rounds=1)
@@ -410,12 +427,12 @@ async def cmd_verify(args: argparse.Namespace) -> None:
     try:
         config = load_config(getattr(args, "config", None))
         if not args.post_merge:
-            raise ValueError("현재 verify는 --post-merge 모드만 지원합니다")
+            raise TargetInputError("현재 verify는 --post-merge 모드만 지원합니다")
         cwd = Path.cwd()
-        targets = await _resolve_verify_targets(args, cwd=cwd)
-        repo_root = await resolve_repo_root(cwd=cwd)
+        selection = await _resolve_verify_targets(args, cwd=cwd)
+        targets = list(selection.paths)
         if not targets:
-            raise ValueError("verify 대상이 없습니다")
+            raise TargetInputError("verify 대상이 없습니다")
         rounds = len(targets)
         record_handle = _start_recording(
             args,
@@ -428,7 +445,12 @@ async def cmd_verify(args: argparse.Namespace) -> None:
         verifier = PostMergeVerifier(timeout_s=float(args.timeout))
         results: list[tuple[str, VerifyResult]] = []
         for target in targets:
-            result = await verifier.verify(str(repo_root / target))
+            execution_target = (
+                str(selection.execution_root / target)
+                if selection.git_backed
+                else target
+            )
+            result = await verifier.verify(execution_target)
             results.append((target, result))
 
         blocked = any(result.blocked or result.timed_out for _, result in results)
@@ -448,24 +470,26 @@ async def cmd_verify(args: argparse.Namespace) -> None:
             duration_s=time.monotonic() - start,
             stdout=json.dumps(payload, ensure_ascii=False),
         )
-    except Exception as exc:
-        payload = {
-            "verified": [],
-            "summary": {
-                "verdict": Verdict.BLOCKED.value,
-                "total": 0,
-                "passed": 0,
-                "failed": 0,
-                "blocked": 1,
-            },
-        }
+    except TargetInputError as exc:
         envelope = Envelope.from_verdict(
             status=Verdict.BLOCKED,
             backend="internal",
             model="post-merge-verifier",
             duration_s=time.monotonic() - start,
-            stdout=json.dumps(payload, ensure_ascii=False),
+            stdout=json.dumps(_verify_blocked_payload(), ensure_ascii=False),
             stderr=str(exc),
+        )
+    except Exception as exc:
+        envelope = Envelope(
+            status=Verdict.BLOCKED,
+            exit_code=INTERNAL_ERROR_EXIT_CODE,
+            backend="internal",
+            model="post-merge-verifier",
+            duration_s=time.monotonic() - start,
+            stdout=json.dumps(_verify_blocked_payload(), ensure_ascii=False),
+            stderr_sanitized=redact_stderr(str(exc)),
+            fallback_used=False,
+            not_claimed=[],
         )
 
     _finish_recording(record_handle, envelope, rounds=rounds)
@@ -508,15 +532,39 @@ async def cmd_invariants(args: argparse.Namespace) -> None:
     sys.exit(envelope.exit_code)
 
 
+async def _resolve_goal_intent_repo_root(process_cwd: Path) -> Path:
+    """T13 opt-in root lookup 실패를 닫힌 writer taxonomy로 정규화한다."""
+    try:
+        return await resolve_repo_root(cwd=process_cwd)
+    except Exception as exc:
+        raise GoalIntentError(
+            "GOAL_INTENT_CONTEXT_INVALID", "repository root resolution failed"
+        ) from exc
+
+
 async def cmd_run_phase(args: argparse.Namespace) -> None:
     """Phase 5 deterministic relay를 실행하고 Envelope JSON을 출력한다."""
     start = time.monotonic()
     record_handle: RecordHandle | None = None
     rounds = 0
+    goal_preflight: GoalIntentPreflight | None = None
+    emitted_bytes: bytes | None = None
     try:
         config = load_config(getattr(args, "config", None))
+        if getattr(args, "goal_intent_context_file", None):
+            process_cwd = Path.cwd()
+            repo_root = await _resolve_goal_intent_repo_root(process_cwd)
+            goal_preflight = await prepare_preflight(
+                args,
+                kind="run-phase",
+                config=config,
+                process_cwd=process_cwd,
+                repo_root=repo_root,
+            )
         commands = _relay_commands_from_args(args)
         resume_coordinator = _resume_coordinator_from_args(args)
+        if goal_preflight is not None:
+            goal_preflight.assert_inputs_unchanged()
         record_handle = _start_recording(
             args,
             config=config,
@@ -544,11 +592,24 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
                 },
             },
         )
+        before_fingerprints: dict[str, str] | None = None
+        if goal_preflight is not None:
+            goal_preflight.assert_inputs_unchanged()
+            before_fingerprints = await capture_fingerprints(
+                goal_preflight.repo_root,
+                excluded_paths=goal_preflight.excluded_paths,
+            )
         report = await _run_phase_once(
             args,
             commands=commands,
             resume_coordinator=resume_coordinator,
         )
+        after_fingerprints: dict[str, str] | None = None
+        if goal_preflight is not None:
+            after_fingerprints = await capture_fingerprints(
+                goal_preflight.repo_root,
+                excluded_paths=goal_preflight.excluded_paths,
+            )
         rounds = len(report.steps)
         envelope = Envelope(
             status=report.status,
@@ -561,6 +622,18 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
             fallback_used=report.resume_fallback_used,
             not_claimed=["full-e2e"],
         )
+        if goal_preflight is not None:
+            if before_fingerprints is None or after_fingerprints is None:
+                raise GoalIntentError("GOAL_INTENT_BASELINE_FAILED")
+            goal_preflight.assert_inputs_unchanged(after_relay=True)
+            emitted_bytes = persist_and_append(
+                goal_preflight,
+                report_payload=report.as_payload(),
+                envelope=envelope,
+                changed_paths=changed_fingerprints(
+                    before_fingerprints, after_fingerprints
+                ),
+            )
     except Exception as exc:
         payload = {
             "phase": {
@@ -590,7 +663,14 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
         )
 
     _finish_recording(record_handle, envelope, rounds=rounds)
-    print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
+    if getattr(args, "goal_intent_context_file", None):
+        sys.stdout.write(
+            (emitted_bytes or canonical_json_line(envelope.as_stdout_payload())).decode(
+                "utf-8"
+            )
+        )
+    else:
+        print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
     sys.exit(envelope.exit_code)
 
 
@@ -625,10 +705,25 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
     report: PhaseRelayReport | None = None
     envelope: Envelope | None = None
     record_handle: RecordHandle | None = None
+    goal_preflight: GoalIntentPreflight | None = None
+    before_fingerprints: dict[str, str] | None = None
+    after_fingerprints: dict[str, str] | None = None
+    emitted_bytes: bytes | None = None
     started_at = datetime.now().astimezone().isoformat()
     try:
         original_prompt_path = str(args.prompt_file)
         config = load_config(getattr(args, "config", None))
+        if getattr(args, "goal_intent_context_file", None):
+            process_cwd = Path.cwd()
+            repo_root = await _resolve_goal_intent_repo_root(process_cwd)
+            goal_preflight = await prepare_preflight(
+                args,
+                kind="fix-round",
+                config=config,
+                process_cwd=process_cwd,
+                repo_root=repo_root,
+            )
+            goal_preflight.assert_inputs_unchanged()
         record_handle = _start_recording(
             args,
             config=config,
@@ -742,9 +837,24 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
         args.implementer_resume = implementer_id
         commands = _relay_commands_from_args(args)
         coordinator = _resume_coordinator_from_args(args)
+        if goal_preflight is not None:
+            goal_preflight.assert_inputs_unchanged()
+            before_fingerprints = await capture_fingerprints(
+                goal_preflight.repo_root,
+                excluded_paths=goal_preflight.excluded_paths,
+            )
         round_started = True
-        report = await _run_phase_once(args, commands=commands, resume_coordinator=coordinator)
-        _validate_fix_round_resume(report, expected_id=implementer_id)
+        try:
+            report = await _run_phase_once(
+                args, commands=commands, resume_coordinator=coordinator
+            )
+            _validate_fix_round_resume(report, expected_id=implementer_id)
+        finally:
+            if goal_preflight is not None and before_fingerprints is not None:
+                after_fingerprints = await capture_fingerprints(
+                    goal_preflight.repo_root,
+                    excluded_paths=goal_preflight.excluded_paths,
+                )
         envelope = Envelope(
             status=report.status,
             exit_code=report.exit_code,
@@ -864,6 +974,36 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
         except OSError:
             pass
         ledger.save()
+    if (
+        goal_preflight is not None
+        and round_started
+        and report is not None
+        and envelope is not None
+    ):
+        try:
+            if before_fingerprints is None or after_fingerprints is None:
+                raise GoalIntentError("GOAL_INTENT_BASELINE_FAILED")
+            goal_preflight.assert_inputs_unchanged(after_relay=True)
+            emitted_bytes = persist_and_append(
+                goal_preflight,
+                report_payload=report.as_payload(),
+                envelope=envelope,
+                changed_paths=changed_fingerprints(
+                    before_fingerprints, after_fingerprints
+                ),
+            )
+        except GoalIntentError as exc:
+            envelope = Envelope(
+                status=Verdict.BLOCKED,
+                exit_code=INTERNAL_ERROR_EXIT_CODE,
+                backend="phase-relay",
+                model="fix-round",
+                duration_s=time.monotonic() - start,
+                stdout=envelope.stdout,
+                stderr_sanitized=redact_stderr(str(exc)),
+                fallback_used=envelope.fallback_used,
+                not_claimed=envelope.not_claimed,
+            )
     if envelope is None:
         envelope = Envelope(
             status=Verdict.BLOCKED,
@@ -877,7 +1017,14 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
             not_claimed=["full-e2e"],
         )
     _finish_recording(record_handle, envelope, rounds=1 if round_started else 0)
-    print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
+    if getattr(args, "goal_intent_context_file", None):
+        sys.stdout.write(
+            (emitted_bytes or canonical_json_line(envelope.as_stdout_payload())).decode(
+                "utf-8"
+            )
+        )
+    else:
+        print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
     sys.exit(envelope.exit_code)
 
 
@@ -970,36 +1117,94 @@ def cmd_fix_prompt(args: argparse.Namespace) -> None:
     sys.exit(0)
 
 
-async def _resolve_review_targets(args: argparse.Namespace, *, cwd: Path) -> list[str]:
+async def _resolve_review_targets(
+    args: argparse.Namespace,
+    *,
+    cwd: Path,
+) -> TargetSelection:
+    return await _resolve_targets(args, cwd=cwd, command="review")
+
+
+async def _resolve_verify_targets(
+    args: argparse.Namespace,
+    *,
+    cwd: Path,
+) -> TargetSelection:
+    return await _resolve_targets(args, cwd=cwd, command="verify")
+
+
+async def _resolve_targets(
+    args: argparse.Namespace,
+    *,
+    cwd: Path,
+    command: str,
+) -> TargetSelection:
+    """git-backed changed mode와 cwd-backed explicit mode를 분리한다."""
     if args.changed:
-        return await collect_changed_paths(cwd=cwd)
+        try:
+            repo_root = await resolve_repo_root(cwd=cwd)
+        except RuntimeError as exc:
+            raise TargetInputError(
+                f"{command} --changed에는 git repository가 필요합니다: {exc}"
+            ) from exc
+        paths = await collect_changed_paths(cwd=repo_root)
+        return TargetSelection(tuple(paths), repo_root, True)
+
     paths = [str(path) for path in args.paths]
     if not paths:
-        raise ValueError("review에는 --changed 또는 하나 이상의 경로가 필요합니다")
-    missing = [path for path in paths if not (cwd / path).exists()]
+        raise TargetInputError(
+            f"{command}에는 --changed 또는 하나 이상의 경로가 필요합니다"
+        )
+    resolved_paths = tuple(str((cwd / path).resolve()) for path in paths)
+    missing = [
+        path
+        for path, resolved in zip(paths, resolved_paths)
+        if not Path(resolved).exists()
+    ]
     if missing:
-        raise FileNotFoundError(f"리뷰 대상 경로를 찾을 수 없습니다: {missing}")
-    repo_root = await resolve_repo_root(cwd=cwd)
-    return [_to_repo_relative_path(path, cwd=cwd, repo_root=repo_root) for path in paths]
+        raise TargetInputError(f"{command} 대상 경로를 찾을 수 없습니다: {missing}")
+    return TargetSelection(resolved_paths, cwd.resolve(), False)
 
 
-async def _resolve_verify_targets(args: argparse.Namespace, *, cwd: Path) -> list[str]:
-    if args.changed:
-        return await collect_changed_paths(cwd=cwd)
-    paths = [str(path) for path in args.paths]
-    if not paths:
-        raise ValueError("verify에는 --changed 또는 하나 이상의 경로가 필요합니다")
-    repo_root = await resolve_repo_root(cwd=cwd)
-    return [_to_repo_relative_path(path, cwd=cwd, repo_root=repo_root) for path in paths]
+def _review_blocked_envelope(
+    *,
+    start: float,
+    exc: Exception,
+    exit_code: int,
+) -> Envelope:
+    payload: dict[str, Any] = {
+        "findings": [],
+        "tool_results": {"ruff": {}, "mypy": {}},
+        "review_text": None,
+        "summary": {
+            "verdict": Verdict.BLOCKED.value,
+            "counts": {"ruff": 0, "mypy": 0, "total": 0},
+        },
+    }
+    return Envelope(
+        status=Verdict.BLOCKED,
+        exit_code=exit_code,
+        backend="internal",
+        model="static-review",
+        duration_s=time.monotonic() - start,
+        stdout=json.dumps(payload, ensure_ascii=False),
+        stderr_sanitized=redact_stderr(str(exc)),
+        fallback_used=False,
+        not_claimed=["ollama-review"],
+    )
 
 
-def _to_repo_relative_path(path: str, *, cwd: Path, repo_root: Path) -> str:
-    """사용자 cwd 기준 경로를 repo-relative POSIX 내부 통화로 바꾼다."""
-    resolved = (cwd / path).resolve()
-    try:
-        return resolved.relative_to(repo_root).as_posix()
-    except ValueError as exc:
-        raise ValueError(f"repo 밖 경로는 대상이 될 수 없습니다: {path}") from exc
+def _verify_blocked_payload() -> dict[str, Any]:
+    return {
+        "verified": [],
+        "summary": {
+            "verdict": Verdict.BLOCKED.value,
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "blocked": 1,
+        },
+    }
 
 
 def _load_gate_input(path: Path) -> dict[str, Any]:
@@ -1192,11 +1397,16 @@ def _finish_recording(
 
 
 def _relay_commands_from_args(args: argparse.Namespace) -> list[RelayCommand]:
+    timeout_overrides = _validated_leg_timeout_overrides(args)
     # leg 순서: implementer → mechanical → test → reviewer.
     # reviewer(독립 구현리뷰)를 마지막에 둬서 mechanical/test의 green 증거를 본 뒤 리뷰하게 한다.
     # (골모드 run gm-c2b finding: reviewer가 test보다 먼저 실행되면 test green 봉투를 못 봐 false-negative.)
     commands = [
-        RelayCommand.from_text(name="implementer", value=args.implementer_cmd)
+        RelayCommand.from_text(
+            name="implementer",
+            value=args.implementer_cmd,
+            timeout_s=timeout_overrides["implementer"],
+        )
     ]
     # (ㄴ) autofix leg: implementer 직후·mechanical 전, non-gating(파일 변형 전용).
     # 결정론 정정(예: ruff --fix, ruff format)으로 codex가 self-lint 못 한 결함을 제거해
@@ -1205,15 +1415,28 @@ def _relay_commands_from_args(args: argparse.Namespace) -> list[RelayCommand]:
     for offset, autofix_cmd in enumerate(getattr(args, "autofix_cmd", None) or []):
         name = "autofix" if offset == 0 else f"autofix-{offset + 1}"
         commands.append(
-            RelayCommand.from_text(name=name, value=autofix_cmd, gating=False)
+            RelayCommand.from_text(
+                name=name,
+                value=autofix_cmd,
+                gating=False,
+                timeout_s=timeout_overrides["autofix"],
+            )
         )
     if args.mechanical_cmd:
         commands.append(
-            RelayCommand.from_text(name="mechanical-review", value=args.mechanical_cmd)
+            RelayCommand.from_text(
+                name="mechanical-review",
+                value=args.mechanical_cmd,
+                timeout_s=timeout_overrides["mechanical"],
+            )
         )
     if getattr(args, "test_cmd", ""):
         commands.append(
-            RelayCommand.from_text(name="test", value=args.test_cmd)
+            RelayCommand.from_text(
+                name="test",
+                value=args.test_cmd,
+                timeout_s=timeout_overrides["test"],
+            )
         )
     if args.reviewer_cmd:
         commands.append(
@@ -1221,9 +1444,36 @@ def _relay_commands_from_args(args: argparse.Namespace) -> list[RelayCommand]:
                 name="implementer-reviewer",
                 value=args.reviewer_cmd,
                 verdict_source=getattr(args, "reviewer_verdict_source", "stdout_token"),
+                timeout_s=timeout_overrides["reviewer"],
             )
         )
     return commands
+
+
+def _validated_leg_timeout_overrides(
+    args: argparse.Namespace,
+) -> dict[str, float | None]:
+    """지정됐지만 command가 없는 leg까지 spawn 전에 fail-closed 검증한다."""
+    overrides: dict[str, float | None] = {}
+    for leg in ("implementer", "autofix", "mechanical", "test", "reviewer"):
+        value = getattr(args, f"{leg}_timeout", None)
+        if value is not None:
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"--{leg}-timeout은 양의 유한수여야 합니다")
+            value = float(value)
+        overrides[leg] = value
+    return overrides
+
+
+def _add_leg_timeout_arguments(parser: argparse.ArgumentParser) -> None:
+    """run-phase/fix-round에 동일한 optional per-leg timeout 표면을 추가한다."""
+    for leg in ("implementer", "autofix", "mechanical", "test", "reviewer"):
+        parser.add_argument(
+            f"--{leg}-timeout",
+            type=float,
+            default=None,
+            help=f"{leg} leg 타임아웃 초 (--timeout보다 우선, 미지정 시 global fallback)",
+        )
 
 
 def _runtime_root() -> Path:
@@ -1529,6 +1779,11 @@ def main() -> None:
         help="첫 leg stdin으로 전달할 구현 프롬프트 파일",
     )
     p_run_phase.add_argument(
+        "--goal-intent-context-file",
+        default=None,
+        help="T13 Goal/Intent writer canonical context (repo-relative, opt-in)",
+    )
+    p_run_phase.add_argument(
         "--phase-id",
         default="phase",
         help="캡처 디렉터리 식별자 (기본: phase)",
@@ -1539,6 +1794,7 @@ def main() -> None:
         default=600.0,
         help="각 relay leg 타임아웃 초 (기본: 600). 헤드리스 LLM leg(claude/codex)는 158~337s+ 소요 — 120은 빠듯해 타임아웃(골모드 run gm-c2 실측). 복잡 페이즈는 더 올린다.",
     )
+    _add_leg_timeout_arguments(p_run_phase)
     p_run_phase.add_argument(
         "--output-dir",
         default=".ztr/run-phase",
@@ -1653,7 +1909,13 @@ def main() -> None:
     )
     p_fix_round.add_argument("--phase-id", default="fix-round", help="캡처 디렉터리 식별자")
     p_fix_round.add_argument("--timeout", type=float, default=600.0, help="각 relay leg 타임아웃 초")
+    _add_leg_timeout_arguments(p_fix_round)
     p_fix_round.add_argument("--output-dir", default=".ztr/run-phase", help="relay 캡처 디렉터리")
+    p_fix_round.add_argument(
+        "--goal-intent-context-file",
+        default=None,
+        help="T13 Goal/Intent writer canonical context (repo-relative, opt-in)",
+    )
     p_fix_round.add_argument("--implementer-cmd", required=True, help="구현 leg 명령")
     p_fix_round.add_argument("--reviewer-cmd", default="", help="구현 리뷰 leg 명령")
     p_fix_round.add_argument("--autofix-cmd", action="append", default=None, help="non-gating autofix leg")

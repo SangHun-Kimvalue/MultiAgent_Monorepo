@@ -1,16 +1,21 @@
-.venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+# ztr 런타임 실행 캡처 (transient — run-phase/orchestrator 산출물, 세션 DB)
 .ztr/
-.acp/
-*.db
-*.db-shm
-*.db-wal
-*.jsonl
-.env
-.env.*
-!.env.example
+
+# 로컬 Claude 설정 (phased-handoff.config.md는 추적 유지)
+.claude/settings.local.json
+
+# 닛피커 로컬 활성 config (시크릿 없어도 머신-로컬 — .example.json만 추적)
+methodology/nitpicker/nitpicker.config.json
+
+# build artifacts
 methodology/dist/
+
+# python bytecode
+__pycache__/
+
+# 세션 툴링 산출물 (prepare-session-compaction 등 — transient)
+.agent-workflow/
+
+# 스트레이 export 덤프 (타 트랙/회사 산출물이 MAM 루트에 흘러든 것 — 추적 제외)
+out_md.txt
+*.out_md.txt

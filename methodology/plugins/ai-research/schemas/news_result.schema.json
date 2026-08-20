@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam.local/schemas/news_result.schema.json",
+  "title": "NewsResult",
+  "type": "object",
+  "required": ["status", "final_count", "items", "evidence"],
+  "additionalProperties": false,
+  "properties": {
+    "status": {"type": "string", "enum": ["OK", "DEGRADED"]},
+    "final_count": {"type": "integer", "minimum": 0},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "claim",
+          "url",
+          "published_date",
+          "event_date",
+          "confidence",
+          "audit_reason_ko"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "claim": {"type": "string", "minLength": 1},
+          "url": {"type": "string", "minLength": 1, "format": "uri"},
+          "published_date": {"type": "string", "format": "date"},
+          "event_date": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["official", "trusted_secondary"]
+          },
+          "audit_reason_ko": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "reason_code", "attempt"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["machine_exclusion", "audit_failure", "unverified", "finalization"]
+          },
+          "reason_code": {"type": "string", "minLength": 1},
+          "attempt": {"type": "integer", "minimum": 0, "maximum": 3},
+          "id": {"type": ["string", "null"]},
+          "url": {"type": ["string", "null"]},
+          "detail_ko": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

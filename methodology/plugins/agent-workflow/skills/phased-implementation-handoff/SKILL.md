@@ -73,7 +73,17 @@ Implementer 세션이 리포 접근 가능하면 간결하게(경로·시그니�
 - **도구**: `cross-session-plan-review` 스킬(플랜/프롬프트 사전검토 전용 — 사실 검증 후 severity-ranked 비판)로 집행한다. 또는 §7의 프로젝트별 cross-lineage 메커니즘(예: Codex CLI 위임)이 정의돼 있으면 그것을 쓴다.
 - **자기검토 금지(독립성)**: Planner는 **검토 번들만** 만들고, **별도 세션/CLI**가 검토를 집행한다. **같은 Planner 세션이 자기 산출물을 자기가 판정하지 않는다**(자기 스펙 자기 승인 = 입력 게이트 무력화, C4).
 - **독립성 = §8 상속**: 다른 계열(cross-lineage) 우선 + 폴백 위계(① 다른 계열 CLI → ② 다른 계열 세션 → ③ 같은 계열 독립 컨텍스트=열화, 기록에 `same-lineage` 명시). 같은 계열은 같은 맹점·sycophancy 공유.
+- **선언 블록은 `references/prompt-skeleton.md` 최상단 `[등급·예산 선언]` 에 둔다.** 선언 없는 프롬프트로는 게이트를 열지 않는다.
+- **등급 선언이 먼저다(주체·시점)**: **Planner 가 착수 전에 작업 등급(L0/L1/L2)과 리뷰 예산을 선언하고 IMPL_PROMPT 상단에 박는다.** 선언 없이 게이트를 열지 않는다. 등급은 **최종 변경 표면**으로 판정한다 — 단일 파일·기계적 변경은 L1 이하다. 리뷰 중 등급을 올리려면 scope 재승인을 받는다(리뷰어가 등급을 올릴 수 없다).
 - **등급별 강도**: L2(아키텍처·페이즈 경계)·**신규 트랙/신규 런타임/검증 안 된 통합 경로**·고위험 프롬프트 = **하드 게이트**(finding resolved 전 핸드오프 금지). L1 = 강력 권장. L0·사소·기계적 = 생략 가능(§2 Planner 자기 선행점검으로 충분).
+- **종료 장치 (캐논 `METHODOLOGY.md` §3 상속 — 이 절만 보고 일해도 멈추게 하기 위해 명시)**
+  - **예산은 두 축**(캐논 §3, 2026-08-14 개정): **구현 diff 심사(출력 게이트) L0 2 / L1 3 / L2 4**, **문서 심사(입력 게이트) L0 1 / L1 2 / L2 3**. 각 축 안에서 슬라이스 전체 semantic review 총량을 합산하며, **두 축은 서로의 잔여를 빌려오지 않는다.** 상한 없는 축은 없다 — 축 분리 자체가 예산 우회 경로가 되기 때문이다(입력 게이트 단독 7라운드 사례).
+    - ⛔ **한 축을 소진했다고 다른 축에서 같은 대상을 다시 심사하지 않는다.** 문서 축 3회를 쓴 뒤 같은 산출물을 "구현 diff"로 재분류해 4회를 더 쓰는 것은 축 분리가 아니라 **증축**이다. 축은 대상이 가르지 순서가 가르지 않는다.
+  - **증축 금지**: 선언된 예산을 늘리지 않는다. 예외는 보안·인증·데이터 손실 또는 **재현된 false PASS** 뿐이며, 그때도 별도 emergency slice 로 분리한다.
+  - **종료 경계**: 예산을 소진했는데 PASS 가 아니면 **PASS 를 만들기 위한 추가 리뷰를 호출하지 않는다.** 현재 verdict·미해결 finding·NOT CLAIMED 를 그대로 Human Gate 에 반환한다.
+  - **계약 동결**: Human Gate 1 이후 acceptance contract 는 동결이다. **Reviewer 가 새 요구·새 invariant 를 blocker 로 추가할 수 없다.** 필요하면 슬라이스를 멈추고 scope 재승인을 받는다.
+  - **재현 없는 P2/P3 는 blocker 가 아니다.** 정적 가능성·문서 문구 정합성은 backlog 로 기록하고 verdict 를 막지 않는다.
+  - **예산 소진 시 four-way disposition** 으로 처분해 사람에게 올린다: `ACCEPT` / `REJECT_FALSE_POSITIVE` / `DEFER_OUT_OF_SCOPE` / `REJECT_OVERENGINEERING`(근거 필수).
 - finding은 §8 정형(severity/finding/evidence/impact/recommendation). **하드 게이트 finding은 반영하거나, Planner가 거부 사유를 기록해 `resolved` 처리한 뒤 핸드오프한다. unresolved P1/P2는 핸드오프 금지.** 좋은 지적도 프로젝트 전략과 충돌하면 재해석·거부하되 **사유를 남긴다**(§4 "외부 리뷰 비판적 필터" — 무비판 수용 금지).
 
 ## 6. 로드맵 문서
@@ -109,7 +119,28 @@ Implementer 세션이 리포 접근 가능하면 간결하게(경로·시그니�
     - **폴백 위계(하드 게이트는 불변):** ① 다른 계열 CLI(권장) → ② 다른 계열 세션 → ③ 다른 계열이 전혀 없을 때만 같은 계열의 독립 컨텍스트 서브에이전트. ③은 **열화 모드**이며 review 기록에 `same-lineage(계열 독립성 미확보)`를 명시해 갭이 보이게 한다.
     - **생략·`NOT CLAIMED` 금지.** "다른 계열 CLI 부재"는 스킵 사유가 아니라 폴백 위계를 한 칸 내려가라는 신호다. 어느 단계든 독립 컨텍스트로 **반드시 집행**한다.
   - **소유자 = Implementer 세션(출력 게이트).** 구현 세션이 자기 diff에 대해 **독립 컨텍스트(cross-lineage) 서브에이전트를 띄워 집행**하고 결과를 **Planner에 보고**한다. 구현 세션이 *자기 prose로 자기 코드를 승인*하는 게 아니라(그건 C4 위반), **별개의 독립 에이전트가 판정**하므로 독립성은 유지된다 — §5.5 입력 게이트(Planner가 자기 프롬프트를 독립 에이전트로 검토)와 **대칭**이다. Planner는 이 레그를 인라인으로 대신 떠안지 않고, 커밋 전 **§8.5 통합 확인**만 수행한다. (Implementer는 리뷰를 빈칸으로 두지 말 것 — 자기 소유 게이트다.)
-    - **가짜 PASS 차단(C4 강화) — 보고 필수 필드:** 구현 세션이 리뷰어를 lenient하게 고르거나 finding을 무시할 구멍을 막기 위해, 완료 보고에 다음을 **반드시** 첨부한다: active executor CLI/계열, reviewer tool/CLI version/계열/모델·집행 방식, command shape, review 시각(UTC), review base SHA와 reviewed paths, 폴백 단계(위계 중 어디), review artifact 경로, **verdict(enum)·exit code**(R5: prose 아님), raw output 경로, **모든 P1/P2 finding의 disposition**(반영 커밋 or Planner에 올릴 거부 사유). 배포되는 공용 형식은 이 스킬의 `assets/review-verdict.schema.json`을 따르고 `python <skill-root>/scripts/validate_review_verdict.py <artifact.json>` exit 0을 받아야 한다. 필수 필드 누락, 계열 비교 미기록, unresolved P1/P2가 남은 상태에서는 페이즈 완료·커밋 금지(= 10단계 7步 "구현 세션이 리뷰 검토"의 구체화).
+    - **예산 preflight (출력 게이트 단일 진입점, schema 2.0):** 구현 diff Reviewer 호출은
+      **반드시 preflight 를 통과**한다. 직접 호출은 비정상 경로다.
+      `python <skill-root>/scripts/review_budget_preflight.py --doc <phase 진행 문서> --slice <slice_id> --gate output|input -- <reviewer 명령>`
+      preflight 는 진행 문서의 단일 ```review-budget``` 블록을 읽어 `budget_limit` 을 `work_grade` 에서
+      파생하고, **잠금 → 재검증 → 증가값 내구 저장 → 해제 → Reviewer 시작** 순서로만 호출을 승인한다.
+      `next_round > budget_limit` 이면 **Reviewer 를 호출하지 않고** four-way disposition 을 요구한다
+      (exit 3). 저장 실패는 호출 금지(exit 4), 저장 후 launch 실패는 소비 유지 + Human Gate(exit 5).
+      ※ 적용 대상은 **구현 diff 출력 게이트**다. 문서·계획·프롬프트 심사는 대상이 아니다.
+    - **가짜 PASS 차단(C4 강화) — 보고 필수 필드:** 구현 세션이 리뷰어를 lenient하게 고르거나 finding을 무시할 구멍을 막기 위해, 완료 보고에 다음을 **반드시** 첨부한다: active executor CLI/계열, reviewer tool/CLI version/계열/모델·집행 방식, command shape, review 시각(UTC), review base SHA와 reviewed paths, 폴백 단계(위계 중 어디), review artifact 경로, **verdict(enum)·exit code**(R5: prose 아님), raw output 경로, **모든 P1/P2 finding의 disposition**(반영 커밋 or Planner에 올릴 거부 사유). 배포되는 공용 형식은 이 스킬의 `assets/review-verdict.schema.json`(**2.0** — `slice_id`·`work_grade`·`budget_limit`·`rounds_consumed` 포함)을 따르고 `python <skill-root>/scripts/validate_review_verdict.py <artifact.json>` exit 0을 받아야 한다. 필수 필드 누락, 계열 비교 미기록, unresolved P1/P2가 남은 상태에서는 페이즈 완료·커밋 금지(= 10단계 7步 "구현 세션이 리뷰 검토"의 구체화).
+      - Claude가 독립 Reviewer leg이면 `task_grade`와 `model_selection_reason`을 **산문 완료 보고**에만
+        기록한다. 이 Claude 전용 규칙은 §5.5 입력 리뷰 PASS와 §8의 독립 출력 Reviewer·Nitpicker
+        2-leg 하드 게이트를 보완할 뿐 대체하지 않는다. 구조화 review verdict의 실제 모델은 기존
+        `reviewer.model`을 재사용하고 기존 schema validator가 검증한다. `task_grade`와
+        `model_selection_reason`은 Planner가 §8.5에서 산문 완료 보고 존재·정합을 확인하며, 코드가
+        산문 의미를 파싱해 모델이나 verdict를 자동 판정하지 않는다. `selected_model` 신규 필드나
+        `review-verdict.schema.json` 확장을 만들지 않는다.
+      - 현재 execution-preflight v1의 Sonnet-only 제한과 기본 Opus reviewer binding의 충돌은
+        미실측이 아니라 확인된 **KNOWN CONFLICT**다. 영향은 preflight를 포함한 자동 end-to-end
+        Opus 실행이 현재 불가능하다는 것이다. 후속 전에는 preflight 우회나 자동 E2E PASS 주장을
+        금지하고, 수동으로 얻은 증거는 preflight 포함 E2E claim과 분리해 보고한다. 이를
+        `NOT CLAIMED`로 낮추지 않으며, execution-preflight runtime/schema/test/config를 함께 다루는
+        별도 후속 Phase가 해결을 소유한다.
     - **오케스트레이터 모드 예외:** `phase-cycle-orchestrator`/ztr 릴레이로 **자동 구동**할 땐 리뷰어 생성 주체 = **외부 릴레이**이고 Implementer는 리뷰어 존재를 모른다(ROADMAP_V2 D6 — "구현 세션이 자기 리뷰 오케스트레이션"보다 **더 강한 독립성 변형**). 위 "Implementer 세션 소유"는 **수동(단독 Planner) 핸드오프 모드**에 적용된다. 두 모드 다 "Planner 인라인 리뷰"가 아니며 출력 게이트를 충족한다.
 - **Nitpicker (기계 체크):** 수정 파일마다(Implementer가 실행). 명령은 §7 설정의 경로/모델을 주입한 형태(예시는 `assets/project-config.example.md`).
   PowerShell에서 `--diff "$(git diff)"`를 직접 넘기면 한글/공백/따옴표/줄바꿈 인코딩이 깨진다 → **repo 래퍼(run_nit.py류)**가 있으면 우선.
@@ -124,11 +155,36 @@ severity / finding / evidence_or_repro / impact / recommendation
 전체 리포 병합 파일은 만들지 않는다(토큰 낭비 + 초점 흐림). 커밋은 ALL PASS 후 **사용자 확인("커밋해")** 받고 진행.
 
 ## 8.5 커밋 전 Planner 최종 확인 (통합 게이트)
-출력 게이트(§8) 2갈래를 **구현 세션이 집행·보고**한 뒤, **Planner가 통합 관점에서 한 번 더 확인**하고서야 커밋한다(사용자 "커밋해" 전 마지막 관문 = 의도한 10단계의 9步). **이건 코드 correctness 재판정이 아니다** — diff 의미·정확성 판정은 §8 소유(구현 세션)이며 Planner는 인라인 재리뷰하지 않는다. Planner가 보는 건 **오케스트레이션·정합 3가지**뿐:
+출력 게이트(§8) 2갈래가 **PASS로 보고된 뒤**(집행 주체는 §8의 모드 규약을 따른다 — 수동=구현 세션, 릴레이=외부 릴레이), **Planner가 통합 관점에서 한 번 더 확인**하고서야 커밋한다(사용자 "커밋해" 전 마지막 관문 = 의도한 10단계의 9步). **이건 코드 correctness 재판정이 아니다** — diff 의미·정확성 판정은 §8 소유(구현 세션)이며 Planner는 인라인 재리뷰하지 않는다. Planner가 보는 건 **오케스트레이션·정합 3가지**뿐:
 - 보고된 2갈래 verdict가 **실제 PASS인가**(보고-실측 정직성 — `NOT CLAIMED`/미검증을 PASS로 위장하지 않았나. R5: verdict enum·exit code로만 판정, prose 재해석 금지).
 - 이번 페이즈 산출물이 **로드맵/결정 로그/이전 페이즈와 정합**하는가(범위 이탈·회귀·중복·전략 위반 없음).
-- **HANDOFF·lessons·결정 로그가 갱신**됐는가(다음 세션 cold-start 대비).
-code correctness 결함이든 정합 결함이든 finding이 보이면 **구현 세션에 되돌린다**(Planner가 diff를 직접 고치거나 재리뷰로 때우면 역할 오염). ALL 정합일 때만 사용자에게 커밋 승인을 요청한다.
+- **HANDOFF·lessons·결정 로그가 갱신**됐는가(다음 세션 cold-start 대비) — **갱신 집행자는 아래 잔여 목록 게이트의 역할 3분할을 따른다**(수동=Implementer / 릴레이·오케스트레이터=Planner).
+- **잔여 목록 stale 차단 게이트(하드 — delta 2026-07-28, 실측. 이 절이 계약 정본)**: 이번 페이즈가 **닫은 항목이 다른 문서에는
+  여전히 "잔여/미완/OPEN"으로** 남아 다음 Planner가 끝난 일을 다시 집는 사고가 반복 관측됐다(한 세션 3회).
+  **커밋 승인을 요청하기 전에** 반드시 수행한다(Sync-Out까지 미루면 승인·커밋 후가 되어 늦다).
+  - **역할 3분할(모드 무관 — 중복·fail-open 방지)**:
+    ① **입력 정의 = 항상 Planner**: 문서별 **active-state anchor**(현재 상태를 권위 있게 주장하는 heading·item ID·표 행 —
+    ADR closure matrix 행, `## Current` 최상단 상태 블록, PHASES 현재 상태 요약 등)와 **각 anchor의 기대 최종 상태**,
+    `canonical residual string`, 닫힌 **item ID와 별칭/표기 변형 검색어**, **검색 root와 exclude**(생성물·vendor·archive 제외),
+    **집계 재계산 대상**(`DONE n / PARTIAL n / OPEN n`).
+    ② **집행(검색·문서 편집·증적 생성)**: **수동 모드 = Implementer**(프롬프트 [검증·DoD] 항목 6으로 전달) /
+    **릴레이·오케스트레이터 모드 = Planner**(Implementer는 SoT를 편집하지 않으며, implementer 프롬프트에는
+    **"잔여 목록 Sync-Out은 Planner 소유 · Implementer 편집 금지"** 경계 한 줄만 남긴다).
+    ③ **최종 판정 = 항상 Planner**(여기 §8.5에서). 집행자가 누구든 판정 소유자는 하나다.
+  - **hit 분류(결정론)**: 각 hit에 **분류 + 근거 + 대상 anchor**를 기록한다.
+    `active-state` → **canonical 문자열로 통일**(수정 필수) / `historical` → **원문 보존 + 분류 근거 기록이 기본**(수정 불필요) /
+    `무관` → 근거 필수.
+    - **historical에 날짜 명시 인접 정정을 "추가로" 붙여야 하는 객관적 조건**(아래 중 하나라도 해당할 때만):
+      (a) 그 문장이 **현재형으로 상태를 단정**한다("~는 잔여다/미완이다") · (b) **날짜·시점 라벨이 없어** 현재 판정으로 읽힌다 ·
+      (c) **active-state anchor와 같은 문서의 같은 섹션**에 있어 인접 오독 위험이 있다.
+      해당 없으면 **원문을 건드리지 않는다**(이력 훼손·churn 방지).
+  - **성공 조건**: 열거된 active-state anchor가 **전부** canonical 상태와 일치 · historical hit는 **근거가 기록**(+위 조건 해당 시
+    인접 정정 완료) · **미분류 hit 0** · 집계 수치 일치.
+    **미열거 active-state 후보 발견 · 설명 불가 hit · 집계 불일치 = `BLOCKED`**(구현 세션 또는 입력 정의로 되돌린다).
+finding이 보이면 **결함 종류와 모드에 따라 owner를 가른다**(무주공산·역할 오염 동시 차단):
+- **코드·구현 diff 결함 → 항상 구현 세션에 되돌린다.** Planner가 diff를 직접 고치거나 재리뷰로 때우면 역할 오염이다.
+- **상태 문서 정합 결함(위 잔여 목록 게이트 포함) → 집행 분담을 따른다**: **수동 모드 = Implementer에게 되돌림** / **릴레이·오케스트레이터 모드 = Planner가 직접 수정**(그 모드에서 SoT 편집은 원래 Planner 소유이므로 implementer-blind 위반이 아니다). 어느 쪽이든 **최종 판정은 Planner**.
+ALL 정합일 때만 사용자에게 커밋 승인을 요청한다.
 
 ## 9. 형상관리 규약
 현재 체크아웃된 작업 브랜치를 유지한다. 새 브랜치 생성, 브랜치 전환, 태그 생성은 사용자가 명시적으로 요청한 경우에만 한다.

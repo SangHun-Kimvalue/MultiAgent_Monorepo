@@ -21,8 +21,11 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23,<1.0",
-    "mypy>=1.10",
-    "ruff>=0.8",
+    # 게이트 도구는 실측-정상 버전으로 상한 pin — 무pin floor는 재설치만으로 게이트 판정을
+    # 뒤집는다(ruff 0.16 기본 rule-set 확장 — methodology/docs/LESSONS_LEARNED.md LESSON-M047).
+    # 상한 해제는 재실측을 동반한 의도적 커밋으로만.
+    "mypy>=2.1,<2.4",
+    "ruff>=0.15,<0.16",
     "types-PyYAML>=6.0",
 ]
 sdk = [

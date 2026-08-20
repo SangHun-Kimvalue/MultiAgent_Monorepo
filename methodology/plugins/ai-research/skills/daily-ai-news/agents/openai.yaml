@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily AI News"
+  short_description: "Verify recent AI news and produce an auditable NewsResult."
+  default_prompt: "Use $daily-ai-news to verify today's dated AI news and produce a NewsResult."

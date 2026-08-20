@@ -48,6 +48,22 @@ h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--muted); }
   margin-bottom: 1rem;
 }
 
+.kpi-strip.summary-stale {
+  opacity: 0.75;
+  outline: 1px dashed #d0a24c;
+}
+
+.inline-note {
+  color: #9fb4d0;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.filter-total-hint {
+  color: #9fb4d0;
+  font-size: 0.85rem;
+}
+
 #kpi-section { margin-bottom: 1.5rem; }
 .kpi-strip {
   display: grid;
@@ -83,9 +99,34 @@ h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--muted); }
   background: #261515;
 }
 .kpi-strip.needs-action .kpi-action strong { color: var(--error); }
+.kpi-cleanup strong { color: #9fb4d0; }
 .kpi-state-action {
   border-color: #3c2a2a;
 }
+/* 보관 범위 고지(T14 S4a D8) — "전체"와 상태 분포가 다른 이유를 화면에서 설명한다. */
+.kpi-scope-note {
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.kpi-scope-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  align-self: center;
+}
+.archived-dist {
+  margin: 0.5rem 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.archived-dist summary { cursor: pointer; }
+.archived-dist-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+.archived-dist-body .kpi-state { min-height: 34px; }
 
 #notifications-section { margin-bottom: 1.5rem; }
 
@@ -307,6 +348,9 @@ tr:hover td { background: #21262d; }
 .badge-error    { background: #4a1a1a; color: var(--error); }
 .badge-done     { background: #1a4a24; color: var(--done); }
 .badge-unknown  { background: #2a2a2a; color: var(--unknown); }
+/* 계약 어휘 밖 상태(T14 S4c-2 D2). `badge-<state>`를 쓰면 CSS에 없는 클래스라
+   배지가 투명해져 숫자만 뜬다 — 정의된 하나로 모아 **보이게** 한다. */
+.badge-unrecognized { background: #3d2e0a; color: #f0b849; border: 1px dashed #f0b849; }
 .badge-phase-ok       { background: #1a3a5c; color: #8cc9ff; }
 .badge-phase-stale    { background: #4a3210; color: #f0b849; }
 .badge-phase-missing  { background: #2a2a2a; color: #a6adb5; }

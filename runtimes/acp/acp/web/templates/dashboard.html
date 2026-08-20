@@ -4,11 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ title }}</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
   <script id="initial-sessions" type="application/json">{{ sessions | tojson }}</script>
+  <script id="initial-session-meta" type="application/json">{{ session_meta | tojson }}</script>
   <script id="initial-notifications" type="application/json">{{ notifications | tojson }}</script>
   <script>window.__ACP_POLL_INTERVAL__ = {{ poll_interval | tojson }};</script>
-  <script src="/static/dashboard.js" defer></script>
+  <!-- 자원 URL에 내용 해시를 붙인다: 낡은 JS + 새 HTML 조합이 화면에
+       `undefined`를 찍고 KPI를 창 파생 값으로 퇴행시켰다(T14 S4a 실측). -->
+  <script src="/static/dashboard.js?v={{ asset_version }}" defer></script>
   <script src="/static/vendor/alpine.min.js" defer></script>
 </head>
 <body x-data="dashboardStore()" x-init="init()" x-on:beforeunload.window="destroy()">
@@ -23,10 +26,23 @@
   </header>
 
   <main>
-    <section id="kpi-section" data-testid="kpi-strip" class="kpi-strip" :class="kpis.actionRequired > 0 ? 'needs-action' : 'healthy'">
+    <section
+      id="kpi-section"
+      data-testid="kpi-strip"
+      class="kpi-strip"
+      :class="summaryStale ? 'summary-stale' : (kpis.actionRequired > 0 ? 'needs-action' : 'healthy')"
+      :data-summary-stale="summaryStale">
       <div class="kpi-card kpi-summary">
         <span class="kpi-label">전체</span>
         <strong id="session-count" data-testid="kpi-total" x-text="kpis.total"></strong>
+        <!-- "전체"는 저장 전량이고 상태 분포는 보관을 뺀 집합이다(T14 S4a D7).
+             두 수가 다른 이유를 화면이 말하지 않으면 설명 없는 숫자 변화가 된다. -->
+        <span
+          x-show="hasArchivedScopeNote"
+          x-cloak
+          class="kpi-scope-note"
+          data-testid="kpi-archived-scope"
+          x-text="archivedScopeNote"></span>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">앱</span>
@@ -40,21 +56,90 @@
         <span class="kpi-label" x-text="kpis.healthLabel"></span>
         <strong data-testid="kpi-action-required" x-text="kpis.actionRequired"></strong>
       </div>
-      <template x-for="state in ['holding','stale','error','live','running','idle','done','unknown']" :key="state">
+      <!-- 정리 대상은 조치 대상과 **다른 축**이다. 한 숫자로 합치면 "확인 필요"의
+           대부분이 죽은 세션이 되어 배지가 무의미해진다(T14 S2 D4). -->
+      <div class="kpi-card kpi-cleanup">
+        <span class="kpi-label">비활성</span>
+        <strong data-testid="kpi-cleanup-required" x-text="kpis.inactiveTotal"></strong>
+      </div>
+      <!-- 상태 목록은 **서버가 말한 어휘·순서**에서 온다(T14 S4c-2 D1). 여기 배열을
+           다시 적으면 그것이 두 번째 사본이 되고, 서버와 어긋나는 순간 어휘 밖 상태가
+           화면에서 고지 없이 사라진다(실측). -->
+      <template x-for="state in displayedStates" :key="state">
         <div class="kpi-state" :class="isActionState(state) ? 'kpi-state-action' : ''" :data-testid="'kpi-state-' + state">
-          <span class="badge" :class="'badge-' + state" x-text="state"></span>
+          <span class="badge" :class="badgeClass(state)" x-text="state"></span>
           <strong x-text="kpis.counts[state]"></strong>
         </div>
       </template>
+      <!-- 범위 라벨은 서버가 말한 값에서 유도한다(하드코딩 금지). -->
+      <span
+        x-show="stateScopeLabel"
+        x-cloak
+        class="kpi-scope-label"
+        data-testid="kpi-state-scope"
+        x-text="stateScopeLabel"></span>
+      <!-- 어휘·분포·필터에 관한 사실을 화면이 직접 말한다. 침묵은 "없음"으로 읽힌다. -->
+      <span
+        x-show="stateVocabularyUnknown"
+        x-cloak
+        class="kpi-scope-label"
+        data-testid="kpi-state-vocabulary-unknown">상태 어휘 미상</span>
+      <span
+        x-show="unrecognizedStateNote"
+        x-cloak
+        class="kpi-scope-label"
+        data-testid="kpi-unrecognized-states"
+        x-text="unrecognizedStateNote"></span>
+      <span
+        x-show="hasDistributionNote"
+        x-cloak
+        class="kpi-scope-label"
+        data-testid="kpi-distribution-note"
+        x-text="distributionNote"></span>
+      <span
+        x-show="rejectedStateNote"
+        x-cloak
+        class="kpi-scope-label"
+        data-testid="kpi-rejected-states"
+        x-text="rejectedStateNote"></span>
     </section>
 
+    <!-- 보관 세션의 **마지막으로 알던** 상태. 집계에서 뺐다고 도달까지 막지 않는다
+         (S1 도달 가능성 규칙). 시각 정교화는 S4c. -->
+    <details
+      x-show="archivedLastKnownEntries.length > 0"
+      x-cloak
+      class="archived-dist"
+      data-testid="archived-last-known">
+      <summary x-text="'보관 ' + kpis.archivedTotal + '건의 마지막으로 알던 상태'"></summary>
+      <div class="archived-dist-body">
+        <template x-for="[state, count] in archivedLastKnownEntries" :key="state">
+          <span class="kpi-state" :data-testid="'archived-state-' + state">
+            <span class="badge" :class="badgeClass(state)" x-text="state"></span>
+            <strong x-text="count"></strong>
+          </span>
+        </template>
+      </div>
+    </details>
+
     <p x-show="fetchError" x-cloak class="inline-error" data-testid="snapshot-error" x-text="fetchError"></p>
+
+    <!-- 절단을 숨기지 않는다: 표에 없는 세션이 있다는 사실을 명시한다. -->
+    <p
+      x-show="hasVisibilityNote"
+      x-cloak
+      class="inline-note"
+      data-testid="truncation-note"
+      x-text="truncationNote"></p>
 
     <section id="filters-section" class="filter-band" data-testid="filter-band">
       <div class="filter-summary">
         <strong data-testid="visible-count" x-text="visibleCount"></strong>
         <span>/</span>
-        <span data-testid="visible-total" x-text="kpis.total"></span>
+        <span data-testid="visible-total" x-text="heldForQuery"></span>
+        <span x-show="sessionMeta.truncated" x-cloak class="filter-total-hint">
+          (전체 <span data-testid="visible-grand-total" x-text="sessionMeta.total"></span>)
+        </span>
       </div>
       <label class="toggle-control">
         <input
@@ -79,10 +164,13 @@
       <details class="filter-menu">
         <summary>상태</summary>
         <div class="filter-options">
-          <template x-for="state in ['holding','stale','error','live','running','idle','done','unknown']" :key="state">
-            <label>
+          <!-- 상태 목록은 하드코딩하지 않는다 — 서버 집계에 있는 상태를 그대로 노출해야
+               KPI가 세는 상태를 필터로 고를 수 있다. **선택됨**과 **질의에 적용됨**은
+               다른 사실이므로 라벨로 구분한다(T14 S4c-2 D5). -->
+          <template x-for="state in availableStates" :key="state">
+            <label :data-state-recognized="isRecognizedState(state)" :data-state-rejected="isRejectedState(state)">
               <input type="checkbox" :data-testid="'filter-state-' + state" :checked="selectedStates.includes(state)" @change="toggleFilter('selectedStates', state)">
-              <span x-text="state"></span>
+              <span x-text="stateFilterLabel(state)"></span>
             </label>
           </template>
         </div>
@@ -194,7 +282,9 @@
     </section>
 
     <section id="sessions-section">
-      <h2>세션 현황 <span x-text="'(' + visibleCount + '/' + kpis.total + ')'"></span></h2>
+      <!-- 분모는 서버가 보낸 창 크기가 아니라 **실제 보유 행 수**다. SSE로 창 밖
+           세션이 들어오면 둘이 어긋나므로, 화면에 있는 것과 같은 수를 쓴다. -->
+      <h2>세션 현황 <span x-text="'(' + visibleCount + '/' + heldForQuery + ')'"></span></h2>
       <table id="sessions-table" data-testid="sessions-table">
         <thead>
           <tr>
@@ -242,8 +332,8 @@
                 <td x-text="s.owner_session || '-'"></td>
                 <td class="mono small last-event" x-text="s.last_event || '-'"></td>
                 <td class="mono small" x-text="s.last_activity || '-'"></td>
-                <td class="running-cmd" :title="s.running_cmd || ''" x-text="shortText(s.running_cmd)"></td>
-                <td class="mono small" x-text="s.running_pid || '-'"></td>
+                <td class="running-cmd" :title="executionCmdTitle(s)" x-text="executionCmdText(s)"></td>
+                <td class="mono small" x-text="executionPidText(s)"></td>
                 <td class="mono small" x-text="shortText(s.updated_at, 19)"></td>
               </tr>
             </template>

@@ -45,9 +45,20 @@
 - reviewer: `<도구/CLI version/모델 계열>` (예: `claude / 2.x / Anthropic`)
 - 기본 매핑: active executor가 Codex/OpenAI면 Claude CLI, Claude/Anthropic이면 Codex CLI. 같은 계열 서브에이전트는 자동 대체가 아니라 최후의 `same-lineage` 열화 모드다.
 - reviewer argv shape: `<긴 diff 본문이 아닌 review artifact 경로만 받는 argv 배열>`
+- Claude가 독립 Reviewer leg이면 공식 Claude Code CLI만 사용하고 기본 argv에 `--model opus`를
+  명시한다. L0 리뷰 작업은 사람이 명시적으로 `--model sonnet`을 선택하며, L1/L2·등급 누락·모호는 Opus다.
+- stdout silence만으로 종료·`BLOCKED`·강제 종료를 판정하지 않는다. terminal process 상태 또는
+  전체 wall timeout만 종료 근거로 쓰고, `stream-json`은 선택적 관측 수단으로만 취급한다.
+- 기본 L1/L2 run의 `--timeout 900`과 사람이 명시한 L0 run의 `--timeout 300`은 reviewer 전용이
+  아니라 그 run의 모든 leg 각각에 적용되는 전역 per-leg 값이다. 상세 정본은
+  `methodology/docs/EXECUTION_ADAPTER_CONTRACT.md` §3.3이다.
 - review artifact / raw output: `<repo 내부 evidence 경로>` / `<raw stdout·stderr 경로>`
 - verdict 계약: `PASS | CHANGES_REQUESTED | BLOCKED` enum + process exit code를 별도 기록. prose만으로 PASS를 재해석하지 않는다.
-- 증거 형식: 스킬 `assets/review-verdict.schema.json` 필수 필드와 review 시각(UTC), review base SHA/reviewed paths를 기록한다.
+- 증거 형식: 스킬 `assets/review-verdict.schema.json`(**2.0**) 필수 필드와 review 시각(UTC),
+  review base SHA/reviewed paths를 기록한다. 2.0 은 `slice_id` · `work_grade` · `budget_limit` ·
+  `rounds_consumed` 를 포함하며, `budget_limit` 은 `work_grade` 에서 파생된다(L0 2 / L1 3 / L2 4).
+- 예산 preflight: 독립 Reviewer 호출은 `scripts/review_budget_preflight.py` 를 통과한다. 축은 `--gate output`(구현 diff, 기본) / `--gate input`(문서·계획·프롬프트).
+  라운드 SoT 는 **phase 진행 문서의 단일 `review-budget` 블록**이며 별도 상태 파일을 만들지 않는다.
 - 폴백: `cross-lineage CLI → cross-lineage session → same-lineage independent context(degraded)`. 대체·열화는 완료 보고에 명시하며 리뷰를 생략하지 않는다.
 
 ## 코드 컨벤션 (프로젝트 언어/스택)

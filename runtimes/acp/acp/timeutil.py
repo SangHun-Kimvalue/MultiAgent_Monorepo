@@ -15,7 +15,10 @@ def ms_to_dt(ms: int | float | None) -> datetime | None:
         return None
     try:
         return datetime.fromtimestamp(int(ms) / 1000, tz=timezone.utc)
-    except (TypeError, ValueError, OSError):
+    except (TypeError, ValueError, OSError, OverflowError):
+        # `Infinity`(JSON이 기본 허용하는 비표준 값)는 `int()`에서 OverflowError를 낸다.
+        # 잡지 않으면 예외가 호출자까지 올라가 **그 레코드가 통째로 탈락**했다 —
+        # 시각 하나를 몰라서 세션 자체를 잃는 것은 버린 사실이 된다(LESSON-004).
         return None
 
 

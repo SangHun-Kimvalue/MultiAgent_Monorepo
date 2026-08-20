@@ -1,0 +1,41 @@
+[
+  {
+    "chatTitle": null,
+    "command": "python -m acp web",
+    "conversationId": "aaa00000-0001-0001-0001-000000000001",
+    "cwd": "C:\\Users\\shkim\\Desktop\\Todo\\AgentControlPlane",
+    "id": "item-001",
+    "itemId": "item-001",
+    "osPid": 12345,
+    "processId": "proc-001",
+    "startedAtMs": 1780000000000,
+    "turnId": "turn-001",
+    "updatedAtMs": 1780000010000
+  },
+  {
+    "chatTitle": null,
+    "command": "ssh pi@172.30.0.166 'ls'",
+    "conversationId": "bbb00000-0002-0002-0002-000000000002",
+    "cwd": "C:\\Users\\shkim\\Desktop\\Todo\\ZeroTokenRoundtable",
+    "id": "item-002",
+    "itemId": "item-002",
+    "osPid": 99999,
+    "processId": "proc-002",
+    "startedAtMs": 1779990000000,
+    "turnId": "turn-002",
+    "updatedAtMs": 1779990030000
+  },
+  {
+    "chatTitle": null,
+    "command": "python -m acp web --fake",
+    "conversationId": "ddd11111-0004-0004-0004-000000000004",
+    "cwd": "C:\\Users\\shkim\\Desktop\\Todo\\AgentControlPlane",
+    "id": "item-004",
+    "itemId": "item-004",
+    "osPid": 55555,
+    "processId": "proc-004",
+    "startedAtMs": 1780000050000,
+    "turnId": "turn-004",
+    "updatedAtMs": 1780000055000
+  }
+]

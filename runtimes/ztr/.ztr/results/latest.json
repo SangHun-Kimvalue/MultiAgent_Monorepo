@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-04-13T13:55:41.702494",
+  "type": "session_complete",
+  "task": "test",
+  "target_file": "",
+  "verdict": "error",
+  "rounds": 0,
+  "elapsed_ms": 0.0,
+  "error": "Writer 에이전트 없음"
+}

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#67df70",
+                        "on-tertiary-fixed-variant": "#005317",
+                        "surface-tint": "#a2c9ff",
+                        "surface-variant": "#31353c",
+                        "on-secondary-fixed-variant": "#5a21ab",
+                        "surface-container-high": "#262a31",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#2d3137",
+                        "secondary-fixed": "#ecdcff",
+                        "tertiary-fixed": "#83fc89",
+                        "on-tertiary-fixed": "#002105",
+                        "error-container": "#93000a",
+                        "outline": "#8b919d",
+                        "surface-container-lowest": "#0a0e14",
+                        "outline-variant": "#414752",
+                        "inverse-surface": "#dfe2eb",
+                        "background": "#0d0d0d", /* Monolith Obsidian Deep */
+                        "secondary-container": "#5a21ab",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-surface": "#dfe2eb",
+                        "primary-container": "#58a6ff",
+                        "on-error": "#690005",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-highest": "#31353c",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#d5bbff",
+                        "tertiary-fixed-dim": "#67df70",
+                        "tertiary-container": "#40ba51",
+                        "on-tertiary-container": "#004411",
+                        "secondary": "#d5bbff",
+                        "on-primary-container": "#003a6b",
+                        "inverse-primary": "#0060aa",
+                        "on-secondary-fixed": "#270058",
+                        "on-secondary-container": "#c6a5ff",
+                        "on-surface-variant": "#c0c7d4",
+                        "on-primary-fixed-variant": "#004882",
+                        "on-background": "#dfe2eb",
+                        "on-secondary": "#41008b",
+                        "on-tertiary": "#00390d",
+                        "on-primary-fixed": "#001c38",
+                        "on-primary": "#00315c",
+                        "primary": "#a2c9ff",
+                        "surface": "#0d0d0d",
+                        "surface-bright": "#1a1a1a",
+                        "surface-dim": "#0a0a0a",
+                        "surface-container": "#141414",
+                        "surface-container-low": "#111111"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"],
+                        "mono": ["JetBrains Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #000000;
+            color: #dfe2eb;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .fhd-viewport {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: flex;
+            margin: auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+        
+        @media (max-width: 1919px), (max-height: 1079px) {
+            .fhd-viewport {
+                transform: translate(-50%, -50%) scale(calc(min(100vw / 1920, 100vh / 1080)));
+            }
+        }
+    </style>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen">
+<div class="fhd-viewport bg-background text-on-surface">
+<!-- SideNavBar -->
+<aside class="w-[280px] bg-[#0a0a0a] flex flex-col shadow-[1px_0_0_0_rgba(255,255,255,0.05)] shrink-0 z-50">
+<div class="p-8 flex flex-col items-start">
+<div class="text-2xl font-black text-[#58a6ff] flex items-center gap-3">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">terminal</span>
+                Orchestrator
+            </div>
+<div class="text-xs font-mono tracking-[0.2em] text-[#dfe2eb]/40 mt-2 uppercase">v1.0.4 CLUSTER_STABLE</div>
+</div>
+<nav class="flex flex-col gap-1 p-6 h-full font-sans text-base tracking-wide">
+<a class="flex items-center gap-4 px-5 py-4 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-5 py-4 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span>Live Monitor</span>
+</a>
+<a class="flex items-center gap-4 px-5 py-4 text-[#58a6ff] bg-[#1c2026] rounded-lg font-medium transition-all border-l-4 border-[#58a6ff]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span>Agent Stats</span>
+</a>
+<a class="flex items-center gap-4 px-5 py-4 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined">difference</span>
+<span>Diff Viewer</span>
+</a>
+<a class="flex items-center gap-4 px-5 py-4 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto p-6 border-t border-white/5">
+<div class="flex items-center gap-4 bg-surface-container-low p-4 rounded-xl border border-white/5">
+<div class="w-10 h-10 rounded-lg bg-[#58a6ff]/10 flex items-center justify-center text-[#58a6ff]">
+<span class="material-symbols-outlined text-xl">precision_manufacturing</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-sm font-bold truncate">ZTR Admin Node</span>
+<span class="text-[11px] text-outline opacity-70">Superuser Auth</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-hidden bg-background relative">
+<!-- TopAppBar -->
+<header class="bg-[#0d0d0d]/80 backdrop-blur-md border-b border-white/5 h-20 flex justify-between items-center px-10 w-full sticky top-0 z-40">
+<div class="text-2xl font-bold tracking-tighter text-[#dfe2eb] flex items-center gap-3">
+                ZTR Dashboard <span class="text-outline-variant font-light px-2">/</span> <span class="text-primary font-medium">Agent Stats</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 px-4 py-2 rounded-lg bg-[#58a6ff]/10 text-[#58a6ff] text-[13px] font-bold tracking-widest uppercase border border-[#58a6ff]/20">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">sensors</span>
+                    Live Telemetry
+                </div>
+<div class="h-8 w-px bg-outline-variant/30"></div>
+<button class="material-symbols-outlined text-2xl text-on-surface-variant hover:text-on-surface transition-colors">notifications</button>
+<button class="material-symbols-outlined text-2xl text-on-surface-variant hover:text-on-surface transition-colors">account_circle</button>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="flex-1 p-10 space-y-8 flex flex-col overflow-hidden relative z-10">
+<!-- Hero Header Section -->
+<section class="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
+<div>
+<h1 class="text-5xl font-black tracking-tight text-on-surface mb-3 uppercase">Agent Intelligence Portal</h1>
+<p class="text-lg text-on-surface-variant max-w-4xl font-body leading-relaxed opacity-80">
+                        High-density performance analytics for multi-agent swarm deployments. Real-time telemetry across token consumption, inference latency, and circuit-breaker states.
+                    </p>
+</div>
+<div class="flex gap-4">
+<button class="bg-surface-container-high text-primary px-6 py-3 rounded-lg flex items-center gap-3 text-base font-semibold hover:bg-surface-container-highest transition-colors border border-outline-variant/20">
+<span class="material-symbols-outlined text-lg">download</span> Export Logs
+                    </button>
+<button class="bg-primary-container text-on-primary-fixed px-6 py-3 rounded-lg flex items-center gap-3 text-base font-bold hover:brightness-110 transition-all shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined text-lg">refresh</span> Re-sync Cluster
+                    </button>
+</div>
+</section>
+<!-- Agent Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
+<!-- Gemini Pro -->
+<div class="bg-surface-container-low p-6 rounded-xl border border-white/5 flex flex-col shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-2xl text-primary" style="font-variation-settings: 'FILL' 1;">google</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">gemini-pro</h3>
+<span class="px-2 py-0.5 rounded-[4px] bg-tertiary/20 text-tertiary text-[10px] font-black tracking-wider">HEALTHY</span>
+</div>
+</div>
+<span class="text-[10px] font-mono text-outline uppercase font-bold text-right opacity-50">LVM-1</span>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Calls</div><div class="text-2xl font-mono text-on-surface">142</div></div>
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Latency</div><div class="text-2xl font-mono text-on-surface">1.24s</div></div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-black uppercase tracking-widest"><span class="text-outline">Success</span><span class="text-primary">95.2%</span></div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-primary w-[95.2%]"></div></div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-white/5">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[10px] font-mono text-tertiary font-black px-2 py-0.5 bg-tertiary/10 rounded">CLOSED</span>
+</div>
+</div>
+</div>
+<!-- Claude Primary -->
+<div class="bg-surface-container-low p-6 rounded-xl border border-white/5 flex flex-col shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center border border-secondary/20">
+<span class="material-symbols-outlined text-2xl text-secondary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">claude-primary</h3>
+<span class="px-2 py-0.5 rounded-[4px] bg-tertiary/20 text-tertiary text-[10px] font-black tracking-wider">HEALTHY</span>
+</div>
+</div>
+<span class="text-[10px] font-mono text-outline uppercase font-bold text-right opacity-50">ANTH-3</span>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Calls</div><div class="text-2xl font-mono text-on-surface">89</div></div>
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Latency</div><div class="text-2xl font-mono text-on-surface">2.84s</div></div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-black uppercase tracking-widest"><span class="text-outline">Success</span><span class="text-secondary">98.9%</span></div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-secondary w-[98.9%]"></div></div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-white/5">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[10px] font-mono text-tertiary font-black px-2 py-0.5 bg-tertiary/10 rounded">CLOSED</span>
+</div>
+</div>
+</div>
+<!-- Ollama Local -->
+<div class="bg-surface-container-low p-6 rounded-xl border border-error/30 flex flex-col shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-error/10 flex items-center justify-center border border-error/20">
+<span class="material-symbols-outlined text-2xl text-error" style="font-variation-settings: 'FILL' 1;">memory</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">ollama-local</h3>
+<span class="px-2 py-0.5 rounded-[4px] bg-error/20 text-error text-[10px] font-black tracking-wider">DEGRADED</span>
+</div>
+</div>
+<span class="text-[10px] font-mono text-outline uppercase font-bold text-right opacity-50">LOCAL</span>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Calls</div><div class="text-2xl font-mono text-on-surface">512</div></div>
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Latency</div><div class="text-2xl font-mono text-on-surface">0.64s</div></div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-black uppercase tracking-widest"><span class="text-outline">Success</span><span class="text-error">82.4%</span></div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-error w-[82.4%]"></div></div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-white/5">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[10px] font-mono text-error font-black px-2 py-0.5 bg-error/20 rounded">OPEN</span>
+</div>
+</div>
+</div>
+<!-- Nitpicker Prefilter -->
+<div class="bg-surface-container-low p-6 rounded-xl border border-white/5 flex flex-col shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-tertiary/10 flex items-center justify-center border border-tertiary/20">
+<span class="material-symbols-outlined text-2xl text-tertiary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">nitpicker-prefilter</h3>
+<span class="px-2 py-0.5 rounded-[4px] bg-tertiary/20 text-tertiary text-[10px] font-black tracking-wider">HEALTHY</span>
+</div>
+</div>
+<span class="text-[10px] font-mono text-outline uppercase font-bold text-right opacity-50">INT-V2</span>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Calls</div><div class="text-2xl font-mono text-on-surface">2,104</div></div>
+<div><div class="text-[10px] text-outline uppercase font-black tracking-widest mb-1">Latency</div><div class="text-2xl font-mono text-on-surface">0.11s</div></div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-black uppercase tracking-widest"><span class="text-outline">Success</span><span class="text-tertiary">99.8%</span></div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-tertiary w-[99.8%]"></div></div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-white/5">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[10px] font-mono text-tertiary font-black px-2 py-0.5 bg-tertiary/10 rounded">CLOSED</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Analytics Grid -->
+<div class="grid grid-cols-12 gap-8 flex-1 min-h-0">
+<!-- Latency Chart Column -->
+<div class="col-span-4 flex flex-col gap-8">
+<div class="bg-surface-container-low rounded-2xl p-8 border border-white/5 shadow-xl flex-1 flex flex-col">
+<div class="flex justify-between items-center mb-8">
+<h2 class="text-xl font-black text-on-surface tracking-tight uppercase">Latency Comparison</h2>
+<span class="material-symbols-outlined text-outline">query_stats</span>
+</div>
+<div class="space-y-8 flex-1 justify-center flex flex-col">
+<div class="space-y-3">
+<div class="flex justify-between text-xs font-mono uppercase tracking-widest text-outline"><span>gemini-pro</span><span>1,247ms</span></div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-primary" style="width: 44%"></div></div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-xs font-mono uppercase tracking-widest text-outline"><span>claude-primary</span><span>2,843ms</span></div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-secondary" style="width: 100%"></div></div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-xs font-mono uppercase tracking-widest text-outline"><span>ollama-local</span><span>640ms</span></div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-error" style="width: 22%"></div></div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-xs font-mono uppercase tracking-widest text-outline"><span>nitpicker-v2</span><span>110ms</span></div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-tertiary" style="width: 4%"></div></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Tables Column -->
+<div class="col-span-8 flex flex-col gap-6 min-h-0">
+<!-- Error Table -->
+<section class="bg-surface-container-low rounded-2xl overflow-hidden border border-white/5 flex flex-col h-[400px]">
+<div class="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+<h2 class="text-lg font-black uppercase tracking-widest">Terminal State Audit</h2>
+<div class="flex bg-black p-1 rounded-md text-[10px] font-black uppercase">
+<button class="px-3 py-1 bg-primary text-on-primary rounded">Last 24h</button>
+<button class="px-3 py-1 text-outline">Live</button>
+</div>
+</div>
+<div class="overflow-y-auto flex-1">
+<table class="w-full text-left">
+<thead class="sticky top-0 bg-surface-container-low z-10 border-b border-white/10">
+<tr class="text-[10px] font-black text-outline uppercase tracking-widest">
+<th class="px-6 py-4">Agent</th>
+<th class="px-6 py-4 text-center">Timeout</th>
+<th class="px-6 py-4 text-center">Rate Limit</th>
+<th class="px-6 py-4 text-center">Parse Error</th>
+<th class="px-6 py-4 text-center">Context Limit</th>
+<th class="px-6 py-4 text-right">Other</th>
+</tr>
+</thead>
+<tbody class="text-sm font-mono divide-y divide-white/5">
+<tr>
+<td class="px-6 py-5 font-bold">gemini-pro</td>
+<td class="px-6 py-5 text-center text-outline">12</td>
+<td class="px-6 py-5 text-center text-error font-bold">42</td>
+<td class="px-6 py-5 text-center text-outline">3</td>
+<td class="px-6 py-5 text-center text-outline">9</td>
+<td class="px-6 py-5 text-right text-outline">0</td>
+</tr>
+<tr>
+<td class="px-6 py-5 font-bold">claude-primary</td>
+<td class="px-6 py-5 text-center text-error font-bold">24</td>
+<td class="px-6 py-5 text-center text-outline">2</td>
+<td class="px-6 py-5 text-center text-outline">1</td>
+<td class="px-6 py-5 text-center text-outline">4</td>
+<td class="px-6 py-5 text-right text-outline">0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- CircuitBreaker State History -->
+<section class="bg-surface-container-low rounded-2xl border border-white/5 p-8 flex flex-col flex-1">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-lg font-black uppercase tracking-widest">CircuitBreaker State History</h2>
+<span class="text-[10px] font-mono text-outline uppercase">Active Sessions: 04</span>
+</div>
+<div class="flex-1 space-y-6">
+<!-- Timeline Row 1 -->
+<div class="flex items-center gap-6">
+<div class="w-32 text-xs font-mono font-bold text-outline uppercase truncate">gemini-pro</div>
+<div class="flex-1 flex gap-1">
+<div class="h-4 flex-1 bg-tertiary/60 rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary/60 rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary/60 rounded-sm"></div>
+<div class="h-4 flex-1 bg-error/80 rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary/60 rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary/60 rounded-sm"></div>
+<div class="h-4 flex-[2] bg-tertiary rounded-sm shadow-[0_0_8px_rgba(103,223,112,0.4)]"></div>
+</div>
+</div>
+<!-- Timeline Row 2 -->
+<div class="flex items-center gap-6">
+<div class="w-32 text-xs font-mono font-bold text-outline uppercase truncate">ollama-local</div>
+<div class="flex-1 flex gap-1">
+<div class="h-4 flex-1 bg-tertiary/40 rounded-sm"></div>
+<div class="h-4 flex-1 bg-error/40 rounded-sm"></div>
+<div class="h-4 flex-1 bg-error/60 rounded-sm"></div>
+<div class="h-4 flex-1 bg-error/80 rounded-sm"></div>
+<div class="h-4 flex-[2] bg-error rounded-sm shadow-[0_0_8px_rgba(255,180,171,0.4)]"></div>
+</div>
+</div>
+<!-- Timeline Row 3 -->
+<div class="flex items-center gap-6">
+<div class="w-32 text-xs font-mono font-bold text-outline uppercase truncate">nitpicker-pref</div>
+<div class="flex-1 flex gap-1">
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+<div class="h-4 flex-1 bg-tertiary rounded-sm"></div>
+</div>
+</div>
+</div>
+<div class="mt-4 flex justify-end gap-6 text-[10px] font-black uppercase tracking-tighter text-outline/50">
+<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-tertiary"></div> CLOSED (Normal)</div>
+<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-error"></div> OPEN (Fault)</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Floating Quick Action -->
+<button class="absolute bottom-12 right-12 w-20 h-20 bg-primary-container text-on-primary-fixed rounded-2xl shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all group border border-white/20">
+<span class="material-symbols-outlined text-4xl group-hover:rotate-90 transition-transform">bolt</span>
+</button>
+</main>
+</div>
+</body></html>

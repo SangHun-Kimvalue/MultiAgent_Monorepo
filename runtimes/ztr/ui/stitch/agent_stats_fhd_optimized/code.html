@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#67df70",
+                        "on-tertiary-fixed-variant": "#005317",
+                        "surface-tint": "#a2c9ff",
+                        "surface-variant": "#31353c",
+                        "on-secondary-fixed-variant": "#5a21ab",
+                        "surface-container-high": "#262a31",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#2d3137",
+                        "secondary-fixed": "#ecdcff",
+                        "tertiary-fixed": "#83fc89",
+                        "on-tertiary-fixed": "#002105",
+                        "error-container": "#93000a",
+                        "outline": "#8b919d",
+                        "surface-container-lowest": "#0a0e14",
+                        "outline-variant": "#414752",
+                        "inverse-surface": "#dfe2eb",
+                        "background": "#10141a",
+                        "secondary-container": "#5a21ab",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-surface": "#dfe2eb",
+                        "primary-container": "#58a6ff",
+                        "on-error": "#690005",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-highest": "#31353c",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#d5bbff",
+                        "tertiary-fixed-dim": "#67df70",
+                        "tertiary-container": "#40ba51",
+                        "on-tertiary-container": "#004411",
+                        "secondary": "#d5bbff",
+                        "on-primary-container": "#003a6b",
+                        "inverse-primary": "#0060aa",
+                        "on-secondary-fixed": "#270058",
+                        "on-secondary-container": "#c6a5ff",
+                        "on-surface-variant": "#c0c7d4",
+                        "on-primary-fixed-variant": "#004882",
+                        "on-background": "#dfe2eb",
+                        "on-secondary": "#41008b",
+                        "on-tertiary": "#00390d",
+                        "on-primary-fixed": "#001c38",
+                        "on-primary": "#00315c",
+                        "primary": "#a2c9ff",
+                        "surface": "#10141a",
+                        "surface-bright": "#353940",
+                        "surface-dim": "#10141a",
+                        "surface-container": "#1c2026",
+                        "surface-container-low": "#181c22"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"],
+                        "mono": ["JetBrains Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #10141a;
+            color: #dfe2eb;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Lock viewport to 16:9 */
+        }
+        /* Strict 16:9 aspect ratio container for 1920x1080 design */
+        .fhd-viewport {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: flex;
+            margin: auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* Scale handling for non-1080p screens */
+            transform-origin: center center;
+        }
+        
+        @media (max-width: 1919px), (max-height: 1079px) {
+            .fhd-viewport {
+                transform: translate(-50%, -50%) scale(calc(min(100vw / 1920, 100vh / 1080)));
+            }
+        }
+
+        .agent-pulse {
+            position: relative;
+        }
+        .agent-pulse::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4);
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(88, 166, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0); }
+        }
+    </style>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen">
+<div class="fhd-viewport bg-background text-on-surface">
+<!-- SideNavBar -->
+<aside class="w-[280px] bg-[#181c22] flex flex-col shadow-2xl shadow-black/50 shrink-0 z-50">
+<div class="p-8 flex flex-col items-start">
+<div class="text-2xl font-black text-[#58a6ff] flex items-center gap-3">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">terminal</span>
+                Orchestrator
+            </div>
+<div class="text-xs font-mono tracking-[0.2em] text-[#dfe2eb]/40 mt-2 uppercase">v1.0.4 CLUSTER_STABLE</div>
+</div>
+<nav class="flex flex-col gap-2 p-6 h-full font-sans text-base tracking-wide">
+<a class="flex items-center gap-4 px-5 py-4 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-5 py-4 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span>Live Monitor</span>
+</a>
+<a class="flex items-center gap-4 px-5 py-4 text-[#58a6ff] bg-[#262a31] rounded-lg font-medium translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span>Agent Stats</span>
+</a>
+<a class="flex items-center gap-4 px-5 py-4 text-[#dfe2eb]/60 hover:text-[#dfe2eb] hover:bg-[#1c2026] transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto p-6 border-t border-outline-variant/10">
+<div class="flex items-center gap-4 bg-surface-container-low p-4 rounded-xl">
+<div class="w-10 h-10 rounded-lg bg-[#58a6ff]/20 flex items-center justify-center text-[#58a6ff]">
+<span class="material-symbols-outlined text-xl">precision_manufacturing</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-sm font-bold truncate">ZTR Admin Node</span>
+<span class="text-[11px] text-outline opacity-70">Superuser Auth</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-hidden bg-background relative">
+<!-- Background Radial Glow -->
+<div class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-10">
+<div class="absolute -top-[10%] -left-[5%] w-[50%] h-[50%] rounded-full bg-primary-container blur-[150px]"></div>
+</div>
+<!-- TopAppBar -->
+<header class="bg-[#10141a]/80 backdrop-blur-md shadow-[0_1px_0_0_rgba(65,71,82,0.2)] h-20 flex justify-between items-center px-10 w-full sticky top-0 z-40">
+<div class="text-2xl font-bold tracking-tighter text-[#dfe2eb] flex items-center gap-3">
+                ZTR Dashboard <span class="text-outline-variant font-light px-2">/</span> <span class="text-primary font-medium">Agent Stats</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 px-4 py-2 rounded-lg bg-[#58a6ff]/10 text-[#58a6ff] text-[13px] font-bold tracking-widest uppercase border border-[#58a6ff]/20">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">sensors</span>
+                    Live Telemetry
+                </div>
+<div class="h-8 w-px bg-outline-variant/30"></div>
+<button class="material-symbols-outlined text-2xl text-on-surface-variant hover:text-on-surface transition-colors">notifications</button>
+<button class="material-symbols-outlined text-2xl text-on-surface-variant hover:text-on-surface transition-colors">account_circle</button>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="flex-1 p-10 space-y-8 flex flex-col overflow-hidden relative z-10">
+<!-- Hero Header Section -->
+<section class="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
+<div>
+<h1 class="text-5xl font-black tracking-tight text-on-surface mb-3">Agent Intelligence Portal</h1>
+<p class="text-lg text-on-surface-variant max-w-4xl font-body leading-relaxed opacity-80">
+                        High-density performance analytics for multi-agent swarm deployments. Real-time telemetry across token consumption, inference latency, and circuit-breaker states for enterprise clusters.
+                    </p>
+</div>
+<div class="flex gap-4">
+<button class="bg-surface-container-high text-primary px-6 py-3 rounded-lg flex items-center gap-3 text-base font-semibold hover:bg-surface-container-highest transition-colors border border-outline-variant/20">
+<span class="material-symbols-outlined text-lg">download</span> Export Logs
+                    </button>
+<button class="bg-primary-container text-on-primary-fixed px-6 py-3 rounded-lg flex items-center gap-3 text-base font-bold hover:brightness-110 transition-all shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined text-lg">refresh</span> Re-sync Cluster
+                    </button>
+</div>
+</section>
+<!-- Agent Grid (Bento Layout) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
+<!-- Gemini Pro Card -->
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-col border-b-4 border-[#58a6ff] shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-[#58a6ff]/10 flex items-center justify-center border border-[#58a6ff]/20">
+<span class="material-symbols-outlined text-2xl text-[#58a6ff]" style="font-variation-settings: 'FILL' 1;">google</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">gemini-pro</h3>
+<div class="flex gap-1.5">
+<span class="px-2 py-0.5 rounded-[4px] bg-on-tertiary-container text-tertiary text-[10px] font-black tracking-wider uppercase">HEALTHY</span>
+<span class="px-2 py-0.5 rounded-[4px] bg-surface-container-highest text-outline text-[10px] font-black tracking-wider uppercase">v1.5</span>
+</div>
+</div>
+</div>
+<div class="text-[11px] font-mono text-outline-variant uppercase font-bold text-right">Writer<br/>Critic</div>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-6">
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Calls</div>
+<div class="text-3xl font-mono text-on-surface font-light">142</div>
+</div>
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Latency</div>
+<div class="text-3xl font-mono text-on-surface font-light">1.24s</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-black uppercase tracking-widest">
+<span class="text-outline">Success Rate</span>
+<span class="text-[#58a6ff]">95.2%</span>
+</div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-[#58a6ff] w-[95.2%]"></div>
+</div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-outline-variant/10">
+<span class="text-[11px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[11px] font-mono text-tertiary font-black px-2 py-0.5 bg-tertiary/10 rounded">CLOSED</span>
+</div>
+</div>
+</div>
+<!-- Claude 3 Card -->
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-col border-b-4 border-[#a371f7] shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-[#a371f7]/10 flex items-center justify-center border border-[#a371f7]/20">
+<span class="material-symbols-outlined text-2xl text-[#a371f7]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">claude-3-opus</h3>
+<div class="flex gap-1.5">
+<span class="px-2 py-0.5 rounded-[4px] bg-on-tertiary-container text-tertiary text-[10px] font-black tracking-wider uppercase">HEALTHY</span>
+<span class="px-2 py-0.5 rounded-[4px] bg-surface-container-highest text-outline text-[10px] font-black tracking-wider uppercase">Opus</span>
+</div>
+</div>
+</div>
+<div class="text-[11px] font-mono text-outline-variant uppercase font-bold text-right">Arch<br/>Lead</div>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-6">
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Calls</div>
+<div class="text-3xl font-mono text-on-surface font-light">89</div>
+</div>
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Latency</div>
+<div class="text-3xl font-mono text-on-surface font-light">2.84s</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-black uppercase tracking-widest">
+<span class="text-outline">Success Rate</span>
+<span class="text-[#a371f7]">98.9%</span>
+</div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-[#a371f7] w-[98.9%]"></div>
+</div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-outline-variant/10">
+<span class="text-[11px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[11px] font-mono text-tertiary font-black px-2 py-0.5 bg-tertiary/10 rounded">CLOSED</span>
+</div>
+</div>
+</div>
+<!-- Ollama Local Card -->
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-col border-b-4 border-[#3fb950] shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-[#3fb950]/10 flex items-center justify-center border border-[#3fb950]/20">
+<span class="material-symbols-outlined text-2xl text-[#3fb950]" style="font-variation-settings: 'FILL' 1;">memory</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">llama-3-8b</h3>
+<div class="flex gap-1.5">
+<span class="px-2 py-0.5 rounded-[4px] bg-error-container text-error text-[10px] font-black tracking-wider uppercase">STRESSED</span>
+<span class="px-2 py-0.5 rounded-[4px] bg-surface-container-highest text-outline text-[10px] font-black tracking-wider uppercase">LOCAL</span>
+</div>
+</div>
+</div>
+<div class="text-[11px] font-mono text-outline-variant uppercase font-bold text-right">Summ<br/>Parser</div>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-6">
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Calls</div>
+<div class="text-3xl font-mono text-on-surface font-light">512</div>
+</div>
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Latency</div>
+<div class="text-3xl font-mono text-on-surface font-light">0.64s</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-black uppercase tracking-widest">
+<span class="text-outline">Success Rate</span>
+<span class="text-[#3fb950]">82.4%</span>
+</div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-[#3fb950] w-[82.4%]"></div>
+</div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-outline-variant/10">
+<span class="text-[11px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[11px] font-mono text-error font-black px-2 py-0.5 bg-error/10 rounded">OPENING</span>
+</div>
+</div>
+</div>
+<!-- Nitpicker Card -->
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-col border-b-4 border-[#d29922] shadow-xl">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-[#d29922]/10 flex items-center justify-center border border-[#d29922]/20">
+<span class="material-symbols-outlined text-2xl text-[#d29922]" style="font-variation-settings: 'FILL' 1;">rule</span>
+</div>
+<div>
+<h3 class="font-black text-on-surface text-lg leading-none mb-2">nitpicker-v2</h3>
+<div class="flex gap-1.5">
+<span class="px-2 py-0.5 rounded-[4px] bg-on-tertiary-container text-tertiary text-[10px] font-black tracking-wider uppercase">HEALTHY</span>
+<span class="px-2 py-0.5 rounded-[4px] bg-surface-container-highest text-outline text-[10px] font-black tracking-wider uppercase">INTERNAL</span>
+</div>
+</div>
+</div>
+<div class="text-[11px] font-mono text-outline-variant uppercase font-bold text-right">Linter<br/>Audit</div>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-6">
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Calls</div>
+<div class="text-3xl font-mono text-on-surface font-light">2,104</div>
+</div>
+<div>
+<div class="text-[11px] text-outline uppercase font-black tracking-[0.1em] mb-1">Latency</div>
+<div class="text-3xl font-mono text-on-surface font-light">0.11s</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-black uppercase tracking-widest">
+<span class="text-outline">Success Rate</span>
+<span class="text-[#d29922]">99.8%</span>
+</div>
+<div class="h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-[#d29922] w-[99.8%]"></div>
+</div>
+</div>
+<div class="pt-4 flex justify-between items-center border-t border-outline-variant/10">
+<span class="text-[11px] text-outline uppercase font-black tracking-widest">CircuitBreaker</span>
+<span class="text-[11px] font-mono text-tertiary font-black px-2 py-0.5 bg-tertiary/10 rounded">CLOSED</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Performance Comparison & Tables (Expanded for 1080p) -->
+<div class="grid grid-cols-12 gap-8 flex-1 min-h-0">
+<!-- Left: Analytics Column -->
+<div class="col-span-4 space-y-8 flex flex-col min-h-0">
+<!-- Latency Chart Container -->
+<div class="bg-surface-container-low rounded-2xl p-8 shadow-xl flex-1 flex flex-col">
+<div class="flex justify-between items-center mb-10">
+<div>
+<h2 class="text-xl font-black text-on-surface tracking-tight uppercase">Latency Comparison</h2>
+<p class="text-sm text-outline font-medium mt-1">Response profile (ms) - 60min window</p>
+</div>
+<button class="material-symbols-outlined text-outline hover:text-on-surface">open_in_full</button>
+</div>
+<div class="space-y-8 flex-1 justify-center flex flex-col">
+<!-- Bar 1 -->
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm font-mono">
+<span class="text-on-surface font-bold">gemini-pro</span>
+<span class="text-outline">1247ms</span>
+</div>
+<div class="h-4 w-full bg-surface-container rounded-md overflow-hidden">
+<div class="h-full bg-[#58a6ff]" style="width: 44%"></div>
+</div>
+</div>
+<!-- Bar 2 -->
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm font-mono">
+<span class="text-on-surface font-bold">claude-3-opus</span>
+<span class="text-outline">2841ms</span>
+</div>
+<div class="h-4 w-full bg-surface-container rounded-md overflow-hidden">
+<div class="h-full bg-[#a371f7]" style="width: 100%"></div>
+</div>
+</div>
+<!-- Bar 3 -->
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm font-mono">
+<span class="text-on-surface font-bold">llama-3-8b</span>
+<span class="text-outline">640ms</span>
+</div>
+<div class="h-4 w-full bg-surface-container rounded-md overflow-hidden">
+<div class="h-full bg-[#3fb950]" style="width: 22%"></div>
+</div>
+</div>
+<!-- Bar 4 -->
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm font-mono">
+<span class="text-on-surface font-bold">nitpicker-v2</span>
+<span class="text-outline">112ms</span>
+</div>
+<div class="h-4 w-full bg-surface-container rounded-md overflow-hidden">
+<div class="h-full bg-[#d29922]" style="width: 4%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Distribution Mini Card -->
+<div class="bg-surface-container-low rounded-2xl p-8 shadow-xl">
+<div class="flex items-center gap-6">
+<div class="relative w-32 h-32 flex items-center justify-center shrink-0">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-width="10"></circle>
+<circle class="text-[#58a6ff]" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-dasharray="351.8" stroke-dashoffset="17.6" stroke-linecap="round" stroke-width="10"></circle>
+</svg>
+<span class="absolute text-3xl font-mono font-black">95%</span>
+</div>
+<div class="space-y-3">
+<h3 class="text-sm font-black uppercase tracking-widest text-outline">Global Cluster Health</h3>
+<p class="text-on-surface font-medium">95.0% aggregate success rate across 4,204 transactions.</p>
+<div class="flex gap-2">
+<span class="text-[10px] font-black bg-[#58a6ff]/20 text-[#58a6ff] px-2 py-1 rounded">STABLE</span>
+<span class="text-[10px] font-black bg-tertiary/20 text-tertiary px-2 py-1 rounded">UPTIME 99.9%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Massive Breakdown Table -->
+<div class="col-span-8 flex flex-col min-h-0">
+<section class="bg-surface-container-low rounded-2xl overflow-hidden shadow-xl flex flex-col h-full border border-outline-variant/10">
+<div class="p-8 border-b border-outline-variant/10 flex justify-between items-center bg-[#1c2026]/30">
+<div>
+<h2 class="text-2xl font-black text-on-surface tracking-tight uppercase">Detailed Terminal State Audit</h2>
+<p class="text-base text-outline mt-1 font-medium">Breakdown of non-success states per agent instance (Latest Epoch)</p>
+</div>
+<div class="flex bg-surface-container p-1 rounded-lg">
+<button class="px-6 py-2 text-xs font-black bg-[#58a6ff] rounded-md text-on-primary-fixed shadow-md">LAST 24H</button>
+<button class="px-6 py-2 text-xs font-black text-outline hover:text-on-surface transition-colors">LAST 7D</button>
+<button class="px-6 py-2 text-xs font-black text-outline hover:text-on-surface transition-colors">LIFETIME</button>
+</div>
+</div>
+<div class="overflow-y-auto flex-1">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 z-20">
+<tr class="bg-surface-container-lowest/80 backdrop-blur-md">
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em] border-b border-outline-variant/20">Agent Signature</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em] text-center border-b border-outline-variant/20">Timeout</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em] text-center border-b border-outline-variant/20">Rate Limit</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em] text-center border-b border-outline-variant/20">Parse Error</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em] text-center border-b border-outline-variant/20">Context Limit</th>
+<th class="px-8 py-6 text-xs font-black text-outline uppercase tracking-[0.2em] text-right border-b border-outline-variant/20">System Action</th>
+</tr>
+</thead>
+<tbody class="text-base font-mono divide-y divide-outline-variant/10">
+<tr class="hover:bg-[#58a6ff]/5 transition-colors group">
+<td class="px-8 py-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-[#58a6ff] shadow-[0_0_8px_rgba(88,166,255,0.6)]"></div>
+<span class="text-on-surface font-bold text-lg">gemini-pro</span>
+</div>
+</td>
+<td class="px-8 py-8 text-center text-outline text-lg">12</td>
+<td class="px-8 py-8 text-center text-error font-black text-lg">42</td>
+<td class="px-8 py-8 text-center text-outline text-lg">3</td>
+<td class="px-8 py-8 text-center text-outline text-lg">0</td>
+<td class="px-8 py-8 text-right">
+<button class="bg-[#58a6ff]/10 text-[#58a6ff] px-4 py-2 rounded font-black text-xs uppercase tracking-widest hover:bg-[#58a6ff]/20 transition-all">Analyze Cluster</button>
+</td>
+</tr>
+<tr class="hover:bg-[#a371f7]/5 transition-colors group">
+<td class="px-8 py-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-[#a371f7] shadow-[0_0_8px_rgba(163,113,247,0.6)]"></div>
+<span class="text-on-surface font-bold text-lg">claude-3-opus</span>
+</div>
+</td>
+<td class="px-8 py-8 text-center text-error font-black text-lg">24</td>
+<td class="px-8 py-8 text-center text-outline text-lg">2</td>
+<td class="px-8 py-8 text-center text-outline text-lg">1</td>
+<td class="px-8 py-8 text-center text-outline text-lg">4</td>
+<td class="px-8 py-8 text-right">
+<button class="bg-[#58a6ff]/10 text-[#58a6ff] px-4 py-2 rounded font-black text-xs uppercase tracking-widest hover:bg-[#58a6ff]/20 transition-all">Analyze Cluster</button>
+</td>
+</tr>
+<tr class="hover:bg-[#3fb950]/5 transition-colors group">
+<td class="px-8 py-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-[#3fb950] shadow-[0_0_8px_rgba(63,185,80,0.6)]"></div>
+<span class="text-on-surface font-bold text-lg">llama-3-8b</span>
+</div>
+</td>
+<td class="px-8 py-8 text-center text-outline text-lg">5</td>
+<td class="px-8 py-8 text-center text-outline text-lg">0</td>
+<td class="px-8 py-8 text-center text-error font-black text-lg">89</td>
+<td class="px-8 py-8 text-center text-outline text-lg">12</td>
+<td class="px-8 py-8 text-right">
+<button class="bg-[#58a6ff]/10 text-[#58a6ff] px-4 py-2 rounded font-black text-xs uppercase tracking-widest hover:bg-[#58a6ff]/20 transition-all">Analyze Cluster</button>
+</td>
+</tr>
+<tr class="hover:bg-[#d29922]/5 transition-colors group">
+<td class="px-8 py-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-[#d29922] shadow-[0_0_8px_rgba(210,153,34,0.6)]"></div>
+<span class="text-on-surface font-bold text-lg">nitpicker-v2</span>
+</div>
+</td>
+<td class="px-8 py-8 text-center text-outline text-lg">0</td>
+<td class="px-8 py-8 text-center text-outline text-lg">1</td>
+<td class="px-8 py-8 text-center text-outline text-lg">2</td>
+<td class="px-8 py-8 text-center text-outline text-lg">0</td>
+<td class="px-8 py-8 text-right">
+<button class="bg-[#58a6ff]/10 text-[#58a6ff] px-4 py-2 rounded font-black text-xs uppercase tracking-widest hover:bg-[#58a6ff]/20 transition-all">Analyze Cluster</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Floating Quick Action (Corner) -->
+<button class="absolute bottom-12 right-12 w-20 h-20 bg-primary-container text-on-primary-fixed rounded-2xl shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all group border-2 border-white/10">
+<span class="material-symbols-outlined text-4xl group-hover:rotate-90 transition-transform">bolt</span>
+<div class="absolute right-full mr-6 bg-[#1c2026] border border-outline-variant/30 px-5 py-3 rounded-xl text-sm font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none translate-x-4 group-hover:translate-x-0 shadow-2xl">
+                Global System Diagnostic
+            </div>
+</button>
+</main>
+</div>
+</body></html>

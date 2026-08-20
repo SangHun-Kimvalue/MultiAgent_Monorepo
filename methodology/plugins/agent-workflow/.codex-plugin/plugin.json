@@ -1,6 +1,6 @@
 {
   "name": "agent-workflow",
-  "version": "1.2.3+codex.20260722020851",
+  "version": "1.2.4+codex.20260804234535",
   "description": "Role-based multi-agent workflow skills for discovery, phased handoff, cross-lineage implementation review plus Nitpicker hard gates, phase-cycle orchestration, ZRT commit closeout, and compaction resume with explicit reviewer provenance and raw evidence.",
   "author": {
     "name": "shkim",

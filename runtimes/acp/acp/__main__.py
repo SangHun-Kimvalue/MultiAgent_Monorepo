@@ -34,6 +34,9 @@ logging.basicConfig(
 logger = logging.getLogger("acp.main")
 
 
+# 종료 시 진행 중인 틱을 기다리는 한도. 넘기면 연결을 닫지 않고 나간다(T14 S6 감사 P1).
+_SHUTDOWN_WAIT_SECONDS = 15.0
+
 USAGE = (
     "사용법: python -m acp web [--fake] [--host HOST] [--port PORT] "
     "[--db-path PATH] [--events-log PATH] [--poll-interval SECONDS] "
@@ -41,7 +44,9 @@ USAGE = (
     "[--ztr-python PATH] [--ztr-runner PATH] [--ztr-cwd PATH] "
     "[--ztr-implementer-cmd CMD] [--ztr-reviewer-cmd CMD] "
     "[--ztr-mechanical-cmd CMD] [--ztr-test-cmd CMD] [--ztr-timeout SECONDS] "
-    "[--ztr-process-timeout SECONDS] [--ztr-output-dir PATH] [--no-toast]"
+    "[--ztr-process-timeout SECONDS] [--ztr-output-dir PATH] [--no-toast]\n"
+    "       python -m acp purge --app <name> [--yes] [--db-path PATH]"
+    "  (미리보기가 기본, --yes 없이는 삭제하지 않음)"
 )
 
 
@@ -74,6 +79,12 @@ async def _main(
         cfg.port = port
     if db_path is not None:
         cfg.db_path = db_path
+    elif use_fake:
+        # 합성 데이터가 실 DB를 오염시키지 않도록 **경로 자체를 분리**한다(T14 S3 D4).
+        # 과거 --fake 실행이 남긴 fake 행이 실데이터 총계에 섞여 있었다.
+        fake_db = Path(cfg.db_path).with_name("acp-fake.db")
+        cfg.db_path = str(fake_db)
+        logger.info("--fake 모드: 별도 DB 사용 %s", cfg.db_path)
     if events_log is not None:
         cfg.events_log = events_log
     if poll_interval is not None:
@@ -124,7 +135,12 @@ async def _main(
         logger.info("CodexCollector 등록: sessions=%s processes=%s", sessions_base, processes_path)
         claude_sessions = cfg.get_path("claude_sessions")
         cursor_workspace = cfg.get_path("cursor_workspace")
-        poller.register(ClaudeSessionCollector(claude_sessions))
+        poller.register(
+            ClaudeSessionCollector(
+                claude_sessions,
+                include_archived=cfg.include_archived,
+            )
+        )
         poller.register(CursorWorkspaceCollector(cursor_workspace))
         logger.info("ClaudeSessionCollector 등록: sessions=%s", claude_sessions)
         logger.info("CursorWorkspaceCollector 등록: workspace=%s", cursor_workspace)
@@ -141,7 +157,23 @@ async def _main(
     try:
         await server.serve()
     finally:
-        poller_task.cancel()
+        # **취소하지 않는다.** 수집·쓰기는 워커 스레드에서 돌고, 태스크를 취소해도
+        # 그 스레드는 멈추지 않는다 — 곧바로 연결을 닫으면 쓰는 중에 닫힌다.
+        poller.request_stop()
+        try:
+            await asyncio.wait_for(poller_task, timeout=_SHUTDOWN_WAIT_SECONDS)
+        except asyncio.TimeoutError:
+            # 워커가 아직 도는지 확인할 수 없으면 **닫지 않는다**. 프로세스가 끝나면
+            # OS가 회수한다 — 확인 못 한 상태에서 닫는 것보다 안전하다.
+            logger.warning(
+                "폴러가 %.0f초 안에 멈추지 않았다 — 연결을 닫지 않고 종료한다"
+                "(워커가 쓰는 중일 수 있다)",
+                _SHUTDOWN_WAIT_SECONDS,
+            )
+            return
+        except asyncio.CancelledError:
+            logger.warning("종료 대기가 취소됐다 — 연결을 닫지 않고 종료한다")
+            raise
         store.close()
 
 
@@ -189,6 +221,8 @@ def main() -> None:
             ztr_output_dir=_arg_value(args, "--ztr-output-dir"),
             no_toast="--no-toast" in args,
         ))
+    elif args[0] == "purge":
+        sys.exit(_run_purge(args[1:]))
     else:
         print(
             "알 수 없는 명령: "
@@ -196,6 +230,50 @@ def main() -> None:
             file=sys.stderr,
         )
         sys.exit(1)
+
+
+# 삭제가 **지속적 정리**를 뜻하지 않는다는 사실을 CLI가 말한다(T14 S5 D3). 수집기는
+# 시간 컷오프 없이 전량을 재스캔하므로, 원본 세션 파일이 남아 있으면 같은 행이 다음
+# 수집 주기에 다시 만들어진다. 그 사실을 숨기면 사용자는 하지 않은 정리를 했다고 믿는다.
+_PURGE_REGENERATION_NOTICE = (
+    "\n주의: 원본 세션 파일이 남아 있으면 다음 수집 주기에 같은 행이 다시 생성됩니다"
+    "(수집기는 시간 컷오프 없이 전량을 재스캔합니다)."
+)
+
+
+def _run_purge(args: list[str]) -> int:
+    """앱 행 일회성 정리(T14 S3 D4). **사용자 승인 없이는 삭제하지 않는다.**
+
+    안전 계약: ① 대상 미리보기 ② `app` 정확 일치로만 한정 ③ `--yes` 없이는 실행 금지
+    ④ 삭제 건수를 감사 이벤트로 기록.
+    """
+    app = _arg_value(args, "--app")
+    if not app:
+        print("purge: --app <name> 필요(예: --app fake)", file=sys.stderr)
+        return 2
+
+    cfg = AppConfig.load("config/paths.yaml")
+    db_path = _arg_value(args, "--db-path") or cfg.db_path
+    store = SessionStore(db_path, cfg.events_log)
+    try:
+        preview = store.preview_app_rows(app)
+        print(
+            f"대상: app='{app}' {preview['count']}행 "
+            f"(updated_at {preview['oldest']} ~ {preview['newest']}) · DB={db_path}"
+            + _PURGE_REGENERATION_NOTICE
+        )
+        if preview["count"] == 0:
+            print("삭제할 행이 없습니다.")
+            return 0
+        if "--yes" not in args:
+            # 비가역 작업이므로 명시적 승인 없이는 여기서 멈춘다.
+            print("미리보기만 수행했습니다. 실제 삭제하려면 --yes 를 붙이세요.")
+            return 0
+        deleted = store.purge_app_rows(app, confirmed=True)
+        print(f"삭제 완료: {deleted}행 (감사 이벤트 rows_purged 기록됨)")
+        return 0
+    finally:
+        store.close()
 
 
 def _wants_help(args: list[str]) -> bool:

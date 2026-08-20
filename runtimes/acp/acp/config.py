@@ -1,12 +1,15 @@
 """acp/config.py — 설정 로드 (paths.yaml + 런타임 파라미터)."""
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -38,6 +41,11 @@ class AppConfig:
     db_path: str = ".acp/acp.db"
     events_log: str = ".acp/events.jsonl"
     orch_events_dir: str = ""         # orchestrator 이벤트 폴링 디렉터리(빈 값=비활성)
+    # **deprecated(T14 S4a D6)**: 더 이상 저장 범위를 제어하지 않는다. 수집은 항상
+    # 보관 세션을 반환하고(플래그로 표시), 표시 범위는 API `archived` 파라미터가 정한다.
+    # 설정에 이 키가 있으면 값과 무관하게 기동 시 경고한다 — 조용한 no-op은 "제외되고
+    # 있다"고 믿는 사용자를 속이는 것이고, 그건 이 트랙이 고쳐 온 결함 그 자체다.
+    include_archived: bool = False
     paths_yaml: str = "config/paths.yaml"
     host: str = "127.0.0.1"
     port: int = 8900
@@ -76,4 +84,14 @@ class AppConfig:
                     notify_cooldown=notify.get("notify_cooldown", 3600.0),
                 )
             cfg.orch_events_dir = raw.get("orch_events_dir", "")
+            cfg.include_archived = bool(raw.get("include_archived", False))
+            if "include_archived" in raw:
+                # 값이 True든 False든 마찬가지로 무시된다. 오히려 기본값이자 대다수인
+                # False 사용자가 "제외되고 있다"고 오해하므로 **값과 무관하게** 알린다.
+                logger.warning(
+                    "설정 키 'include_archived'(=%s)는 더 이상 저장 범위를 제어하지 "
+                    "않는다(T14 S4a). 수집은 항상 보관 세션을 저장하며, 표시 범위는 "
+                    "API 파라미터 archived=include|exclude|only 로 정한다.",
+                    cfg.include_archived,
+                )
         return cfg

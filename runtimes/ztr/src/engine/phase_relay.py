@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import re
 import shlex
 import shutil
@@ -27,6 +28,12 @@ from src.engine.resume_chain import ResumeAttempt, ResumeCoordinator, ResumePoli
 from src.engine.static_review import collect_changed_paths
 
 _STDOUT_PREVIEW_CHARS = 4000
+
+
+def _require_positive_finite_timeout(timeout_s: float) -> None:
+    """child spawn 전에 relay timeout 수치 계약을 검증한다."""
+    if not math.isfinite(timeout_s) or timeout_s <= 0:
+        raise ValueError("timeout은 양의 유한수여야 합니다")
 
 
 @dataclass(frozen=True)
@@ -54,6 +61,7 @@ class RelayCommand:
     verdict_source: str = "exit_code"
     gating: bool = True
     cwd: str | None = None
+    timeout_s: float | None = None
 
     def __post_init__(self) -> None:
         if self.verdict_source not in ("exit_code", "stdout_token"):
@@ -61,6 +69,9 @@ class RelayCommand:
                 f"{self.name} verdict_source는 'exit_code'|'stdout_token'이어야 합니다: "
                 f"{self.verdict_source!r}"
             )
+        if self.timeout_s is not None:
+            _require_positive_finite_timeout(self.timeout_s)
+            object.__setattr__(self, "timeout_s", float(self.timeout_s))
 
     @classmethod
     def from_text(
@@ -70,6 +81,7 @@ class RelayCommand:
         value: str,
         verdict_source: str = "exit_code",
         gating: bool = True,
+        timeout_s: float | None = None,
     ) -> RelayCommand:
         """JSON array 또는 shell-like 문자열을 argv로 정규화한다."""
         text = value.strip()
@@ -79,12 +91,19 @@ class RelayCommand:
             data = json.loads(text)
             if not isinstance(data, list) or not all(isinstance(item, str) for item in data):
                 raise ValueError(f"{name} command JSON은 문자열 배열이어야 합니다")
-            return cls(name=name, argv=data, verdict_source=verdict_source, gating=gating)
+            return cls(
+                name=name,
+                argv=data,
+                verdict_source=verdict_source,
+                gating=gating,
+                timeout_s=timeout_s,
+            )
         return cls(
             name=name,
             argv=_split_command_text(text),
             verdict_source=verdict_source,
             gating=gating,
+            timeout_s=timeout_s,
         )
 
     def resolved_argv(self) -> list[str]:
@@ -110,6 +129,7 @@ class RelayStepResult:
     timed_out: bool
     skipped: bool
     gating: bool = True
+    timeout_s: float | None = None
     stdin_path: Path | None = None
     stdout_path: Path | None = None
     stderr_path: Path | None = None
@@ -131,6 +151,7 @@ class RelayStepResult:
             "timed_out": self.timed_out,
             "skipped": self.skipped,
             "gating": self.gating,
+            "timeout_s": self.timeout_s,
             "stdin_path": _path_or_none(self.stdin_path),
             "stdout_path": _path_or_none(self.stdout_path),
             "stderr_path": _path_or_none(self.stderr_path),
@@ -215,8 +236,7 @@ class PhaseRelay:
         forbidden_paths: list[str] | None = None,
         cwd: Path | None = None,
     ) -> None:
-        if timeout_s <= 0:
-            raise ValueError("timeout은 0보다 커야 합니다")
+        _require_positive_finite_timeout(timeout_s)
         if not commands:
             raise ValueError("최소 하나의 relay command가 필요합니다")
         invalid_forbidden_paths = [
@@ -234,7 +254,7 @@ class PhaseRelay:
         self._commands = commands
         self._output_dir = output_dir
         self._phase_id = phase_id
-        self._timeout_s = timeout_s
+        self._timeout_s = float(timeout_s)
         self._resume_coordinator = resume_coordinator
         self._forbidden_paths = forbidden_paths
         self._cwd = cwd or Path.cwd()
@@ -407,6 +427,7 @@ class PhaseRelay:
                 verdict_source=command.verdict_source,
                 gating=command.gating,
                 cwd=attempt.working_dir,
+                timeout_s=command.timeout_s,
             ),
             attempt,
         )
@@ -431,6 +452,7 @@ class PhaseRelay:
                 gating=command.gating,
                 # 신규 세션 폴백 argv에는 원래 --cd가 남으므로 cwd를 중복 지정하지 않는다.
                 cwd=None,
+                timeout_s=command.timeout_s,
             ),
             attempt,
         )
@@ -550,6 +572,8 @@ class PhaseRelay:
         stderr_text = ""
         child_exit_code: int | None = None
         timed_out = False
+        actual_timeout_s: float | None = None
+        effective_timeout_s = command.timeout_s or self._timeout_s
 
         try:
             resolved = command.resolved_argv()
@@ -568,10 +592,12 @@ class PhaseRelay:
                     stderr=asyncio.subprocess.PIPE,
                     cwd=command.cwd,
                 )
+            # child 반환 이전의 resolve/create 실패는 실행 attempt가 아니다.
+            actual_timeout_s = effective_timeout_s
             try:
                 stdout_b, stderr_b = await asyncio.wait_for(
                     proc.communicate(stdin_text.encode("utf-8")),
-                    timeout=self._timeout_s,
+                    timeout=effective_timeout_s,
                 )
                 child_exit_code = proc.returncode
             except asyncio.TimeoutError:
@@ -607,6 +633,7 @@ class PhaseRelay:
             timed_out=timed_out,
             skipped=False,
             gating=command.gating,
+            timeout_s=actual_timeout_s,
             stdin_path=stdin_path,
             stdout_path=stdout_path,
             stderr_path=stderr_path,

@@ -1,0 +1,40 @@
+{
+  "provenance": {
+    "source": "codex rollout jsonl (event_msg.payload.type)",
+    "sample_files": 60,
+    "extractor": "tests/vocab_extract.py",
+    "note": "시점 고정 스냅샷. 갱신은 --write로만."
+  },
+  "event_types": [
+    "agent_message",
+    "agent_reasoning",
+    "context_compacted",
+    "image_generation_end",
+    "mcp_tool_call_end",
+    "patch_apply_end",
+    "sub_agent_activity",
+    "task_complete",
+    "task_started",
+    "thread_settings_applied",
+    "token_count",
+    "turn_aborted",
+    "user_message",
+    "web_search_end"
+  ],
+  "counts": {
+    "token_count": 19104,
+    "agent_reasoning": 8946,
+    "agent_message": 4332,
+    "sub_agent_activity": 1428,
+    "patch_apply_end": 970,
+    "user_message": 565,
+    "task_started": 495,
+    "task_complete": 480,
+    "thread_settings_applied": 380,
+    "web_search_end": 295,
+    "mcp_tool_call_end": 292,
+    "context_compacted": 133,
+    "image_generation_end": 13,
+    "turn_aborted": 9
+  }
+}
