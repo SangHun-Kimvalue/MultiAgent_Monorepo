@@ -1,10 +1,37 @@
-# MultiAgent_Monorepo (MAM) — LLM 출력을 검증 체계로 통제하는 반자율 개발 스위트
+# MAM — AI가 만든 변경을 함부로 통과시키지 않는 검증 스위트
 
-> **판단은 LLM 세션이, 기계 검사는 코드가, 인터페이스는 envelope으로, 관제는 사람이 본다.**
-> AI 에이전트 협업 방법론(캐논·스킬) + 기계 검사 런타임(ztr) + 관제 control plane(ACP)을
-> 계약으로만 결합한 **반자율(semi-autonomous) 개발 스위트**입니다.
-> AI가 개발하게 만드는 체계가 아니라, **AI가 만든 것을 함부로 통과시키지 않는 체계**입니다.
-> 멀티 에이전트를 쓰는 이유는 분업이 아니라 교차검증 — 서로 다른 계열이 저자의 판정을 반증합니다.
+**A semi-autonomous verification suite for AI-assisted software development**
+
+> **Don't trust the agent. Verify the change.**
+
+## 문제
+
+AI 코딩 에이전트는 코드를 빠르게 만듭니다. 정작 답하기 어려운 건 **"이 변경을 믿어도 되는가"** 입니다.
+자기가 짠 코드를 자기가 승인하고, 근거 없이 PASS를 선언하고, 리뷰 라운드는 끝없이 늘어납니다.
+겉으로는 잘 돌아가는 것처럼 보여도 내부에서 조용히 망가집니다.
+
+## 해법 — 네 가지 제약
+
+| 제약 | 내용 |
+|---|---|
+| **권한 분리** | 구현자와 리뷰어는 **서로 다른 계열**의 AI. 자기 구현 자기 승인 금지 |
+| **기계 증거** | 코드가 LLM에서 읽는 것은 **verdict enum + exit code뿐**. 자연어를 해석해 지휘하지 않는다(R5) |
+| **fail-closed** | 근거·예산·계약 중 하나라도 없으면 통과가 아니라 **차단** |
+| **사람 게이트 2개** | phase start / phase end — 커밋 여부와 다음 페이즈를 사람이 각각 승인 |
+
+**멀티 에이전트를 쓰는 이유는 분업이 아니라 교차검증입니다** — 서로 다른 계열이 저자의 판정을 반증합니다.
+에이전트를 여러 개 돌리는 프레임워크가 아니라, 그 출력을 통제하는 검증 계층이 본체입니다.
+
+## 아키텍처
+
+```mermaid
+flowchart TD
+    H["Human<br/>페이즈 경계 go/no-go (게이트 2개)"] --> ACP["ACP — 관제 Control Plane<br/>FastAPI · SQLite · 이벤트 수집 · 대시보드"]
+    ACP -->|관측·제어| ORCH["phase-cycle-orchestrator<br/>바깥 루프 — LLM 세션이 운전 (스킬)"]
+    ORCH -->|envelope 계약| ZTR["ztr — Mechanical Runtime<br/>안쪽 루프: run-phase · resume · invariants · quality_gate"]
+    ZTR -->|"verdict · exit code · 이벤트"| ACP
+    M["methodology/ — 캐논(C1~C7)<br/>역할·게이트·HANDOFF·스킬"] -.규약.-> ORCH
+```
 
 **한눈에 보는 결과**
 
@@ -31,17 +58,6 @@ MAM은 이 실패 진단을 불변선으로 코드화한 재설계입니다:
 > 의미 해석·수락/거부·설계 판단은 코드가 하지 않는다.
 
 못 모는 것(상용 GUI 앱)은 관제로 보고(ACP), 몰 수 있는 것(CLI/헤드리스 에이전트)은 구동합니다.
-
-## 아키텍처
-
-```mermaid
-flowchart TD
-    H["Human<br/>페이즈 경계 go/no-go (게이트 2개)"] --> ACP["ACP — 관제 Control Plane<br/>FastAPI · SQLite · 이벤트 수집 · 대시보드"]
-    ACP -->|관측·제어| ORCH["phase-cycle-orchestrator<br/>바깥 루프 — LLM 세션이 운전 (스킬)"]
-    ORCH -->|envelope 계약| ZTR["ztr — Mechanical Runtime<br/>안쪽 루프: run-phase · resume · invariants · quality_gate"]
-    ZTR -->|"verdict · exit code · 이벤트"| ACP
-    M["methodology/ — 캐논(C1~C7)<br/>역할·게이트·HANDOFF·스킬"] -.규약.-> ORCH
-```
 
 ## 설계 원칙 (캐논 C1~C7 — 위반 시 리뷰 blocking)
 
