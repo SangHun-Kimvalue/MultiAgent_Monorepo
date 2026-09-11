@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-08-16T08:09:40Z",
+  "registry_path": "methodology/config/validation-impact-registry.json",
+  "registry_sha256": "5ce557b24a9de62cfb2a012f8f79016971bf77ef2edad1169d15317713db758a",
+  "registry_sha256_lf": "5ce557b24a9de62cfb2a012f8f79016971bf77ef2edad1169d15317713db758a",
+  "hash_canonicalization": "lf-normalized-utf8",
+  "contract_sha256": "ebeea50002e20e5e9aaf754d8bdda129454a2f39bb761564209201c6d8b5f00d",
+  "derivation": {
+    "tool": "methodology/tools/registry_derivation.py",
+    "module_spec": "methodology/tests/fixtures/registry_derivation/module-spec.json",
+    "module_spec_sha256": "ab5668d1b75a54eb29a7b50cd119fb78f8c837f492c5da0babd6105e3ea3cc65",
+    "demotion_threshold": 0.5,
+    "demotion_threshold_note": "Planner 확정값(2026-08-16) — planner-design.md §3 임계 파라미터. 근거 = derivation-sidecar threshold_grid_stats(소각 fixture focused 유지 + 광역 모듈 강등 동시 충족).",
+    "approved_draft_sha256": "878c4d21fb67b95c81d049cb69582c2f1b5894068486272b47f0fac4bb9250cf",
+    "derivation_sidecar_sha256": "f76c7061e3baa8f85b2259dc95fcf7b785635cc3da09dbc223726a624ed38e8e",
+    "draft_path": ".ztr/orchestrator/T16-P2b2/draft/draft-registry.json",
+    "sidecar_path": ".ztr/orchestrator/T16-P2b2/draft/derivation-sidecar.json"
+  },
+  "calibration_cases": [
+    {
+      "case": "mam-f852-env",
+      "parent": "d0b2d4e56139e4732b02072d8eaff859a60333bf",
+      "fix": "f8522037401a35cb1249aed8dc65d978ba9764b5",
+      "fixture": "methodology/tests/fixtures/validation_impact_selector_calibration/mam-f852-env/changed-paths.json",
+      "focused_groups": [
+        "methodology-focused-4ff09f1163",
+        "methodology-focused-83004b2b72"
+      ]
+    },
+    {
+      "case": "t14-s6",
+      "parent": "695ef557302d7b07e72fbd77c70d50ae35f050ed",
+      "fix": "57f417ccf73bb412e07108097dfe3f0fc96529d7",
+      "fixture": "methodology/tests/fixtures/validation_impact_selector_calibration/t14-s6/changed-paths.json",
+      "focused_groups": [
+        "acp-focused-6cffa4edc1",
+        "acp-focused-9dce06c401",
+        "acp-focused-f3534d3824"
+      ]
+    },
+    {
+      "case": "ztr-4ffe-verdict",
+      "parent": "529d4474b2c98132a9d9a6a496678098d1f4d85d",
+      "fix": "4ffe3bb2096134def35bf96f4943665adeaada81",
+      "fixture": "methodology/tests/fixtures/validation_impact_selector_calibration/ztr-4ffe-verdict/changed-paths.json",
+      "focused_groups": [
+        "ztr-focused-2bc0de53e3",
+        "ztr-focused-2f3d9038c5",
+        "ztr-focused-3c9037a06a",
+        "ztr-focused-f4bb9b3c06"
+      ]
+    }
+  ],
+  "command_contract": {
+    "argv_authority": "methodology/config/validation-impact-registry.json#groups — 각 group의 cwd·argv가 정본이며 registry_sha256로 동결된다(v1의 per-group argv_template 중복 등재는 폐지)",
+    "env": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONHASHSEED": "0"
+    },
+    "pytest_cache": "off",
+    "volatile_args_excluded": [
+      "--junitxml"
+    ],
+    "inherited_from": "P2b freeze(2026-08-06T10:43:47Z) command_contract — interpreter·cwd·env 계약 승계, argv[0]은 repo-root 기준 해석(이월 ① 종결)"
+  },
+  "p2c_candidate_execution_policy": {
+    "authority": "T16_HR_P2_DIRECTION_AND_PHASE_PLAN.md §3 P2c (2026-08-05 개정)",
+    "iteration_run": "recommended groups where scope_class==focused only",
+    "module_full_recommendation": "over-selection 지표로 기록, iteration 미실행 — 원인 경로 전부 docs-prefix여야 함(promotion 조건 6)",
+    "final_full": "policy 소유, case당 1회 항상 실행(safety oracle)",
+    "no_focused_recommendation": "candidate-infeasible — saving 미주장, promotion 표본 실패 계상(조건 7)"
+  },
+  "case_selection_protocol": {
+    "held_out_min": 3,
+    "independence": "선정자는 selector 출력·registry 내용을 보지 않는다",
+    "exclusion": "HR-P0/P1 3-case 및 그 parent/fix 계보 재사용 금지",
+    "provenance_required": [
+      "module",
+      "defect class",
+      "parent/fix SHA",
+      "oracle blob SHA",
+      "oracle grade"
+    ]
+  },
+  "invalidation_rule": "freeze 이후 registry raw bytes 또는 contract_sha256 대상 변경 시 기존 held-out evidence 전체 무효"
+}

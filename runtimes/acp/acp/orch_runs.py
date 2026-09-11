@@ -39,6 +39,11 @@ class SegmentResult(BaseModel):
     resume_token: str | None = None
     events: tuple[OrchPhaseEvent, ...] = ()
     message: str | None = None
+    #: 프로세스 트리 정리 열화 토큰(Phase 9). 비어 있으면 정리 완료.
+    #: **안정 enum 이며 코드가 이 값으로 분기한다(R5)** — 산문이 아니다.
+    #: 정본 = `acp.process_supervisor`. 비어 있지 않으면 세그먼트는 성공했어도
+    #: **프로세스 트리를 통제했다고 주장할 수 없다**(PASS vs NOT CLAIMED 분리).
+    cleanup: tuple[str, ...] = ()
 
 
 class OrchRunState(BaseModel):

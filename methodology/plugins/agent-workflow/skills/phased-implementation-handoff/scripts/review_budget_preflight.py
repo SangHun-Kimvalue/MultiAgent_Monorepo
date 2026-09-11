@@ -20,6 +20,9 @@
 - `output` (기본) — 구현 diff 심사. 카운터 `rounds_consumed`, 예산 L0 2 / L1 3 / L2 4.
 - `input` — 문서·계획·프롬프트 심사. 카운터 `doc_rounds_consumed`, 예산 L0 1 / L1 2 / L2 3.
 
+`--status` 는 **부작용 없는 조회**다 — 잠금을 잡지 않고 아무것도 쓰지 않으며, 소진을 차단이 아니라
+사실(`remaining: 0`)로 보고한다. 조회와 예약이 같은 명령이면 관측이 상태를 바꾼다(`LESSON-M049`).
+
 두 축은 **같은 문서·같은 잠금**을 쓰지만 **카운터가 분리**돼 서로의 잔여를 빌려오지 못한다.
 해당 축의 카운터 줄이 없으면 fail-closed 다 — 줄을 지워 예산을 리셋하는 우회를 막는다.
 
@@ -92,8 +95,10 @@ def counter_key(gate: str) -> str:
     return GATES[gate][0]
 
 
-def parse_record(text: str, gate: str = DEFAULT_GATE) -> dict[str, str]:
-    gate_key = counter_key(gate)  # 아래 파싱 루프의 `key` 와 이름이 겹치면 누락 검사가 무력해진다
+def parse_record(text: str, gate: str | None = DEFAULT_GATE) -> dict[str, str]:
+    # gate=None 은 **조회용** — 특정 축의 카운터 키를 요구하지 않는다(§status).
+    # 예약 경로는 항상 gate 를 넘기므로 fail-closed 가 유지된다.
+    gate_key = counter_key(gate) if gate is not None else None  # 아래 루프의 `key` 와 겹치면 누락 검사가 무력해진다
     blocks = BLOCK_RE.findall(text)
     if len(blocks) != 1:
         raise ContractError(f"exactly one review-budget block required, found {len(blocks)}")
@@ -109,7 +114,7 @@ def parse_record(text: str, gate: str = DEFAULT_GATE) -> dict[str, str]:
         if key in record:
             raise ContractError(f"duplicate review-budget key: {key}")
         record[key] = value.strip()
-    for required in ("slice_id", "work_grade", gate_key):
+    for required in ["slice_id", "work_grade"] + ([gate_key] if gate_key else []):
         if required not in record:
             raise ContractError(
                 f"review-budget block missing key for gate {gate!r}: {required}. "
@@ -137,6 +142,62 @@ def read_state(doc: Path, expected_slice: str | None,
     if consumed < 0:
         raise ContractError(f"{key} must not be negative")
     return record["slice_id"], grade, budget_by_grade[grade], consumed
+
+
+def status(doc: Path, expected_slice: str | None, gate: str | None = None) -> dict[str, Any]:
+    """**부작용 없는 조회.** 잠금을 잡지 않고 어떤 파일도 쓰지 않는다.
+
+    왜 필요한가: 잔여를 확인할 방법이 예약 명령뿐이면 **상태를 보는 행위가 상태를 소비**한다
+    (2026-08-18 실측: 조회하려다 문서 축 한 라운드가 소진됐다 — `LESSON-M049`).
+
+    **소진은 차단이 아니라 사실 보고**다 — `exit 0` + `remaining: 0` 으로 낸다.
+    조회는 아무것도 승인하지 않으므로 여기서 비0 을 내면 "확인했더니 막혔다"와
+    "확인 자체가 실패했다"를 호출자가 구분할 수 없다.
+
+    축별 카운터 줄이 없거나 정수가 아니면 **그 축의 사실로 보고**한다(`counter_present`/`note`).
+    조회가 통과해도 **예약은 여전히 fail-closed** 라 우회 경로가 생기지 않는다.
+    구조 위반(블록 0/2개 이상 · 미지 등급 · slice 불일치)만 `EXIT_CONTRACT` 다.
+    """
+    record = parse_record(doc.read_text(encoding="utf-8"), None)
+    grade = record["work_grade"]
+    if expected_slice is not None and record["slice_id"] != expected_slice:
+        raise ContractError(
+            f"slice_id mismatch: document={record['slice_id']!r} requested={expected_slice!r}"
+        )
+    if gate is not None and gate not in GATES:
+        raise ContractError(f"unknown gate: {gate!r} (expected one of {'/'.join(GATES)})")
+
+    axes: dict[str, Any] = {}
+    for name, (key, budget_by_grade) in GATES.items():
+        if gate is not None and name != gate:
+            continue
+        if grade not in budget_by_grade:
+            raise ContractError(f"unknown work_grade: {grade!r}")
+        limit = budget_by_grade[grade]
+        axis: dict[str, Any] = {"counter": key, "budget_limit": limit}
+        if key not in record:
+            axis["counter_present"] = False
+            axis["note"] = "counter line missing — reserving this gate will fail closed"
+        else:
+            axis["counter_present"] = True
+            try:
+                consumed = int(record[key])
+            except ValueError:
+                axis["note"] = (f"non-integer value {record[key]!r} — "
+                                "reserving this gate will fail closed")
+            else:
+                axis["consumed"] = consumed
+                if consumed < 0:
+                    # 음수는 비정수와 같은 부류다 — `remaining`/`exhausted` 를 **만들지 않는다**.
+                    # `max(0, limit-(-1))` 은 상한보다 큰 잔여를 만들어, `remaining > 0` 만 보는
+                    # 호출자가 Reviewer 를 띄우게 유도한다(R1-P2-1).
+                    axis["note"] = (f"negative value {consumed} — "
+                                    "reserving this gate will fail closed")
+                else:
+                    axis["remaining"] = max(0, limit - consumed)
+                    axis["exhausted"] = consumed >= limit
+        axes[name] = axis
+    return {"status": "STATUS", "slice_id": record["slice_id"], "work_grade": grade, "gates": axes}
 
 
 def persist(doc: Path, expected_slice: str, expected_grade: str,
@@ -262,26 +323,44 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="리뷰 예산 preflight (출력 게이트 단일 진입점)")
     parser.add_argument("--doc", required=True, type=Path, help="phase 진행 문서 경로")
     parser.add_argument("--slice", dest="slice_id", help="기대 slice_id (불일치 시 fail-closed)")
-    parser.add_argument("--gate", choices=sorted(GATES), default=DEFAULT_GATE,
+    parser.add_argument("--gate", choices=sorted(GATES), default=None,
                         help="예산 축: output=구현 diff 심사(기본), input=문서·계획·프롬프트 심사")
+    parser.add_argument("--status", action="store_true",
+                        help="부작용 없는 조회 — 잠금·쓰기 없음. --gate 생략 시 두 축 모두 보고")
     parser.add_argument("--lock-timeout", type=float, default=10.0)
     parser.add_argument("command", nargs=argparse.REMAINDER,
                         help="'--' 뒤에 실행할 Reviewer 명령. 생략하면 예약만 수행")
     args = parser.parse_args(argv)
+    command = [arg for arg in args.command if arg != "--"]
+    gate = args.gate if args.gate is not None else DEFAULT_GATE
+
+    if args.status:
+        if command:
+            emit({"status": "BLOCKED",
+                  "reason": "--status is read-only and cannot run a reviewer command"})
+            return EXIT_CONTRACT
+        try:
+            emit(status(args.doc, args.slice_id, args.gate))
+        except ContractError as exc:
+            emit({"status": "BLOCKED", "reason": str(exc)})
+            return exc.code
+        except OSError as exc:
+            emit({"status": "BLOCKED", "reason": str(exc)})
+            return EXIT_CONTRACT
+        return EXIT_OK
 
     try:
-        state = reserve(args.doc, args.slice_id, args.lock_timeout, args.gate)
+        state = reserve(args.doc, args.slice_id, args.lock_timeout, gate)
     except ContractError as exc:
-        payload = {"status": "BLOCKED", "gate": args.gate, "reason": str(exc)}
+        payload = {"status": "BLOCKED", "gate": gate, "reason": str(exc)}
         if exc.code == EXIT_UNLOCK:  # 저장은 성공했다 — 소비를 되돌리지 않는다
             payload["round_consumed_kept"] = True
         emit(payload)
         return exc.code
     except OSError as exc:
-        emit({"status": "BLOCKED", "gate": args.gate, "reason": str(exc)})
+        emit({"status": "BLOCKED", "gate": gate, "reason": str(exc)})
         return EXIT_CONTRACT
 
-    command = [arg for arg in args.command if arg != "--"]
     if not command:
         emit({"status": "RESERVED", **state})
         return EXIT_OK

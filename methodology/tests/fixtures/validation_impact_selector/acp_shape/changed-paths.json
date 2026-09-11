@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "paths": [
+    "runtimes/acp/src/acp/dashboard/app.py",
+    "runtimes/acp/tests/test_dashboard_events.py"
+  ]
+}

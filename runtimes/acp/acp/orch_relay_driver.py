@@ -15,6 +15,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
+from acp.process_supervisor import (
+    attach,
+    merge_cleanup,
+    spawn_kwargs,
+    terminate_tree,
+)
 from acp.orch_events import OrchEventType, OrchPhaseEvent
 from acp.orch_runs import SegmentResult, SegmentStatus
 
@@ -43,6 +49,9 @@ class ToolRun:
     duration_s: float = 0.0
     timed_out: bool = False
     error: str = ""
+    #: 트리 정리 결과 토큰(Phase 9). 비어 있으면 정리 완료. 안정 enum이며 코드가 이 값으로
+    #: 분기한다(R5) — 산문이 아니다. 정본 = `acp.process_supervisor`.
+    cleanup: tuple[str, ...] = ()
 
 
 class SubprocessRunner(Protocol):
@@ -62,57 +71,70 @@ async def run_subprocess_tool(
     cwd: Path,
     timeout_s: float,
 ) -> ToolRun:
-    """Run ztr with timeout/spawn failures converted to data."""
+    """ztr 을 실행하고 timeout/spawn 실패를 데이터로 변환한다.
+
+    Phase 9: `proc.kill()` 은 직계만 죽인다 — 트리 경계로 정리하고, 정리 열화는
+    **모든 반환 경로에서** `cleanup` 토큰으로 보고한다.
+
+    ⚠ **반환 지점은 하나다.** 예외 블록에서 곧바로 `return` 하면 그 반환값이 먼저 만들어져
+    `finally` 가 수집한 토큰이 유실된다(ztr P2 출력 R2 에서 실측된 실패).
+    """
     start = time.monotonic()
     proc: asyncio.subprocess.Process | None = None
+    job = None
+    cleaned = False
+    late_cleanup: list[tuple[str, ...]] = []
+    cleanup: tuple[str, ...] = ()
+    stdout_b: bytes = b""
+    stderr_b: bytes = b""
+    exit_code: int | None = None
+    timed_out = False
+    error = ""
+    stderr_override: str | None = None
     try:
         proc = await asyncio.create_subprocess_exec(
             *command,
             cwd=str(cwd),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            **spawn_kwargs(),
         )
-        stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout_s)
+        job = attach(proc)   # Phase 9: spawn 직후 트리 경계에 편입
+        stdout_b, stderr_b = await asyncio.wait_for(
+            proc.communicate(), timeout_s
+        )
         exit_code = proc.returncode if proc.returncode is not None else -1
     except (asyncio.TimeoutError, TimeoutError):
-        if proc is not None and proc.returncode is None:
-            proc.kill()
-            try:
-                # 독립 리뷰 P2: Windows kill은 트리 킬이 아니라 grandchild가 파이프를 물고
-                # 있으면 communicate가 EOF를 못 받아 영구 hang — 짧은 유예로 제한하고 포기한다.
-                stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), 5.0)
-            except (asyncio.TimeoutError, TimeoutError):
-                stdout_b, stderr_b = b"", b""
-        else:
-            stdout_b, stderr_b = b"", b""
-        return ToolRun(
-            command=tuple(command),
-            exit_code=TIMEOUT_EXIT_CODE,
-            stdout=_decode(stdout_b),
-            stderr=_decode(stderr_b),
-            duration_s=time.monotonic() - start,
-            timed_out=True,
-            error="timeout",
-        )
+        timed_out = True
+        error = "timeout"
+        exit_code = TIMEOUT_EXIT_CODE
+        if proc is not None:
+            # ⚠ `proc.returncode is None` 으로 가드하지 않는다 — **직계가 이미 죽었어도
+            # 트리는 살아 있을 수 있다**(중간 부모 선종료, P0 S2 실측).
+            stdout_b, stderr_b, cleanup = await terminate_tree(proc, job)
+            job, cleaned = None, True
     except OSError as exc:
-        return ToolRun(
-            command=tuple(command),
-            exit_code=INTERNAL_ERROR_EXIT_CODE,
-            stderr=str(exc),
-            duration_s=time.monotonic() - start,
-            error=str(exc),
-        )
+        exit_code = INTERNAL_ERROR_EXIT_CODE
+        error = str(exc)
+        stderr_override = str(exc)
+        stdout_b, stderr_b = b"", b""
     finally:
-        if proc is not None and proc.returncode is None:
-            proc.kill()
-            await proc.wait()
+        # 정상 종료 경로에서도 **반드시** 경계를 닫는다 — 남은 후손 정리 + Job 핸들 반납.
+        # ⚠ `job is not None` 으로 가드하지 않는다 — 편입 실패야말로 보고할 상황이다.
+        if proc is not None and not cleaned:
+            _out, _err, late = await terminate_tree(proc, job)
+            job = None
+            late_cleanup.append(late)   # 출력은 이미 확보했으므로 토큰만 수집
 
     return ToolRun(
         command=tuple(command),
         exit_code=exit_code,
-        stdout=_decode(stdout_b),
-        stderr=_decode(stderr_b),
+        stdout="" if stderr_override is not None else _decode(stdout_b),
+        stderr=stderr_override if stderr_override is not None else _decode(stderr_b),
         duration_s=time.monotonic() - start,
+        timed_out=timed_out,
+        error=error,
+        cleanup=merge_cleanup(cleanup, *late_cleanup),
     )
 
 
@@ -203,13 +225,15 @@ class ZtrRelayDriver:
         run = await self._runner(command, cwd=self._cwd, timeout_s=self._process_timeout_s)
         envelope, blocked_message = interpret_run(run)
         if blocked_message is not None:
-            return _blocked(blocked_message)
+            # Phase 9: BLOCKED 로 닫을 때도 정리 열화를 **삼키지 않는다**.
+            return _blocked(blocked_message, cleanup=run.cleanup)
         assert envelope is not None
 
         if envelope.status == STATUS_PASS:
             gate_token = f"{run_id}:ztr-relay-gate"
             return SegmentResult(
                 status=SegmentStatus.AWAITING_GATE,
+                cleanup=run.cleanup,   # Phase 9: 정리 못 했으면 게이트에 그 사실이 실린다
                 resume_token=gate_token,
                 message=f"ztr relay PASS in {envelope.duration_s:.3f}s; awaiting human approval",
                 events=(
@@ -234,9 +258,12 @@ class ZtrRelayDriver:
         if envelope.status in {STATUS_CHANGES_REQUESTED, STATUS_BLOCKED}:
             return _blocked(
                 f"ztr relay {envelope.status} in {envelope.duration_s:.3f}s "
-                f"(exit {envelope.exit_code})"
+                f"(exit {envelope.exit_code})",
+                cleanup=run.cleanup,
             )
-        return _blocked(f"ztr relay unsupported status: {envelope.status}")
+        return _blocked(
+            f"ztr relay unsupported status: {envelope.status}", cleanup=run.cleanup
+        )
 
     def _approve_segment(
         self,
@@ -354,8 +381,8 @@ def _parse_envelope_object(data: dict[str, Any]) -> tuple[RelayEnvelope | None, 
     return RelayEnvelope(status=status, exit_code=exit_code, duration_s=float(duration_s)), None
 
 
-def _blocked(message: str) -> SegmentResult:
-    return SegmentResult(status=SegmentStatus.BLOCKED, message=message)
+def _blocked(message: str, *, cleanup: tuple[str, ...] = ()) -> SegmentResult:
+    return SegmentResult(status=SegmentStatus.BLOCKED, message=message, cleanup=cleanup)
 
 
 def _event(

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "paths": [
+    "runtimes/acp/acp/notify_view.py",
+    "runtimes/acp/acp/poller.py",
+    "runtimes/acp/acp/store.py",
+    "runtimes/acp/acp/web/app.py",
+    "runtimes/acp/docs/HANDOFF.md",
+    "runtimes/acp/docs/LESSONS_LEARNED.md",
+    "runtimes/acp/tests/test_tick_and_notification_view.py"
+  ]
+}

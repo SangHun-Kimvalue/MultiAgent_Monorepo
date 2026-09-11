@@ -36,6 +36,7 @@ description: >
 6. **Discovery Brief First**: 전체 산출물 작성 전에 `discovery_brief.md` 1페이지를 만든다. Problem / Baseline failure / New value / Core blockers / Gate recommendation이 흔들리면 추가 질문을 먼저 한다.
 7. **Draft Outputs**: brief가 안정된 뒤 `assets/templates/`를 기반으로 산출물을 만든다.
 8. **Senior Critique**: silent fallback, PASS 레벨, SSOT, adapter 경계, evidence, 과거 lessons, baseline delta를 finding 형식으로 압박한다.
+   - **근거 등급 승격 축(delta 2026-09-02)**: brief·requirements 의 실측 주장 **각각**에 대해 그 근거가 **실행 출력인가 추론/전달인가**, 그리고 유보(`NOT CLAIMED`·가설) 표기가 **결론 문장에서 살아남았는가**를 finding 으로 요구한다. 이 축이 요청서에 없으면 잡히지 않는다(M090 적용 4 가 산문이라 매번 빠졌다). ⚠ 산문 축 — 효과 미관측(근거 = `docs/discovery/evidence-grade-gate-20260902/closeout.md`).
 9. **Reconcile**: critique finding을 반영해 `requirements/design/validation/open_items/handoff`의 gate, 가치 claim, blocker, NOT CLAIMED가 서로 일치하는지 재검토한다.
 10. **Gate Decision**:
    - `DISCOVERY_PASS`: Planner 세션으로 handoff 가능

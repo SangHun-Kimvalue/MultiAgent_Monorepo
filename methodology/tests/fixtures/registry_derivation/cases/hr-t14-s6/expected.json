@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "case": "hr-t14-s6",
+  "source": "hr-calibration",
+  "module": "acp",
+  "parent": "695ef557302d7b07e72fbd77c70d50ae35f050ed",
+  "fix": "57f417ccf73bb412e07108097dfe3f0fc96529d7",
+  "gold_red_test_files": [
+    "runtimes/acp/tests/test_tick_and_notification_view.py"
+  ]
+}

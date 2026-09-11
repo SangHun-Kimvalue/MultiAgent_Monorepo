@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "case": "ztr-4ffe-verdict",
+  "parent": "529d4474b2c98132a9d9a6a496678098d1f4d85d",
+  "fix": "4ffe3bb2096134def35bf96f4943665adeaada81",
+  "focused_groups": [
+    "ztr-focused-2bc0de53e3",
+    "ztr-focused-2f3d9038c5",
+    "ztr-focused-3c9037a06a",
+    "ztr-focused-f4bb9b3c06"
+  ],
+  "recommended_groups": [
+    "methodology-full",
+    "ztr-focused-2bc0de53e3",
+    "ztr-focused-2f3d9038c5",
+    "ztr-focused-3c9037a06a",
+    "ztr-focused-f4bb9b3c06",
+    "ztr-full"
+  ],
+  "gold_red_test_files": [
+    "runtimes/ztr/tests/test_phase_relay.py"
+  ],
+  "not_claimed": [
+    "promotion_evidence"
+  ]
+}

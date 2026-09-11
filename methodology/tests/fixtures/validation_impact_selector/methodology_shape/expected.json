@@ -1,0 +1,40 @@
+{
+  "matches": [
+    {
+      "path": "methodology/docs/T16_VALIDATION_EFFICIENCY_ROADMAP.md",
+      "rule_ids": ["methodology-prefix"],
+      "group_ids": ["methodology-tests"]
+    },
+    {
+      "path": "methodology/tools/workflow_doctor.py",
+      "rule_ids": ["methodology-prefix", "workflow-doctor-exact"],
+      "group_ids": ["methodology-doctor-focused", "methodology-tests"]
+    }
+  ],
+  "recommended_groups": [
+    {
+      "id": "methodology-doctor-focused",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "methodology/tests/test_workflow_doctor.py"
+      ],
+      "scope_class": "focused"
+    },
+    {
+      "id": "methodology-tests",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "methodology/tests"
+      ],
+      "scope_class": "module-full"
+    }
+  ]
+}

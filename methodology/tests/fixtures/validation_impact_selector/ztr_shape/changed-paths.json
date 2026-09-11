@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "paths": [
+    "runtimes/ztr/src/engine/phase_relay.py",
+    "runtimes/ztr/src/engine/static_review.py"
+  ]
+}

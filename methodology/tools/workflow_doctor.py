@@ -1,4 +1,4 @@
-"""Read-only diagnosis of the agent-workflow plugin installation.
+"""Read-only diagnosis of a supported MAM plugin installation.
 
 The doctor observes one canonical plugin target and reports drift as a single
 JSON object.  It never installs, removes, repairs, or rewrites plugin state.
@@ -20,6 +20,7 @@ from typing import Any, Never
 
 
 PLUGIN_NAME = "agent-workflow"
+SUPPORTED_PLUGINS = ("agent-workflow", "ai-research")
 MARKETPLACE_NAME = "multiagent-methodology"
 TARGET = f"{PLUGIN_NAME}@{MARKETPLACE_NAME}"
 PASS = "PASS"
@@ -237,7 +238,9 @@ def _marketplace_root(marketplace_path: Path) -> Path:
 
 
 def observe_source(
-    marketplace_path: Path, expected_plugin_path: Path
+    marketplace_path: Path,
+    expected_plugin_path: Path,
+    plugin_name: str = PLUGIN_NAME,
 ) -> PluginObservation:
     """Read and validate the canonical marketplace and plugin source."""
 
@@ -252,7 +255,7 @@ def observe_source(
     targets = [
         item
         for item in plugins
-        if isinstance(item, dict) and item.get("name") == PLUGIN_NAME
+        if isinstance(item, dict) and item.get("name") == plugin_name
     ]
     if len(targets) != 1:
         raise DoctorError(
@@ -281,8 +284,8 @@ def observe_source(
 
     plugin_manifest_path = expected_plugin_path / ".codex-plugin" / "plugin.json"
     manifest = _read_json_object(plugin_manifest_path, "plugin manifest")
-    if _required_string(manifest, "name", "plugin manifest") != PLUGIN_NAME:
-        raise DoctorError(f"plugin manifest.name must be {PLUGIN_NAME!r}")
+    if _required_string(manifest, "name", "plugin manifest") != plugin_name:
+        raise DoctorError(f"plugin manifest.name must be {plugin_name!r}")
     version = _required_string(manifest, "version", "plugin manifest")
     skills_value = _required_string(manifest, "skills", "plugin manifest")
     skills_path = Path(skills_value)
@@ -336,12 +339,15 @@ def _slice_row(line: str, offsets: tuple[int, int, int, int]) -> tuple[str, ...]
     )
 
 
-def parse_plugin_list(stdout: str) -> ParsedInstalledRow:
+def parse_plugin_list(
+    stdout: str, plugin_name: str = PLUGIN_NAME
+) -> ParsedInstalledRow:
     """Parse the unique target using validated fixed-width table offsets."""
 
     if not isinstance(stdout, str):
         raise DoctorError("plugin list stdout must be decoded text")
     lines = stdout.splitlines()
+    target = f"{plugin_name}@{MARKETPLACE_NAME}"
     matches: list[ParsedInstalledRow] = []
     index = 0
     saw_marketplace = False
@@ -373,7 +379,7 @@ def parse_plugin_list(stdout: str) -> ParsedInstalledRow:
             if _marketplace_header(lines[index]) is not None:
                 break
             plugin, status, version, plugin_path = _slice_row(lines[index], offsets)
-            if plugin == TARGET:
+            if plugin == target:
                 if marketplace != MARKETPLACE_NAME:
                     raise DoctorError(
                         f"target plugin row is under unexpected marketplace {marketplace!r}"
@@ -398,8 +404,10 @@ def parse_plugin_list(stdout: str) -> ParsedInstalledRow:
     return matches[0]
 
 
-def observe_installed_from_list(stdout: str) -> PluginObservation:
-    row = parse_plugin_list(stdout)
+def observe_installed_from_list(
+    stdout: str, plugin_name: str = PLUGIN_NAME
+) -> PluginObservation:
+    row = parse_plugin_list(stdout, plugin_name)
     skills = _scan_skills(Path(row.plugin_path) / "skills")
     return PluginObservation(
         marketplace_path=row.marketplace_path,
@@ -420,7 +428,9 @@ def _codex_list_argv() -> list[str]:
 
 
 def observe_installed_live(
-    timeout_seconds: float, runner: RunCommand = subprocess.run
+    timeout_seconds: float,
+    runner: RunCommand = subprocess.run,
+    plugin_name: str = PLUGIN_NAME,
 ) -> PluginObservation:
     """Invoke the single allowed read-only command exactly once."""
 
@@ -444,7 +454,7 @@ def observe_installed_live(
         raise DoctorError(
             f"codex plugin list exited with code {completed.returncode}"
         )
-    return observe_installed_from_list(completed.stdout)
+    return observe_installed_from_list(completed.stdout, plugin_name)
 
 
 def observe_installed_fixture(path: Path) -> PluginObservation:
@@ -498,11 +508,12 @@ def _payload(
     diagnostics: list[str],
     observation_mode: str,
     legacy_skill_surfaces: list[dict[str, Any]] | None = None,
+    plugin_name: str = PLUGIN_NAME,
 ) -> dict[str, Any]:
     status = PASS if drift is not None and not drift.blocks and not diagnostics else BLOCKED
     return {
         "status": status,
-        "plugin": PLUGIN_NAME,
+        "plugin": plugin_name,
         "marketplace": MARKETPLACE_NAME,
         "observation_mode": observation_mode,
         "source": _observation_json(source),
@@ -526,7 +537,8 @@ def _payload(
 
 def build_parser() -> JsonArgumentParser:
     methodology_root = Path(__file__).resolve().parent.parent
-    parser = JsonArgumentParser(description="Read-only agent-workflow installation doctor")
+    parser = JsonArgumentParser(description="Read-only MAM plugin installation doctor")
+    parser.add_argument("--plugin", choices=SUPPORTED_PLUGINS, default=PLUGIN_NAME)
     parser.add_argument(
         "--source-marketplace",
         type=Path,
@@ -544,7 +556,7 @@ def build_parser() -> JsonArgumentParser:
     parser.add_argument(
         "--source-plugin",
         type=Path,
-        default=methodology_root / "plugins" / PLUGIN_NAME,
+        default=None,
     )
     parser.add_argument(
         "--installed-fixture",
@@ -562,22 +574,28 @@ def execute(
     installed: PluginObservation | None = None
     legacy_skill_surfaces: list[dict[str, Any]] = []
     observation_mode = "live"
+    plugin_name = PLUGIN_NAME
     try:
         args = build_parser().parse_args(argv)
+        plugin_name = args.plugin
+        source_plugin = args.source_plugin
+        if source_plugin is None:
+            methodology_root = Path(__file__).resolve().parent.parent
+            source_plugin = methodology_root / "plugins" / plugin_name
         if not 0 < args.timeout <= 300:
             raise DoctorError("timeout must be greater than 0 and at most 300 seconds")
         observation_mode = "fixture" if args.installed_fixture is not None else "live"
-        source = observe_source(args.source_marketplace, args.source_plugin)
+        source = observe_source(args.source_marketplace, source_plugin, plugin_name)
         legacy_roots = args.legacy_skill_root
         if legacy_roots is None and args.installed_fixture is None:
             legacy_roots = [Path.home() / ".codex" / "skills", Path.home() / ".claude" / "skills"]
         legacy_skill_surfaces = observe_legacy_skill_surfaces(
-            args.source_plugin, legacy_roots or []
+            source_plugin, legacy_roots or []
         )
         installed = (
             observe_installed_fixture(args.installed_fixture)
             if args.installed_fixture is not None
-            else observe_installed_live(args.timeout, runner)
+            else observe_installed_live(args.timeout, runner, plugin_name)
         )
         drift = compare_observations(source, installed)
         diagnostics = [
@@ -593,6 +611,7 @@ def execute(
             diagnostics,
             observation_mode,
             legacy_skill_surfaces,
+            plugin_name,
         )
         return payload, 0 if payload["status"] == PASS else 2
     except Exception as exc:  # Fail closed without exposing a traceback.
@@ -605,6 +624,7 @@ def execute(
                 [message],
                 observation_mode,
                 legacy_skill_surfaces,
+                plugin_name,
             ),
             2,
         )

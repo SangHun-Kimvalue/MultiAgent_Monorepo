@@ -23,6 +23,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
+from acp.process_supervisor import (
+    attach,
+    merge_cleanup,
+    spawn_kwargs,
+    terminate_tree,
+)
 from acp.orch_events import OrchEventType, OrchPhaseEvent
 from acp.orch_runs import Driver, MockGateDriver, SegmentResult, SegmentStatus
 
@@ -47,6 +53,9 @@ class ToolRun:
     duration_s: float = 0.0
     timed_out: bool = False
     error: str = ""  # OSError(spawn 실패) 시에만 채워진다. timeout은 timed_out으로 구분.
+    #: 트리 정리 결과 토큰(Phase 9). 비어 있으면 정리 완료. 안정 enum이며 코드가 이 값으로
+    #: 분기한다(R5) — 산문이 아니다. 정본 = `acp.process_supervisor`.
+    cleanup: tuple[str, ...] = ()
 
 
 class SubprocessRunner(Protocol):
@@ -72,16 +81,28 @@ async def run_subprocess_tool(
 ) -> ToolRun:
     """LESSON-001 규칙: communicate + wait_for + finally kill 3단 방어.
 
-    timeout이면 프로세스를 kill하고 잔여 출력을 회수한다. OSError(launcher 미해결 잔존
-    경로/WinError 등)는 예외를 흘리지 않고 error 필드로 닫는다.
+    `stdin_text` 가 None 이 아니면 stdin PIPE 를 열고 UTF-8 bytes 로 주입한다
+    (EXECUTION_ADAPTER_CONTRACT §4 payload-as-stdin). locale 의존 text wrapper 를
+    타지 않도록 항상 bytes 경계만 쓴다.
 
-    `stdin_text`가 None이 아니면 stdin PIPE를 열고 그 본문을 UTF-8 bytes로 인코딩해
-    `communicate(input_bytes)`로 한 번에 주입한다(EXECUTION_ADAPTER_CONTRACT §4 payload-as-
-    stdin). None이면 stdin 인자를 주지 않아 기존 동작을 그대로 유지한다. locale 의존
-    text wrapper(Windows cp949 등)를 타지 않도록 항상 bytes 경계만 쓴다.
+    Phase 9: `proc.kill()` 은 직계만 죽인다 — 트리 경계로 정리하고, 정리 열화는
+    **모든 반환 경로에서** `cleanup` 토큰으로 보고한다.
+
+    ⚠ **반환 지점은 하나다.** 예외 블록에서 곧바로 `return` 하면 그 반환값이 먼저 만들어져
+    `finally` 가 수집한 토큰이 유실된다(ztr P2 출력 R2 에서 실측된 실패).
     """
     start = time.monotonic()
     proc: asyncio.subprocess.Process | None = None
+    job = None
+    cleaned = False
+    late_cleanup: list[tuple[str, ...]] = []
+    cleanup: tuple[str, ...] = ()
+    stdout_b: bytes = b""
+    stderr_b: bytes = b""
+    exit_code: int | None = None
+    timed_out = False
+    error = ""
+    stderr_override: str | None = None
     input_bytes = stdin_text.encode("utf-8") if stdin_text is not None else None
     stdin_pipe = asyncio.subprocess.PIPE if stdin_text is not None else None
     try:
@@ -91,46 +112,44 @@ async def run_subprocess_tool(
             stdin=stdin_pipe,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            **spawn_kwargs(),
         )
+        job = attach(proc)   # Phase 9: spawn 직후 트리 경계에 편입
         stdout_b, stderr_b = await asyncio.wait_for(
             proc.communicate(input_bytes), timeout_s
         )
         exit_code = proc.returncode if proc.returncode is not None else -1
     except (asyncio.TimeoutError, TimeoutError):
-        if proc is not None and proc.returncode is None:
-            proc.kill()
-            stdout_b, stderr_b = await proc.communicate()
-        else:
-            stdout_b, stderr_b = b"", b""
-        return ToolRun(
-            command=tuple(command),
-            exit_code=None,
-            stdout=_decode(stdout_b),
-            stderr=_decode(stderr_b),
-            duration_s=time.monotonic() - start,
-            timed_out=True,
-            error="timeout",
-        )
+        timed_out = True
+        error = "timeout"
+        exit_code = None
+        if proc is not None:
+            # ⚠ `proc.returncode is None` 으로 가드하지 않는다 — **직계가 이미 죽었어도
+            # 트리는 살아 있을 수 있다**(중간 부모 선종료, P0 S2 실측).
+            stdout_b, stderr_b, cleanup = await terminate_tree(proc, job)
+            job, cleaned = None, True
     except OSError as exc:
-        return ToolRun(
-            command=tuple(command),
-            exit_code=None,
-            stdout="",
-            stderr=str(exc),
-            duration_s=time.monotonic() - start,
-            error=str(exc),
-        )
+        exit_code = None
+        error = str(exc)
+        stderr_override = str(exc)
+        stdout_b, stderr_b = b"", b""
     finally:
-        if proc is not None and proc.returncode is None:
-            proc.kill()
-            await proc.wait()
+        # 정상 종료 경로에서도 **반드시** 경계를 닫는다 — 남은 후손 정리 + Job 핸들 반납.
+        # ⚠ `job is not None` 으로 가드하지 않는다 — 편입 실패야말로 보고할 상황이다.
+        if proc is not None and not cleaned:
+            _out, _err, late = await terminate_tree(proc, job)
+            job = None
+            late_cleanup.append(late)   # 출력은 이미 확보했으므로 토큰만 수집
 
     return ToolRun(
         command=tuple(command),
         exit_code=exit_code,
-        stdout=_decode(stdout_b),
-        stderr=_decode(stderr_b),
+        stdout="" if stderr_override is not None else _decode(stdout_b),
+        stderr=stderr_override if stderr_override is not None else _decode(stderr_b),
         duration_s=time.monotonic() - start,
+        timed_out=timed_out,
+        error=error,
+        cleanup=merge_cleanup(cleanup, *late_cleanup),
     )
 
 
@@ -287,10 +306,12 @@ class ClaudeCliProbeDriver:
         )
         session_id, blocked_message = self._interpret(run)
         if blocked_message is not None:
-            return _blocked(blocked_message)
+            # Phase 9: BLOCKED 로 닫을 때도 정리 열화를 **삼키지 않는다**.
+            return _blocked(blocked_message, cleanup=run.cleanup)
         assert session_id is not None  # _interpret 계약: message None이면 session_id 존재
         return SegmentResult(
             status=SegmentStatus.AWAITING_GATE,
+            cleanup=run.cleanup,   # Phase 9: 정리 못 했으면 게이트에 그 사실이 실린다
             resume_token=session_id,
             message="awaiting human approval (claude-cli)",
             events=(
@@ -349,10 +370,12 @@ class ClaudeCliProbeDriver:
         )
         session_id, blocked_message = self._interpret(run)
         if blocked_message is not None:
-            return _blocked(blocked_message)
+            # Phase 9: BLOCKED 로 닫을 때도 정리 열화를 **삼키지 않는다**.
+            return _blocked(blocked_message, cleanup=run.cleanup)
         assert session_id is not None
         return SegmentResult(
             status=SegmentStatus.DONE,
+            cleanup=run.cleanup,
             message="approved by human gate (claude-cli)",
             events=(
                 _event(
@@ -681,8 +704,8 @@ def _launcher_command(launcher: str, *args: str) -> tuple[str, ...]:
     return (launcher, *args)
 
 
-def _blocked(message: str) -> SegmentResult:
-    return SegmentResult(status=SegmentStatus.BLOCKED, message=message)
+def _blocked(message: str, *, cleanup: tuple[str, ...] = ()) -> SegmentResult:
+    return SegmentResult(status=SegmentStatus.BLOCKED, message=message, cleanup=cleanup)
 
 
 def _event(

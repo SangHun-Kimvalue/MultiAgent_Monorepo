@@ -54,10 +54,10 @@
   `methodology/docs/EXECUTION_ADAPTER_CONTRACT.md` §3.3이다.
 - review artifact / raw output: `<repo 내부 evidence 경로>` / `<raw stdout·stderr 경로>`
 - verdict 계약: `PASS | CHANGES_REQUESTED | BLOCKED` enum + process exit code를 별도 기록. prose만으로 PASS를 재해석하지 않는다.
-- 증거 형식: 스킬 `assets/review-verdict.schema.json`(**2.0**) 필수 필드와 review 시각(UTC),
+- 증거 형식: 스킬 `assets/review-verdict.schema.json`(**2.1**) 필수 필드와 review 시각(UTC),
   review base SHA/reviewed paths를 기록한다. 2.0 은 `slice_id` · `work_grade` · `budget_limit` ·
   `rounds_consumed` 를 포함하며, `budget_limit` 은 `work_grade` 에서 파생된다(L0 2 / L1 3 / L2 4).
-- 예산 preflight: 독립 Reviewer 호출은 `scripts/review_budget_preflight.py` 를 통과한다. 축은 `--gate output`(구현 diff, 기본) / `--gate input`(문서·계획·프롬프트).
+- 예산 preflight: 독립 Reviewer 호출은 `scripts/review_budget_preflight.py` 를 통과한다. 축은 `--gate output`(구현 diff, 기본) / `--gate input`(문서·계획·프롬프트). 잔여 확인은 `--status`(부작용 없음).
   라운드 SoT 는 **phase 진행 문서의 단일 `review-budget` 블록**이며 별도 상태 파일을 만들지 않는다.
 - 폴백: `cross-lineage CLI → cross-lineage session → same-lineage independent context(degraded)`. 대체·열화는 완료 보고에 명시하며 리뷰를 생략하지 않는다.
 

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "alpha-suite",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "methodology/tests"
+      ],
+      "scope_class": "module-full"
+    },
+    {
+      "id": "beta-suite",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "methodology/tests/test_workflow_doctor.py"
+      ],
+      "scope_class": "focused"
+    }
+  ],
+  "rules": [
+    {
+      "id": "methodology-prefix",
+      "match": {"kind": "prefix", "value": "methodology/"},
+      "groups": ["alpha-suite"]
+    },
+    {
+      "id": "workflow-doctor-exact",
+      "match": {"kind": "exact", "value": "methodology/tools/workflow_doctor.py"},
+      "groups": ["beta-suite"]
+    }
+  ]
+}

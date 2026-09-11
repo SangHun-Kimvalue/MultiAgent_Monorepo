@@ -13,9 +13,10 @@
 | 계획·실측 방법 | `…/references/planning-method.md` | Planner 계획 절차 |
 | 리뷰 finding 정형 | `METHODOLOGY.md` §2 + `MULTI_AGENT.md` §4 | Reviewer 출력 |
 | finding disposition 양식 | `artifacts/finding-disposition.md` | Reviewer finding 선별·근거·corrective round·재리뷰 기록 |
-| 구현 리뷰 verdict 스키마/예시 | `plugins/agent-workflow/skills/phased-implementation-handoff/assets/review-verdict.schema.json`(2.0), `review-verdict.example.json` | cross-lineage provenance·enum verdict + **리뷰 예산**(`slice_id`/`work_grade`/`budget_limit`/`rounds_consumed`) 계약 |
+| 구현 리뷰 verdict 스키마/예시 | `plugins/agent-workflow/skills/phased-implementation-handoff/assets/review-verdict.schema.json`(2.1), `review-verdict.example.json` | cross-lineage provenance·enum verdict + **리뷰 예산**(`slice_id`/`work_grade`/`budget_limit`/`rounds_consumed`) 계약 |
+| 구 verdict 스키마(동결) | `.../assets/review-verdict-2.0.schema.json` | 과거 artifact 조회·감사용. **신규 생성은 거부**한다 |
 | 구 verdict 스키마(동결) | `.../assets/review-verdict-1.0.schema.json` | 과거 artifact 조회·감사용. **신규 생성은 거부**한다 |
-| 예산 preflight | `.../scripts/review_budget_preflight.py` | 독립 Reviewer 호출의 단일 강제 진입점. `--gate output`(구현 diff, 기본) / `--gate input`(문서·계획·프롬프트) 두 축을 분리 집행하며, 소진 시 호출하지 않고 four-way disposition 요구 |
+| 예산 preflight | `.../scripts/review_budget_preflight.py` | 독립 Reviewer 호출의 단일 강제 진입점. `--gate output`(구현 diff, 기본) / `--gate input`(문서·계획·프롬프트) 두 축을 분리 집행하며, 소진 시 호출하지 않고 four-way disposition 요구. **조회는 `--status`**(부작용 없음, 소진도 exit 0 + `remaining: 0` 사실 보고) |
 | 문서 체계(최소셋/풀셋) | `DOC_TAXONOMY.md` | 어떤 문서를 둘지 |
 | 프로젝트 config 템플릿 | `config/project.config.example.md` | 프로젝트 특화값(PARAM) |
 

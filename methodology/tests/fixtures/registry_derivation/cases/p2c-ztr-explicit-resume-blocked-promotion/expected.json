@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "case": "p2c-ztr-explicit-resume-blocked-promotion",
+  "source": "p2c-burned",
+  "module": "ztr",
+  "parent": "8394d8c63ba08a2cc94f66bacb34e2e885182108",
+  "fix": "74dcce651ae4d97b759d104eacb6efa0f5370109",
+  "gold_red_test_files": [
+    "runtimes/ztr/tests/test_phase_relay.py"
+  ],
+  "required_transitive_focused": {
+    "source_path": "runtimes/ztr/src/engine/resume_chain.py",
+    "must_include_test": "runtimes/ztr/tests/test_phase_relay.py"
+  }
+}

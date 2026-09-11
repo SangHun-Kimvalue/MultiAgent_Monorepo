@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "case": "hr-mam-f852-env",
+  "source": "hr-calibration",
+  "module": "methodology",
+  "parent": "d0b2d4e56139e4732b02072d8eaff859a60333bf",
+  "fix": "f8522037401a35cb1249aed8dc65d978ba9764b5",
+  "gold_red_test_files": [
+    "methodology/tests/test_execution_preflight.py"
+  ]
+}

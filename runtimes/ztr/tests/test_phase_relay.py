@@ -99,7 +99,9 @@ async def test_resume_leg_passes_transposed_cwd_and_new_leg_omits_it(
     class FakeProcess:
         returncode = 0
 
-        async def communicate(self, stdin: bytes) -> tuple[bytes, bytes]:
+        # 실제 `asyncio.subprocess.Process.communicate(input=None)` 는 인자가 선택이다.
+        # 스텁이 더 좁으면 인자 없이 부르는 정상 호출에서 TypeError 가 난다.
+        async def communicate(self, stdin: bytes | None = None) -> tuple[bytes, bytes]:
             return b"", b""
 
     async def fake_spawn(*args: object, **kwargs: object) -> FakeProcess:

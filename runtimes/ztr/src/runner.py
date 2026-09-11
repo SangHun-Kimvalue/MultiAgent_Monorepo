@@ -10,14 +10,21 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
+import importlib
+import io
 import json
 import logging
 import math
+import os
+import shutil
 import sys
 import time
+from contextlib import redirect_stdout
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, Callable, NamedTuple, Protocol, cast
 
 # Windows UTF-8 stdout (한국어 출력 깨짐 방지)
 if sys.platform == "win32":
@@ -51,7 +58,9 @@ from src.engine.fix_feedback import (
 from src.engine.reapply_ledger import (
     DEFAULT_MAX_ROUNDS,
     ReapplyLedger,
+    command_digest,
     decide_terminal_state,
+    final_verify_gate_check,
     findings_digest,
     gate_check,
     validate_max_rounds,
@@ -78,6 +87,7 @@ from src.engine.session_store import SessionStore
 from src.envelope import (
     Envelope,
     INTERNAL_ERROR_EXIT_CODE,
+    TIMEOUT_EXIT_CODE,
     Verdict,
     exit_code_for_verdict,
     redact_stderr,
@@ -105,12 +115,235 @@ class TargetInputError(ValueError):
     """review/verify target 선택 또는 사전조건 입력 오류."""
 
 
+class PhaseProjectionBlockedError(RuntimeError):
+    """Opt-in phase manifest/report 배선 실패."""
+
+
+class InitManifestFn(Protocol):
+    """methodology.phase.manifest.init_manifest 계약."""
+
+    def __call__(self, path: Path, phase_id: str, base_sha: str) -> int: ...
+
+
+class AppendEntryFn(Protocol):
+    """methodology.phase.manifest.append_entry 계약."""
+
+    def __call__(
+        self, path: Path, entry: dict[str, Any], dry_run: bool = False
+    ) -> int: ...
+
+
+class ProjectReportFn(Protocol):
+    """methodology.phase.report.project_report 계약."""
+
+    def __call__(self, manifest: Path, out: Path) -> int: ...
+
+
 class TargetSelection(NamedTuple):
     """target 표현과 실행 기준을 입력 모드별로 함께 고정한다."""
 
     paths: tuple[str, ...]
     execution_root: Path
     git_backed: bool
+
+
+async def _candidate_digest(base_sha: str, *, cwd: Path | None = None) -> tuple[str, Path]:
+    """tracked diff와 정렬된 untracked 내용 스냅샷을 SHA-256으로 묶는다."""
+    if not isinstance(base_sha, str) or not base_sha.strip():
+        raise FixRoundBlockedError("--base-sha는 비어 있지 않은 값이어야 합니다")
+    process_cwd = cwd or Path.cwd()
+    try:
+        repo_root = await resolve_repo_root(cwd=process_cwd)
+    except Exception as exc:
+        raise FixRoundBlockedError(f"candidate repository root 확인 실패: {exc}") from exc
+    git = shutil.which("git")
+    if git is None:
+        raise FixRoundBlockedError("git 실행 파일을 찾을 수 없습니다")
+    try:
+        diff_proc = await asyncio.create_subprocess_exec(
+            git,
+            "diff",
+            "--no-ext-diff",
+            "--no-textconv",
+            base_sha,
+            cwd=str(repo_root),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        diff_stdout_b, diff_stderr_b = await asyncio.wait_for(
+            diff_proc.communicate(), timeout=30.0
+        )
+    except TimeoutError as exc:
+        if "diff_proc" in locals() and diff_proc.returncode is None:
+            diff_proc.kill()
+            await diff_proc.communicate()
+        raise FixRoundBlockedError("candidate git diff가 30초 안에 끝나지 않았습니다") from exc
+    except OSError as exc:
+        raise FixRoundBlockedError(f"candidate git diff 실행 실패: {exc}") from exc
+    if diff_proc.returncode != 0:
+        detail = diff_stderr_b.decode("utf-8", errors="replace").strip()
+        raise FixRoundBlockedError(detail or "candidate git diff가 실패했습니다")
+
+    try:
+        untracked_proc = await asyncio.create_subprocess_exec(
+            git,
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            cwd=str(repo_root),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        untracked_stdout_b, untracked_stderr_b = await asyncio.wait_for(
+            untracked_proc.communicate(), timeout=30.0
+        )
+    except TimeoutError as exc:
+        if "untracked_proc" in locals() and untracked_proc.returncode is None:
+            untracked_proc.kill()
+            await untracked_proc.communicate()
+        raise FixRoundBlockedError(
+            "candidate untracked 목록 확인이 30초 안에 끝나지 않았습니다"
+        ) from exc
+    except OSError as exc:
+        raise FixRoundBlockedError(f"candidate untracked 목록 확인 실패: {exc}") from exc
+    if untracked_proc.returncode != 0:
+        detail = untracked_stderr_b.decode("utf-8", errors="replace").strip()
+        raise FixRoundBlockedError(detail or "candidate untracked 목록 확인이 실패했습니다")
+
+    untracked_paths = sorted(
+        path_bytes for path_bytes in untracked_stdout_b.split(b"\0") if path_bytes
+    )
+    digest = hashlib.sha256()
+
+    def update_record(record_type: bytes, payload: bytes) -> None:
+        digest.update(len(record_type).to_bytes(8, "big"))
+        digest.update(record_type)
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+
+    update_record(b"tracked-diff", diff_stdout_b)
+    update_record(b"untracked-count", len(untracked_paths).to_bytes(8, "big"))
+    try:
+        for path_bytes in untracked_paths:
+            relative_path = path_bytes.decode("utf-8", errors="surrogateescape")
+            candidate_path = repo_root / relative_path
+            update_record(b"untracked-path", path_bytes)
+            if candidate_path.is_symlink():
+                update_record(
+                    b"untracked-symlink-target",
+                    os.fsencode(os.readlink(candidate_path)),
+                )
+            else:
+                update_record(b"untracked-file-content", candidate_path.read_bytes())
+    except (OSError, UnicodeError) as exc:
+        raise FixRoundBlockedError(f"candidate untracked 내용 확인 실패: {exc}") from exc
+    return digest.hexdigest(), repo_root
+
+
+def _verification_command_records(
+    args: argparse.Namespace,
+) -> list[tuple[str, str, bool, float | None]]:
+    """implementer/autofix를 제외한 치환 전 gating 명령 사실을 보존한다."""
+    timeouts = _validated_leg_timeout_overrides(args)
+    records: list[tuple[str, str, bool, float | None]] = []
+    for name, attribute, timeout_name in (
+        ("mechanical-review", "mechanical_cmd", "mechanical"),
+        ("test", "test_cmd", "test"),
+        ("implementer-reviewer", "reviewer_cmd", "reviewer"),
+    ):
+        value = getattr(args, attribute, "")
+        if value:
+            records.append((name, value, True, timeouts[timeout_name]))
+    return records
+
+
+def _verification_commands_from_args(args: argparse.Namespace) -> list[RelayCommand]:
+    """candidate를 바꾸지 않는 mechanical/test/reviewer 명령만 만든다."""
+    timeouts = _validated_leg_timeout_overrides(args)
+    commands: list[RelayCommand] = []
+    if getattr(args, "mechanical_cmd", ""):
+        commands.append(RelayCommand.from_text(
+            name="mechanical-review",
+            value=args.mechanical_cmd,
+            timeout_s=timeouts["mechanical"],
+        ))
+    if getattr(args, "test_cmd", ""):
+        commands.append(RelayCommand.from_text(
+            name="test",
+            value=args.test_cmd,
+            timeout_s=timeouts["test"],
+        ))
+    if getattr(args, "reviewer_cmd", ""):
+        commands.append(RelayCommand.from_text(
+            name="implementer-reviewer",
+            value=args.reviewer_cmd,
+            verdict_source=getattr(args, "reviewer_verdict_source", "stdout_token"),
+            timeout_s=timeouts["reviewer"],
+        ))
+    return commands
+
+
+def _apply_focused_commands(
+    args: argparse.Namespace,
+    commands: list[RelayCommand],
+) -> tuple[list[RelayCommand], bool]:
+    """호출자가 명시한 focused 값만 해당 command argv로 치환한다."""
+    replacements = (
+        ("focused_mechanical_cmd", "mechanical-review"),
+        ("focused_test_cmd", "test"),
+    )
+    updated = list(commands)
+    focused = False
+    for attribute, target_name in replacements:
+        value = getattr(args, attribute, None)
+        if value is None:
+            continue
+        if not isinstance(value, str) or not value.strip():
+            raise FixRoundBlockedError(f"--{attribute.replace('_', '-')} 값이 비어 있습니다")
+        target_index = next(
+            (index for index, command in enumerate(updated) if command.name == target_name),
+            None,
+        )
+        if target_index is None:
+            raise FixRoundBlockedError(f"focused 치환 대상 {target_name} leg가 없습니다")
+        current = updated[target_index]
+        replacement = RelayCommand.from_text(
+            name=current.name,
+            value=value,
+            verdict_source=current.verdict_source,
+            gating=current.gating,
+            timeout_s=current.timeout_s,
+        )
+        updated[target_index] = replace(replacement, cwd=current.cwd)
+        focused = True
+    return updated, focused
+
+
+def _gating_leg_facts(report: PhaseRelayReport) -> list[dict[str, Any]]:
+    """자연어 없이 relay의 구조화 step 필드만 추출한다."""
+    return [
+        {
+            "name": step.name,
+            "status": step.status.value,
+            "skipped": step.skipped,
+        }
+        for step in report.steps
+        if step.gating
+    ]
+
+
+def _verification_result_error(
+    report: PhaseRelayReport,
+    commands: list[RelayCommand],
+) -> str | None:
+    expected = [command.name for command in commands]
+    actual = [step.name for step in report.steps if step.gating]
+    if actual != expected:
+        return "final-verify gating step 결과가 명령셋과 일치하지 않습니다"
+    if any(step.skipped for step in report.steps if step.gating):
+        return "final-verify gating step 결과에 skipped가 있습니다"
+    return None
 
 
 async def cmd_invoke(args: argparse.Namespace) -> None:
@@ -328,13 +561,16 @@ async def cmd_review(args: argparse.Namespace) -> None:
         role_binding = config.get_role_binding("mechanical")
         backend = role_binding.backend if role_binding is not None else "internal"
         model = role_binding.model if role_binding is not None else "static-review"
+        # Phase 9: 트리 정리를 보장 못 했으면 **외부 소비자가 보게** 흘린다.
+        # ⚠ `Envelope.not_claimed`(제약 없는 list[str])이지 `GoalIntentContext.not_claimed`
+        # (선언된 claim ID 전용)가 아니다 — 이름만 같고 계약이 다르다.
         envelope = report.as_envelope(
             backend=backend,
             model=model,
             duration_s=time.monotonic() - start,
             review_text=review_text,
             fallback_used=False,
-            not_claimed=not_claimed,
+            not_claimed=[*not_claimed, *report.cleanup_tokens()],
         )
     except TargetInputError as exc:
         envelope = _review_blocked_envelope(
@@ -551,6 +787,7 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
     emitted_bytes: bytes | None = None
     try:
         config = load_config(getattr(args, "config", None))
+        phase_paths = _init_phase_projection(args)
         if getattr(args, "goal_intent_context_file", None):
             process_cwd = Path.cwd()
             repo_root = await _resolve_goal_intent_repo_root(process_cwd)
@@ -604,6 +841,8 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
             commands=commands,
             resume_coordinator=resume_coordinator,
         )
+        if phase_paths is not None:
+            _complete_phase_projection(report, *phase_paths)
         after_fingerprints: dict[str, str] | None = None
         if goal_preflight is not None:
             after_fingerprints = await capture_fingerprints(
@@ -620,7 +859,8 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
             stdout=json.dumps(report.as_payload(), ensure_ascii=False),
             stderr_sanitized="",
             fallback_used=report.resume_fallback_used,
-            not_claimed=["full-e2e"],
+            # Phase 9: 정리 열화를 외부 경계까지 흘린다(출력 R1 P1).
+            not_claimed=["full-e2e", *report.cleanup_tokens()],
         )
         if goal_preflight is not None:
             if before_fingerprints is None or after_fingerprints is None:
@@ -634,6 +874,32 @@ async def cmd_run_phase(args: argparse.Namespace) -> None:
                     before_fingerprints, after_fingerprints
                 ),
             )
+    except PhaseProjectionBlockedError as exc:
+        blocked_exit_code = exit_code_for_verdict(Verdict.BLOCKED)
+        payload = {
+            "phase": {
+                "id": getattr(args, "phase_id", "phase"),
+                "prompt_path": str(getattr(args, "prompt_file", "")),
+                "run_dir": None,
+            },
+            "steps": [],
+            "summary": {
+                "verdict": Verdict.BLOCKED.value,
+                "exit_code": blocked_exit_code,
+                "completed": 0,
+                "total": 0,
+                "failed_step": None,
+            },
+        }
+        envelope = Envelope.from_verdict(
+            status=Verdict.BLOCKED,
+            backend="phase-relay",
+            model="relay",
+            duration_s=time.monotonic() - start,
+            stdout=json.dumps(payload, ensure_ascii=False),
+            stderr=str(exc),
+            not_claimed=["full-e2e"],
+        )
     except Exception as exc:
         payload = {
             "phase": {
@@ -693,6 +959,202 @@ async def _run_phase_once(
     return await relay.run()
 
 
+def _require_phase_output(path: Path, operation: str, exit_code: int) -> None:
+    """Projection API의 반환 코드와 필수 산출물을 fail-closed로 확인한다."""
+    if exit_code != 0:
+        raise PhaseProjectionBlockedError(
+            f"{operation} failed with exit code {exit_code}"
+        )
+    if not path.is_file():
+        raise PhaseProjectionBlockedError(
+            f"{operation} reported success without output: {path}"
+        )
+
+
+def _run_phase_projection_operation(
+    path: Path,
+    operation: str,
+    callback: Callable[[], int],
+) -> None:
+    """내부 API 출력을 격리하고 run-phase 단일 Envelope stdout을 보존한다."""
+    try:
+        with redirect_stdout(io.StringIO()):
+            exit_code = callback()
+    except Exception as exc:
+        raise PhaseProjectionBlockedError(f"{operation} failed: {exc}") from exc
+    _require_phase_output(path, operation, exit_code)
+
+
+def _load_phase_projection_api() -> tuple[
+    InitManifestFn, AppendEntryFn, ProjectReportFn
+]:
+    """Opt-in projection이 활성일 때만 methodology API를 로드한다."""
+    try:
+        manifest_module = importlib.import_module("methodology.phase.manifest")
+        report_module = importlib.import_module("methodology.phase.report")
+        init_manifest = cast(InitManifestFn, manifest_module.init_manifest)
+        append_entry = cast(AppendEntryFn, manifest_module.append_entry)
+        project_report = cast(ProjectReportFn, report_module.project_report)
+    except (ImportError, AttributeError) as exc:
+        raise PhaseProjectionBlockedError(
+            f"phase projection API import failed: {exc}; --phase-dir opt-in에는 "
+            "methodology import가 필요합니다. 저장소 루트에서 실행하거나 저장소 "
+            "루트를 Python import 경로에 포함하세요"
+        ) from exc
+    return init_manifest, append_entry, project_report
+
+
+def _init_phase_projection(args: argparse.Namespace) -> tuple[Path, Path] | None:
+    """Opt-in manifest를 relay 전에 초기화하고 capture 경계를 고정한다."""
+    raw_phase_dir = getattr(args, "phase_dir", None)
+    if raw_phase_dir is None:
+        return None
+    base_sha = getattr(args, "base_sha", None)
+    if base_sha is None:
+        raise PhaseProjectionBlockedError(
+            "--phase-dir 사용 시 --base-sha가 필요합니다"
+        )
+    init_manifest, _, _ = _load_phase_projection_api()
+
+    phase_dir = Path(raw_phase_dir).resolve()
+    expected_output_dir = (phase_dir / "runs").resolve()
+    actual_output_dir = Path(args.output_dir).resolve()
+    if actual_output_dir != expected_output_dir:
+        raise PhaseProjectionBlockedError(
+            "--phase-dir 사용 시 --output-dir은 정확히 <phase-dir>/runs여야 합니다"
+        )
+
+    manifest_path = phase_dir / "phase-manifest.json"
+    report_path = phase_dir / "PHASE_REPORT.md"
+    if report_path.exists():
+        raise PhaseProjectionBlockedError(
+            "phase projection output already exists; --phase-dir must be new"
+        )
+
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    _run_phase_projection_operation(
+        manifest_path,
+        "init_manifest",
+        lambda: init_manifest(manifest_path, args.phase_id, base_sha),
+    )
+    return manifest_path, report_path
+
+
+def _phase_manifest_entry(step: Any, index: int, phase_dir: Path) -> dict[str, Any]:
+    """Relay step을 manifest 닫힌 스키마의 한 entry로 변환한다."""
+    if step.skipped:
+        return {
+            "kind": "validation_fact",
+            "name": step.name,
+            "result": "SKIPPED",
+        }
+    if step.name == "implementer-scope-guard":
+        return {
+            "kind": "validation_fact",
+            "name": step.name,
+            "result": "BLOCKED",
+        }
+    if (
+        step.name == "implementer"
+        or step.name == "autofix"
+        or step.name.startswith("autofix-")
+    ):
+        return {"kind": "command", "argv": step.command}
+
+    subjects = {
+        "mechanical-review": "mechanical",
+        "test": "test",
+        "implementer-reviewer": "diff",
+    }
+    subject = subjects.get(step.name)
+    if subject is None:
+        raise PhaseProjectionBlockedError(
+            f"unsupported relay step for phase manifest: {step.name}"
+        )
+    if step.envelope_path is None:
+        raise PhaseProjectionBlockedError(
+            f"relay step has no envelope artifact: {step.name}"
+        )
+    envelope_path = step.envelope_path.resolve()
+    try:
+        artifact_ref = envelope_path.relative_to(phase_dir).as_posix()
+        content_sha256 = hashlib.sha256(envelope_path.read_bytes()).hexdigest()
+    except (OSError, ValueError) as exc:
+        raise PhaseProjectionBlockedError(
+            f"relay step envelope is unavailable inside phase directory: {step.name}"
+        ) from exc
+    entry = {
+        "kind": "verdict",
+        "verdict": step.status.value,
+        "exit_code": exit_code_for_verdict(step.status),
+        "artifact_ref": artifact_ref,
+        "content_sha256": content_sha256,
+        "attempt_id": f"{step.name}-{index}",
+        "stage": "implementation_review",
+        "subject": subject,
+    }
+    if step.exit_code == TIMEOUT_EXIT_CODE:
+        entry["failure_reason"] = "timeout"
+    return entry
+
+
+def _read_manifest_state(
+    manifest_path: Path,
+) -> list[dict[str, Any]]:
+    """append 결과 검증용 manifest 상태를 fail-closed로 재독한다."""
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise PhaseProjectionBlockedError(
+            f"append_entry output is unavailable or invalid JSON: {manifest_path}: {exc}"
+        ) from exc
+    if not isinstance(manifest, dict):
+        raise PhaseProjectionBlockedError(
+            f"append_entry output has invalid top-level fields: {manifest_path}"
+        )
+    entries = manifest.get("entries")
+    if not isinstance(entries, list) or not all(
+        isinstance(item, dict) for item in entries
+    ):
+        raise PhaseProjectionBlockedError(
+            f"append_entry output has invalid entries: {manifest_path}"
+        )
+    return entries
+
+
+def _complete_phase_projection(
+    relay_report: PhaseRelayReport,
+    manifest_path: Path,
+    report_path: Path,
+) -> None:
+    """완성된 relay report를 순서대로 append한 뒤 단일 보고서를 투영한다."""
+    _, append_entry, project_report = _load_phase_projection_api()
+    phase_dir = manifest_path.parent.resolve()
+    for index, step in enumerate(relay_report.steps):
+        entry = _phase_manifest_entry(step, index, phase_dir)
+        entries_before = _read_manifest_state(manifest_path)
+        _run_phase_projection_operation(
+            manifest_path,
+            "append_entry",
+            lambda: append_entry(manifest_path, entry),
+        )
+        entries_after = _read_manifest_state(manifest_path)
+        appended_entry = entries_after[-1] if entries_after else {}
+        appended_projection = {key: appended_entry.get(key) for key in entry}
+        if (
+            len(entries_after) != len(entries_before) + 1
+            or appended_projection != entry
+        ):
+            raise PhaseProjectionBlockedError(
+                "append_entry reported success without appending the expected entry"
+            )
+    _run_phase_projection_operation(
+        report_path,
+        "project_report",
+        lambda: project_report(manifest_path, report_path),
+    )
+
+
 async def cmd_fix_round(args: argparse.Namespace) -> None:
     """CHANGES_REQUESTED finding을 같은 implementer thread에서 정확히 1회 재검증한다."""
     start = time.monotonic()
@@ -709,6 +1171,10 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
     before_fingerprints: dict[str, str] | None = None
     after_fingerprints: dict[str, str] | None = None
     emitted_bytes: bytes | None = None
+    focused = False
+    candidate_digest_value = ""
+    command_digest_value = ""
+    base_sha = ""
     started_at = datetime.now().astimezone().isoformat()
     try:
         original_prompt_path = str(args.prompt_file)
@@ -828,6 +1294,14 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
             raise FixRoundBlockedError("session-map에 implementer id가 없어 같은 thread resume을 보장할 수 없습니다")
 
         round_index = ledger.next_round_index
+        commands = _relay_commands_from_args(args)
+        command_records = _verification_command_records(args)
+        commands, focused = _apply_focused_commands(args, commands)
+        if focused:
+            base_sha = getattr(args, "base_sha", None) or ""
+            command_digest_value = command_digest(command_records)
+            # relay가 파일을 바꾸기 전에 base가 유효하고 Git 경로가 살아 있는지 닫힌 게이트로 확인한다.
+            await _candidate_digest(base_sha)
         fix_prompt = build_fix_resume_prompt(original_prompt, findings)
         fix_path = Path(args.output_dir) / f"{args.phase_id}-round-{round_index}-fix-prompt.md"
         fix_path.parent.mkdir(parents=True, exist_ok=True)
@@ -835,7 +1309,6 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
 
         args.prompt_file = str(fix_path)
         args.implementer_resume = implementer_id
-        commands = _relay_commands_from_args(args)
         coordinator = _resume_coordinator_from_args(args)
         if goal_preflight is not None:
             goal_preflight.assert_inputs_unchanged()
@@ -855,6 +1328,8 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
                     goal_preflight.repo_root,
                     excluded_paths=goal_preflight.excluded_paths,
                 )
+        if focused:
+            candidate_digest_value, _ = await _candidate_digest(base_sha)
         envelope = Envelope(
             status=report.status,
             exit_code=report.exit_code,
@@ -864,7 +1339,7 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
             stdout=json.dumps(report.as_payload(), ensure_ascii=False),
             stderr_sanitized="",
             fallback_used=report.resume_fallback_used,
-            not_claimed=["full-e2e"],
+            not_claimed=["full-e2e", *(["full-regression"] if focused else [])],
         )
     except SystemExit as exc:
         if envelope is None:
@@ -931,7 +1406,7 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
         previous_digest = (
             ledger.rounds[-1].get("result_digest") if ledger.rounds else None
         )
-        ledger.rounds.append({
+        round_entry: dict[str, Any] = {
             "index": round_index,
             "verdict": envelope.status.value,
             "exit_code": envelope.exit_code,
@@ -942,13 +1417,23 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
             "started_at": started_at,
             "duration_s": time.monotonic() - start,
             "note": "",
-        })
+        }
+        if focused:
+            round_entry.update({
+                "focused": True,
+                "legs": _gating_leg_facts(report) if report is not None else [],
+                "candidate_digest": candidate_digest_value,
+                "base_sha": base_sha,
+                "command_digest": command_digest_value,
+            })
+        ledger.rounds.append(round_entry)
         ledger.terminal_state = decide_terminal_state(
             verdict=envelope.status,
             rounds_used=len(ledger.rounds),
             max_rounds=ledger.max_rounds,
             prev_result_digest=previous_digest,
             this_result_digest=result_digest,
+            focused=focused,
         )
         if (
             envelope.status == Verdict.CHANGES_REQUESTED
@@ -1025,6 +1510,124 @@ async def cmd_fix_round(args: argparse.Namespace) -> None:
         )
     else:
         print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
+    sys.exit(envelope.exit_code)
+
+
+async def cmd_final_verify(args: argparse.Namespace) -> None:
+    """focused candidate에 묶인 full 검증 명령을 정확히 한 번 소비한다."""
+    start = time.monotonic()
+    ledger: ReapplyLedger | None = None
+    report: PhaseRelayReport | None = None
+    envelope: Envelope | None = None
+    record_handle: RecordHandle | None = None
+    try:
+        config = load_config(getattr(args, "config", None))
+        record_handle = _start_recording(
+            args,
+            config=config,
+            task=f"ztr final-verify {args.phase_id}",
+            target_file=str(args.prompt_file),
+            metadata={
+                "command": "final-verify",
+                "phase_id": args.phase_id,
+                "prompt_file": str(args.prompt_file),
+                "ledger": str(args.ledger),
+                "base_sha": str(getattr(args, "base_sha", "")),
+            },
+        )
+        ledger = ReapplyLedger.load(args.ledger)
+        base_sha = getattr(args, "base_sha", None) or ""
+        candidate_digest_value, _ = await _candidate_digest(base_sha)
+        command_digest_value = command_digest(_verification_command_records(args))
+        gate_error = final_verify_gate_check(
+            ledger,
+            base_sha=base_sha,
+            candidate_digest=candidate_digest_value,
+            command_digest_value=command_digest_value,
+        )
+        if gate_error is not None:
+            raise FixRoundBlockedError(gate_error)
+
+        commands = _verification_commands_from_args(args)
+        report = await _run_phase_once(
+            args,
+            commands=commands,
+            resume_coordinator=None,
+        )
+
+        result_error = _verification_result_error(report, commands)
+        if result_error is not None:
+            raise FixRoundBlockedError(result_error)
+        after_candidate_digest, _ = await _candidate_digest(base_sha)
+        if after_candidate_digest != candidate_digest_value:
+            raise FixRoundBlockedError(
+                "final-verify 실행 중 candidate_digest가 변경되었습니다"
+            )
+
+        gating_steps = [step for step in report.steps if step.gating]
+        all_steps_passed = all(
+            step.status == Verdict.PASS and step.exit_code == 0
+            for step in gating_steps
+        )
+        if report.status == Verdict.PASS and report.exit_code == 0 and not all_steps_passed:
+            raise FixRoundBlockedError(
+                "final-verify summary PASS와 gating step PASS/0 사실이 일치하지 않습니다"
+            )
+        envelope = Envelope(
+            status=report.status,
+            exit_code=report.exit_code,
+            backend="phase-relay",
+            model="final-verify",
+            duration_s=time.monotonic() - start,
+            stdout=json.dumps(report.as_payload(), ensure_ascii=False),
+            stderr_sanitized="",
+            fallback_used=report.resume_fallback_used,
+            not_claimed=["full-e2e"],
+        )
+        if report.status == Verdict.PASS and report.exit_code == 0 and all_steps_passed:
+            ledger.append_full_verification({
+                "base_sha": base_sha,
+                "candidate_digest": candidate_digest_value,
+                "command_digest": command_digest_value,
+                "legs": _gating_leg_facts(report),
+                "completed_at": datetime.now().astimezone().isoformat(),
+            })
+            ledger.terminal_state = "CONVERGED"
+            ledger.save()
+    except FixRoundBlockedError as exc:
+        envelope = Envelope.from_verdict(
+            status=Verdict.BLOCKED,
+            backend="phase-relay",
+            model="final-verify",
+            duration_s=time.monotonic() - start,
+            stderr=str(exc),
+            not_claimed=["full-e2e"],
+        )
+    except Exception as exc:
+        envelope = Envelope(
+            status=Verdict.BLOCKED,
+            exit_code=INTERNAL_ERROR_EXIT_CODE,
+            backend="phase-relay",
+            model="final-verify",
+            duration_s=time.monotonic() - start,
+            stdout="",
+            stderr_sanitized=redact_stderr(str(exc)),
+            fallback_used=False,
+            not_claimed=["full-e2e"],
+        )
+
+    if envelope is None:
+        envelope = Envelope(
+            status=Verdict.BLOCKED,
+            exit_code=INTERNAL_ERROR_EXIT_CODE,
+            backend="phase-relay",
+            model="final-verify",
+            duration_s=time.monotonic() - start,
+            stderr_sanitized="final-verify finished without envelope",
+            not_claimed=["full-e2e"],
+        )
+    _finish_recording(record_handle, envelope, rounds=1 if report is not None else 0)
+    print(json.dumps(envelope.as_stdout_payload(), ensure_ascii=False))
     sys.exit(envelope.exit_code)
 
 
@@ -1789,6 +2392,16 @@ def main() -> None:
         help="캡처 디렉터리 식별자 (기본: phase)",
     )
     p_run_phase.add_argument(
+        "--phase-dir",
+        default=None,
+        help="opt-in phase manifest/report 출력 디렉터리",
+    )
+    p_run_phase.add_argument(
+        "--base-sha",
+        default=None,
+        help="phase manifest 기준 40자리 git SHA (--phase-dir 사용 시 필수)",
+    )
+    p_run_phase.add_argument(
         "--timeout",
         type=float,
         default=600.0,
@@ -1921,6 +2534,21 @@ def main() -> None:
     p_fix_round.add_argument("--autofix-cmd", action="append", default=None, help="non-gating autofix leg")
     p_fix_round.add_argument("--mechanical-cmd", default="", help="기계 리뷰 leg 명령")
     p_fix_round.add_argument("--test-cmd", default="", help="테스트 leg 명령")
+    p_fix_round.add_argument(
+        "--focused-mechanical-cmd",
+        default=None,
+        help="이번 라운드에서만 mechanical-review value를 치환",
+    )
+    p_fix_round.add_argument(
+        "--focused-test-cmd",
+        default=None,
+        help="이번 라운드에서만 test value를 치환",
+    )
+    p_fix_round.add_argument(
+        "--base-sha",
+        default="",
+        help="focused candidate digest의 git diff 기준 SHA",
+    )
     p_fix_round.add_argument("--session-map", required=True, help="implementer id가 든 session map")
     p_fix_round.add_argument("--implementer-resume", default="new", help="호환 인자; session-map id로 강제됨")
     p_fix_round.add_argument("--reviewer-resume", default="new", help="reviewer resume 정책")
@@ -1944,6 +2572,32 @@ def main() -> None:
         choices=["stdout_token", "exit_code"],
         default="stdout_token",
         help="reviewer leg verdict 소스",
+    )
+
+    p_final_verify = sub.add_parser(
+        "final-verify",
+        help="focused candidate에 묶인 full 검증 명령을 정확히 1회 실행",
+    )
+    p_final_verify.add_argument("--prompt-file", required=True, help="검증 leg stdin 프롬프트 파일")
+    p_final_verify.add_argument("--ledger", required=True, help="focused 라운드가 든 재적용 원장")
+    p_final_verify.add_argument("--base-sha", required=True, help="candidate git diff 기준 SHA")
+    p_final_verify.add_argument("--phase-id", default="final-verify", help="캡처 디렉터리 식별자")
+    p_final_verify.add_argument("--timeout", type=float, default=600.0, help="각 검증 leg 타임아웃 초")
+    _add_leg_timeout_arguments(p_final_verify)
+    p_final_verify.add_argument("--output-dir", default=".ztr/run-phase", help="검증 캡처 디렉터리")
+    p_final_verify.add_argument("--mechanical-cmd", default="", help="full 기계 리뷰 leg 명령")
+    p_final_verify.add_argument("--test-cmd", default="", help="full 테스트 leg 명령")
+    p_final_verify.add_argument("--reviewer-cmd", default="", help="full 구현 리뷰 leg 명령")
+    p_final_verify.add_argument(
+        "--reviewer-verdict-source",
+        choices=["stdout_token", "exit_code"],
+        default="stdout_token",
+        help="reviewer leg verdict 소스",
+    )
+    p_final_verify.add_argument(
+        "--record",
+        action="store_true",
+        help="SessionStore에 final-verify 결과를 관측 기록",
     )
 
     # fix-prompt — (ㄱ) 휴먼-게이트 fix-resume 프롬프트 빌더(사람 트리거, 자동 루프 아님)
@@ -2047,6 +2701,8 @@ def main() -> None:
         asyncio.run(cmd_run_phase(args))
     elif args.command == "fix-round":
         asyncio.run(cmd_fix_round(args))
+    elif args.command == "final-verify":
+        asyncio.run(cmd_final_verify(args))
     elif args.command == "reapply-status":
         cmd_reapply_status(args)
     elif args.command == "fix-prompt":

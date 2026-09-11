@@ -1,0 +1,69 @@
+name: r5-gates
+
+# 결정론 게이트(pytest exit code)만으로 초록/빨강을 가른다(R5).
+# continue-on-error · `|| true` 금지 — 실패를 초록으로 위장하지 않는다.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: utf-8
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # 사유: methodology 테스트가 원시 바이트 해시를 대조한다 — windows 러너 기본 core.autocrlf=true 의 CRLF 체크아웃이면 깨진다.
+      - name: 줄바꿈 고정(CRLF 체크아웃 방지)
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # 런타임별 venv — 두 런타임 모두 `tests` 패키지를 써서 한 venv 에 같이 설치하면 충돌한다.
+      # 경로 고정: methodology/tests/test_remediation_adapter.py 가 runtimes/ztr/.venv/Scripts/python.exe 를 직접 부른다.
+      - name: venv ztr (+ methodology 테스트 의존성)
+        run: |
+          python -m venv runtimes/ztr/.venv
+          runtimes/ztr/.venv/Scripts/python.exe -m pip install --upgrade pip
+          runtimes/ztr/.venv/Scripts/python.exe -m pip install -e "runtimes/ztr[dev]" -r methodology/tests/requirements.txt
+
+      - name: venv acp
+        run: |
+          python -m venv runtimes/acp/.venv
+          runtimes/acp/.venv/Scripts/python.exe -m pip install --upgrade pip
+          runtimes/acp/.venv/Scripts/python.exe -m pip install -e "runtimes/acp[dev]"
+
+      - name: ztr pytest
+        working-directory: runtimes/ztr
+        run: .venv/Scripts/python.exe -m pytest -q
+
+      - name: acp pytest
+        working-directory: runtimes/acp
+        run: .venv/Scripts/python.exe -m pytest -q
+
+      - name: methodology pytest
+        # deselect 3건 사유: 정본 커밋 SHA 구간을 git 으로 재측정하는 테스트다 — 미러는 orphan 이력이라 정본 SHA 가 없다(CI 체크아웃은 얕은 이력이기도 하다).
+        run: >-
+          runtimes/ztr/.venv/Scripts/python.exe -m pytest -q
+          methodology/tests
+          methodology/t8
+          methodology/plugins/agent-workflow/skills/phased-implementation-handoff/scripts
+          methodology/plugins/agent-workflow/skills/phase-learning-debrief
+          --deselect "methodology/tests/test_validation_impact_selector_calibration.py::test_fixture_paths_equal_git_re_measure[mam-f852-env]"
+          --deselect "methodology/tests/test_validation_impact_selector_calibration.py::test_fixture_paths_equal_git_re_measure[t14-s6]"
+          --deselect "methodology/tests/test_validation_impact_selector_calibration.py::test_fixture_paths_equal_git_re_measure[ztr-4ffe-verdict]"

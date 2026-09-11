@@ -17,6 +17,12 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
+from src.engine.process_supervisor import (
+    attach,
+    merge_cleanup,
+    spawn_kwargs,
+    terminate_tree,
+)
 from src.envelope import (
     INTERNAL_ERROR_EXIT_CODE,
     TIMEOUT_EXIT_CODE,
@@ -138,6 +144,8 @@ class RelayStepResult:
     stderr_sanitized: str = ""
     resume: dict[str, Any] | None = None
     scope_violations: list[dict[str, str]] | None = None
+    #: 트리 정리 결과 토큰(Phase 9). 비어 있으면 정리 완료. 안정 enum(R5).
+    cleanup: tuple[str, ...] = ()
 
     def as_payload(self) -> dict[str, Any]:
         """Envelope stdout 내부에 넣을 JSON-safe payload를 반환한다."""
@@ -176,6 +184,14 @@ class PhaseRelayReport:
     steps: list[RelayStepResult] = field(default_factory=list)
     resume_fallback_used: bool = False
     resume_warnings: list[str] = field(default_factory=list)
+
+    def cleanup_tokens(self) -> tuple[str, ...]:
+        """leg 들의 트리 정리 열화를 모은다(Phase 9). 정본 = `process_supervisor`.
+
+        비어 있지 않으면 정리를 보장하지 못했다는 뜻이며, 호출자는 이를
+        `Envelope.not_claimed` 로 흘려 외부 소비자가 보게 해야 한다(출력 R1 P1).
+        """
+        return merge_cleanup(*(step.cleanup for step in self.steps))
 
     @property
     def status(self) -> Verdict:
@@ -572,6 +588,12 @@ class PhaseRelay:
         stderr_text = ""
         child_exit_code: int | None = None
         timed_out = False
+        cleanup: tuple[str, ...] = ()
+        job = None
+        cleaned = False
+        # spawn 자체가 실패하면 아래 try 안에서 proc 이 바인딩되지 않는다.
+        # finally 가 참조하므로 **미리 None 으로 둔다**(회귀 실측으로 확인).
+        proc: asyncio.subprocess.Process | None = None
         actual_timeout_s: float | None = None
         effective_timeout_s = command.timeout_s or self._timeout_s
 
@@ -583,6 +605,7 @@ class PhaseRelay:
                     stdin=asyncio.subprocess.PIPE,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
+                    **spawn_kwargs(),
                 )
             else:
                 proc = await asyncio.create_subprocess_exec(
@@ -591,7 +614,9 @@ class PhaseRelay:
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                     cwd=command.cwd,
+                    **spawn_kwargs(),
                 )
+            job = attach(proc)   # Phase 9: spawn 직후 트리 경계에 편입
             # child 반환 이전의 resolve/create 실패는 실행 attempt가 아니다.
             actual_timeout_s = effective_timeout_s
             try:
@@ -602,8 +627,10 @@ class PhaseRelay:
                 child_exit_code = proc.returncode
             except asyncio.TimeoutError:
                 timed_out = True
-                proc.kill()
-                stdout_b, stderr_b = await proc.communicate()
+                # Phase 9: proc.kill()은 직계만 죽인다. 손자가 파이프를 쥐면 아래
+                # communicate()가 EOF를 못 받아 **무한 대기**했다(실측 재현).
+                stdout_b, stderr_b, cleanup = await terminate_tree(proc, job)
+                job, cleaned = None, True   # 핸들은 terminate_tree 가 반납했다
                 child_exit_code = proc.returncode
 
             stdout_text = stdout_b.decode("utf-8", errors="replace")
@@ -619,6 +646,18 @@ class PhaseRelay:
             status = Verdict.BLOCKED
             exit_code = INTERNAL_ERROR_EXIT_CODE
             stderr_text = str(exc)
+        finally:
+            # Phase 9: 정상·예외 어느 경로로 빠져나가도 경계를 닫는다.
+            # ① 남은 후손 정리 ② Job 핸들 반납(안 하면 누수). bounded 라 행에 안 빠진다.
+            # ⚠ **토큰을 버리지 않는다** — 정상 종료 경로에서 편입·종료가 실패해도
+            # 결과가 깨끗해 보이면 silent fallback 이다(출력 R1 P1).
+            # ⚠ `job is not None` 으로 가드하지 않는다 — **편입 자체가 실패한 경우**
+            # (job is None) 야말로 정리를 보장 못 했다고 보고해야 할 상황이다.
+            # 가드를 두면 그 열화가 조용히 사라진다(테스트로 실측 확인).
+            if proc is not None and not cleaned:
+                _out, _err, late = await terminate_tree(proc, job)
+                job = None
+                cleanup = merge_cleanup(cleanup, late)
 
         duration_s = time.monotonic() - start
         stdout_path.write_text(stdout_text, encoding="utf-8")
@@ -634,6 +673,7 @@ class PhaseRelay:
             skipped=False,
             gating=command.gating,
             timeout_s=actual_timeout_s,
+            cleanup=cleanup,
             stdin_path=stdin_path,
             stdout_path=stdout_path,
             stderr_path=stderr_path,

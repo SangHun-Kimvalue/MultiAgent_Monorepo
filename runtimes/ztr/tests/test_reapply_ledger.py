@@ -412,3 +412,54 @@ def test_round_index_and_remaining_boundaries(tmp_path: Path) -> None:
     assert (ledger.next_round_index, ledger.rounds_remaining) == (1, 2)
     ledger.rounds.extend([{}, {}])
     assert (ledger.next_round_index, ledger.rounds_remaining) == (3, 0)
+
+
+def test_command_digest_binds_order_values_gating_and_timeout() -> None:
+    from src.engine.reapply_ledger import command_digest
+
+    commands = [
+        ("mechanical-review", '["preen", "--changed"]', True, 11.0),
+        ("test", '["pytest", "focused"]', True, 12.0),
+        ("implementer-reviewer", '["claude", "-p"]', True, None),
+    ]
+    expected = command_digest(commands)
+
+    for changed in (
+        list(reversed(commands)),
+        [commands[0], ("test", '["pytest", "full"]', True, 12.0), commands[2]],
+        [commands[0], ("test", commands[1][1], False, 12.0), commands[2]],
+        [commands[0], ("test", commands[1][1], True, 13.0), commands[2]],
+    ):
+        assert command_digest(changed) != expected
+
+
+def test_focused_pass_waits_for_final_verify_instead_of_converging() -> None:
+    assert decide_terminal_state(
+        verdict=Verdict.PASS,
+        rounds_used=1,
+        max_rounds=3,
+        prev_result_digest=None,
+        this_result_digest=EMPTY_FINDINGS_DIGEST,
+        focused=True,
+    ) == "AWAITING_FINAL_VERIFY"
+
+
+def test_full_verification_consumer_is_write_once(tmp_path: Path) -> None:
+    ledger = ReapplyLedger.create(tmp_path / "ledger.json", phase_id="phase", max_rounds=3)
+    verification = {
+        "base_sha": "base",
+        "candidate_digest": "a" * 64,
+        "command_digest": "b" * 64,
+        "legs": [
+            {"name": "mechanical-review", "status": "PASS", "skipped": False},
+            {"name": "test", "status": "PASS", "skipped": False},
+            {"name": "implementer-reviewer", "status": "PASS", "skipped": False},
+        ],
+        "completed_at": "2026-08-27T00:00:00+09:00",
+    }
+
+    ledger.append_full_verification(verification)
+    with pytest.raises(ValueError, match="이미 소비"):
+        ledger.append_full_verification(dict(verification))
+
+    assert ledger.full_verifications == [verification]

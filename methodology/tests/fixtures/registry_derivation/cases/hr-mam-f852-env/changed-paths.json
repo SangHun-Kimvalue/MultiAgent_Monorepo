@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "paths": [
+    "methodology/docs/HANDOFF.md",
+    "methodology/docs/MAM_ZTR_P5_ACCEPTED_FINDING_REPORT.json",
+    "methodology/docs/MAM_ZTR_P5_CORRECTIVE_BASE.md",
+    "methodology/docs/MAM_ZTR_P5_CORRECTIVE_PROMPT.md",
+    "methodology/docs/MAM_ZTR_P5_FINAL_AUDIT_PROMPT.md",
+    "methodology/docs/MAM_ZTR_P5_FINAL_AUDIT_REVIEW.md",
+    "methodology/docs/MAM_ZTR_P5_FINDING_DISPOSITION.md",
+    "methodology/docs/MAM_ZTR_P5_REMEDIATION_DISPOSITION.json",
+    "methodology/docs/MAM_ZTR_PROCESS_HARDENING_ROADMAP.md",
+    "methodology/docs/PHASE_CYCLE_ORCHESTRATOR_DESIGN.md",
+    "methodology/docs/lessons/mam-ztr-process.md",
+    "methodology/tests/test_execution_preflight.py",
+    "methodology/tools/execution_preflight.py"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "matches": [
+    {
+      "path": "runtimes/acp/src/acp/dashboard/app.py",
+      "rule_ids": ["acp-prefix"],
+      "group_ids": ["acp-tests"]
+    },
+    {
+      "path": "runtimes/acp/tests/test_dashboard_events.py",
+      "rule_ids": ["acp-prefix"],
+      "group_ids": ["acp-tests"]
+    }
+  ],
+  "recommended_groups": [
+    {
+      "id": "acp-tests",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "runtimes/acp/tests"
+      ],
+      "scope_class": "module-full"
+    }
+  ]
+}

@@ -34,6 +34,7 @@
   콜백 스레드 비차단 / 공개 시그니처 유지>
 
 [불변 원칙] <무수정 대상(본문 로직/특정 매크로), 스레드 안전(FLTK·블로킹 금지), schema 유지, silent fallback 금지 등>
+  + 실행 단계 모드: 각 leg·단계 시작 전에 `completion_mode=unattended|interactive_checkpoint`를 명시한다. `unattended`는 확인창 가능 표시 호출 없이 비대화형 검증만 하며, 불가 검증은 증거와 `NOT CLAIMED` 또는 명시적 human checkpoint로 넘긴다. 세부 어댑터 예외·저장·전달 정책은 [LESSON-M061](unattended-completion.md)을 따른다.
   + Timebox: 같은 축 수정이 N회(예: 3회) 안 풀리면 멈추고 실패 로그+원인+다음 접근을 보고. 무한 수정 루프 금지.
 
 [검증/DoD]
@@ -86,6 +87,10 @@
   보고는 `changed files / tests run / runtime artifacts / assumptions / remaining risks`.
 - **request-review** (교차 리뷰): `Accepted decision / Changed files / Verification artifacts / Phase boundary` →
   finding은 `severity / finding / evidence_or_repro / impact / recommendation`. 근거 없는 blocker 금지.
+  ⭐ **모든 리뷰 요청에 필수 — 손으로 쓴 요청서·stdin 패킷 포함**: `proportionality: PROPORTIONATE | OVERENGINEERED`
+  판정과 `[삭제 권고] <절> — 무엇을 막나 / 실제로 일어나나 / 더 싼 대안`(없으면 "없음")을 출력 계약으로 요구한다.
+  스키마(`review-verdict` 2.1)는 JSON verdict 를 만드는 경로에만 닿는다 — **요청서에 없으면 그 라운드의 비례성 판정은 0 이다**
+  ([[LESSON-M068]]).
 
 ## 작성 팁
 - **[아키텍처 결정]이 가장 중요.** 구현자가 가장 자주 틀리는 한두 지점을 미리 못박는다(예: 비차단 enqueue, 주입 패턴).

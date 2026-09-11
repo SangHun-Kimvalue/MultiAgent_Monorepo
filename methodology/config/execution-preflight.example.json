@@ -57,16 +57,18 @@
       "id": "claude",
       "executable": "C:\\Users\\user\\.local\\bin\\claude.exe",
       "version_expected_substring": "2.1.206 (Claude Code)",
-      "model": "sonnet",
+      "model": "opus",
       "model_binding_kind": "moving_profile",
       "planned_argv": [
         "C:\\Users\\user\\.local\\bin\\claude.exe",
         "-p",
         "--model",
-        "sonnet",
+        "opus",
         "--effort",
         "medium",
-        "--no-session-persistence"
+        "--no-session-persistence",
+        "--output-format",
+        "json"
       ],
       "working_directory": ".",
       "artifact_root": "methodology/docs",

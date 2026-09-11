@@ -9,16 +9,31 @@ exit code 계약:
   1 = 스코프/프로토콜 위반 (브랜치 전환·스코프 불일치 등 — 사람이 판단할 위반)
   2 = 전제/환경 실패 (스냅샷 없음·git 실패·worktree 충돌 — fail-closed)
 """
-from __future__ import annotations
-
 import argparse
 import json
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 SNAPSHOT_NAME = "t8-snapshot.json"  # git-dir 내부 = 비추적, repo 무오염
 _GLOB_MAGIC = ("*", "?", "[")  # pathspec 확장 문자 — 파일-한정 원칙과 충돌(독립 리뷰 P1)
+
+
+@dataclass(frozen=True)
+class PathVerdict:
+    ok: bool
+    repo_relative: str | None
+    reason: str | None
+
+
+_PATH_VIOLATION_MESSAGES = {
+    "outside_repo": "T8_VIOLATION: repo 밖 경로 선언 금지: {}",
+    "pathspec_magic": "T8_VIOLATION: glob/pathspec magic 금지(구체 파일만): {}",
+    "directory_prefix": "T8_VIOLATION: 디렉토리/프리픽스 선언 금지(구체 파일만): {}",
+    "not_concrete_file": "T8_VIOLATION: 구체 파일 아님(미존재·비정규): {}",
+    "no_change": "T8_VIOLATION: 변경 없는 파일 선언(무효 스코프): {}",
+}
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -148,41 +163,46 @@ def cmd_commit(repo: Path, message: str, files: list[str]) -> int:
         )
         return 2
 
-    # P1(6R): 절대경로 선언은 post-verify 표현 불일치로 "커밋 후 위반"이 된다 — 커밋 전에
-    # repo-relative로 정규화(밖이면 거부).
+    def reject_path(verdict: PathVerdict, raw: str) -> int:
+        if verdict.reason not in _PATH_VIOLATION_MESSAGES:
+            print(
+                f"T8_BLOCKED: 경로 검증기 미지 판정 — reason={verdict.reason}",
+                file=sys.stderr,
+            )
+            return 2
+        display_path = raw if verdict.reason == "outside_repo" else verdict.repo_relative
+        print(_PATH_VIOLATION_MESSAGES[verdict.reason].format(display_path), file=sys.stderr)
+        return 1
+
+    def reject_unknown_reason(verdict: PathVerdict) -> int | None:
+        if verdict.reason is None or verdict.reason in _PATH_VIOLATION_MESSAGES:
+            return None
+        print(
+            f"T8_BLOCKED: 경로 검증기 미지 판정 — reason={verdict.reason}",
+            file=sys.stderr,
+        )
+        return 2
+
+    # A단계: 입력 순서대로 전량 정규화한다. repo 밖 선언이 뒤에 있어도 B단계보다 먼저 거부한다.
     declared: set[str] = set()
     for f in files:
-        rel = _to_repo_relative(repo, f)
-        if rel is None:
-            print(f"T8_VIOLATION: repo 밖 경로 선언 금지: {f}", file=sys.stderr)
-            return 1
-        declared.add(rel)
-    # P1: 디렉토리/glob pathspec은 타세션 staged를 쓸어담을 수 있다 — 사전 거부(사후 감지로는
-    # 이미 잘못된 커밋이 만들어진 뒤라 늦다). 파일-한정 원칙은 문자 그대로 "구체 파일"만.
+        normalized = normalize_declared_path(repo, f)
+        unknown_reason = reject_unknown_reason(normalized)
+        if unknown_reason is not None:
+            return unknown_reason
+        if not normalized.ok:
+            return reject_path(normalized, f)
+        assert normalized.repo_relative is not None
+        declared.add(normalized.repo_relative)
+
+    # B단계: canonical 집합을 정렬해 validator 판정에 완전히 위임한다.
     for f in sorted(declared):
-        if f.startswith(":") or any(ch in f for ch in _GLOB_MAGIC):
-            # --literal-pathspecs가 구조 차단하지만, 의도 오류를 이른 시점에 명확히 거부(이중 방어).
-            print(f"T8_VIOLATION: glob/pathspec magic 금지(구체 파일만): {f}", file=sys.stderr)
-            return 1
-        # P1(3R): 워킹트리 is_dir만으로는 "삭제된 tracked 디렉토리"를 못 잡는다 — index 기준 판정.
-        # tracked == {f} = 구체 tracked 파일(삭제 커밋 포함 OK) / tracked ⊋ = 디렉토리 프리픽스 → 거부 /
-        # untracked면 실존 정규 파일만 허용.
-        tracked_under = {
-            line.strip()
-            for line in _git_or_die(repo, "ls-files", "--", f).splitlines()
-            if line.strip()
-        }
-        if tracked_under and tracked_under != {f}:
-            print(f"T8_VIOLATION: 디렉토리/프리픽스 선언 금지(구체 파일만): {f}", file=sys.stderr)
-            return 1
-        if not tracked_under and not (repo / f).is_file():
-            print(f"T8_VIOLATION: 구체 파일 아님(미존재·비정규): {f}", file=sys.stderr)
-            return 1
-        # P2(4R): 변경 없는 파일 선언은 커밋에서 조용히 빠져 committed⊊declared silent-PASS가 된다
-        # — 커밋 생성 전 무효 스코프로 거부.
-        if not _git(repo, "status", "--porcelain", "--", f).stdout.strip():
-            print(f"T8_VIOLATION: 변경 없는 파일 선언(무효 스코프): {f}", file=sys.stderr)
-            return 1
+        verdict = validate_declared_path(repo, f)
+        unknown_reason = reject_unknown_reason(verdict)
+        if unknown_reason is not None:
+            return unknown_reason
+        if not verdict.ok:
+            return reject_path(verdict, f)
     # P1: declared가 이미 index에 staged면 타세션 WIP일 수 있다 — add가 그 내용을 덮거나
     # 내 커밋에 편입시키므로 fail-closed 거부. 내 것이 맞으면 unstage 후 재실행.
     already_staged = declared & _staged_files(repo)
@@ -270,6 +290,37 @@ def _to_repo_relative(repo: Path, path: str) -> str | None:
         return resolved.relative_to(repo.resolve()).as_posix()
     except ValueError:
         return None
+
+
+def normalize_declared_path(repo: Path, declared: str) -> PathVerdict:
+    """선언 경로를 정규화한다. git을 호출하지 않으며 repo 밖 경로만 거부한다."""
+    repo_relative = _to_repo_relative(repo, declared)
+    if repo_relative is None:
+        return PathVerdict(ok=False, repo_relative=None, reason="outside_repo")
+    return PathVerdict(ok=True, repo_relative=repo_relative, reason=None)
+
+
+def validate_declared_path(repo: Path, declared: str) -> PathVerdict:
+    """정규화된 구체 파일인지 현재 repo 상태를 읽어 판정한다."""
+    normalized = normalize_declared_path(repo, declared)
+    if not normalized.ok:
+        return normalized
+    assert normalized.repo_relative is not None
+    repo_relative = normalized.repo_relative
+    if repo_relative.startswith(":") or any(ch in repo_relative for ch in _GLOB_MAGIC):
+        return PathVerdict(False, repo_relative, "pathspec_magic")
+    tracked_under = {
+        line.strip()
+        for line in _git_or_die(repo, "ls-files", "--", repo_relative).splitlines()
+        if line.strip()
+    }
+    if tracked_under and tracked_under != {repo_relative}:
+        return PathVerdict(False, repo_relative, "directory_prefix")
+    if not tracked_under and not (repo / repo_relative).is_file():
+        return PathVerdict(False, repo_relative, "not_concrete_file")
+    if not _git(repo, "status", "--porcelain", "--", repo_relative).stdout.strip():
+        return PathVerdict(False, repo_relative, "no_change")
+    return PathVerdict(True, repo_relative, None)
 
 
 def cmd_isolate(repo: Path, branch: str, dest: Path | None) -> int:

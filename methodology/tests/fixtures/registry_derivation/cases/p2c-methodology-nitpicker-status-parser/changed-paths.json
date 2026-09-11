@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "paths": [
+    "docs/handoff/CUBICON_TRIAL_DIAGNOSIS_20260615.md",
+    "methodology/docs/PHASE_CYCLE_ORCHESTRATOR_DESIGN.md",
+    "methodology/nitpicker/run_nit.py",
+    "methodology/nitpicker/test_run_nit.py",
+    "runtimes/ztr/docs/LESSONS_LEARNED.md"
+  ]
+}

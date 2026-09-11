@@ -175,6 +175,8 @@ DoD: unit + deterministic + live 1회(2-페이즈 resume, 벤더별). full 오�
 - **Phase 5 (run-phase)**: 진입 게이트 = spike S1 완전 통과(§0 결정 로그). 헤드리스 구동(`claude -p/--resume`, `codex exec`), verdict enum 라우팅, 휴먼 게이트 3곳, Toast, 타임박스(L1=동일축 3회→STOP). DoD: deterministic 루프(가짜 CLI 스텁) + live 1회(Sonnet 리뷰).
 - **Phase 6 (dogfood)**: 완료. live Codex leg로 relay mechanics를 dogfood하고 PASS/NOT CLAIMED 경계를 재확정. full E2E 자동 편집·머지와 실제 개선 루프는 NOT CLAIMED.
 
+- **Phase 9 (relay 프로세스 트리 종료)**: **P0~P3 완료 — 네 호출부 전부 배선. RED 8/8 → GREEN. 남은 것은 POSIX 실측·실제 codex 계층 관측(NOT CLAIMED).** 입력 게이트 3라운드 종료(v4, R3 APPROVED). P0 실측: baseline 이 4개 중 3개 시나리오에서 고아+행, `taskkill /T` 는 중간 부모 선종료에서 rc=128 로 실패, **Job Object 만 전 시나리오 통과**. 타임아웃 시 `proc.kill()`이 직계만 죽여 **고아가 남고**(D1), kill 뒤 `communicate()`에 상한이 없어 손자가 파이프를 쥐면 **무한 대기**(D2)한다. 둘 다 **실측 재현됨**(손자 생존 + 30s 초과). 부착점 4곳 — `phase_relay.py:605` · `static_review.py:262` · acp `orch_drivers.py:101` · `orch_relay_driver.py:79`(D2만 조치됨). ⚠ **P0 스파이크로 DEC-1(트리 킬 수단)을 확정하기 전에는 구현 착수 금지.** 두 라운드 연속으로 메커니즘 설명 오류가 나왔다 — R1: 프로세스 그룹↔Job Object 혼동 · R2: Windows 재양육 오설명 + PID 불변 자기모순. v3 는 단정을 줄이고 **P0 10칸 실험 행렬**로 옮겼다. 계획 정본 = `methodology/docs/discovery/ztr-relay-process-tree-kill-20260821/PLAN.md`.
+
 ## 끝. 불변 원칙 (전 페이즈 공통 — 모든 프롬프트의 [불변 원칙]에 주입)
 
 1. **Boundaries (R5 — 리뷰 자동 BLOCKED 사유)**: 코드가 파싱하는 LLM 출력은 **verdict enum + exit code뿐**. 리뷰 *내용* 해석·설계 판단·수락/거부·소스 편집·머지는 코드가 하지 않는다 (design.md Boundaries 표 전문 참조).

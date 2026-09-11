@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "acp-tests",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "runtimes/acp/tests"
+      ],
+      "scope_class": "module-full"
+    }
+  ],
+  "rules": [
+    {
+      "id": "acp-prefix",
+      "match": {"kind": "prefix", "value": "runtimes/acp/"},
+      "groups": ["acp-tests"]
+    }
+  ]
+}

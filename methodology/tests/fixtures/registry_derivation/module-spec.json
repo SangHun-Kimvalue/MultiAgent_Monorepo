@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "_comment": "T16-P2b2 유도 모듈 스펙 — 2026-08-16 실측(planner-design.md §2·§3) 유래 데이터. class C 고정 목록·class D prefix는 여기(데이터)에만 있고 도구에 하드코딩되지 않는다. draft 제안일 뿐 registry 권위가 아니다.",
+  "exclude_dir_names": ["__pycache__", ".venv", "node_modules", ".pytest_cache", "_tmp", ".git"],
+  "exclude_dir_suffixes": [".egg-info"],
+  "modules": [
+    {
+      "name": "ztr",
+      "packages": [
+        {"package": "src", "path": "runtimes/ztr/src"},
+        {"package": "tests", "path": "runtimes/ztr/tests"}
+      ],
+      "source_roots": ["runtimes/ztr/src"],
+      "test_root": "runtimes/ztr/tests",
+      "test_exclude_dirs": [],
+      "interpreter": "runtimes/ztr/.venv/Scripts/python.exe",
+      "pytest_cwd": "runtimes/ztr",
+      "full_group_id": "ztr-full",
+      "full_group_paths": [],
+      "coupling_forced": [
+        {"kind": "exact", "value": "runtimes/ztr/tests/conftest.py", "rationale": "conftest autouse fixture가 전 테스트에 전역 결합(212노드 전파, 2026-08-16 실측)"},
+        {"kind": "exact", "value": "runtimes/ztr/pyproject.toml", "rationale": "빌드·pytest 설정 — suite 전역 결합"},
+        {"kind": "exact", "value": "runtimes/ztr/src/agents/base.py", "rationale": "conftest가 직접 import(autouse 전역 결합) — focused 주장 불가"},
+        {"kind": "exact", "value": "runtimes/ztr/src/agents/registry.py", "rationale": "conftest가 직접 import(autouse 전역 결합) — focused 주장 불가"},
+        {"kind": "exact", "value": "runtimes/ztr/src/agents/discovery.py", "rationale": "직접 커버 0(진짜 공백) — focused 주장 불가, module-full이 정직"},
+        {"kind": "prefix", "value": "runtimes/ztr/src/web/", "rationale": "web/app.py 직접 커버 0 + 정적 자산 — 전체만 정직(커버리지 신설은 범위 밖 NOT CLAIMED)"}
+      ],
+      "asset_prefixes": []
+    },
+    {
+      "name": "acp",
+      "packages": [
+        {"package": "acp", "path": "runtimes/acp/acp"},
+        {"package": "tests", "path": "runtimes/acp/tests"}
+      ],
+      "source_roots": ["runtimes/acp/acp"],
+      "test_root": "runtimes/acp/tests",
+      "test_exclude_dirs": ["e2e"],
+      "interpreter": "runtimes/acp/.venv/Scripts/python.exe",
+      "pytest_cwd": "runtimes/acp",
+      "full_group_id": "acp-full",
+      "full_group_paths": [],
+      "coupling_forced": [
+        {"kind": "exact", "value": "runtimes/acp/tests/conftest.py", "rationale": "conftest 공유 fixture — suite 전역 결합"},
+        {"kind": "exact", "value": "runtimes/acp/pyproject.toml", "rationale": "빌드·pytest 설정(testpaths·marker 분리 포함) — suite 전역 결합"}
+      ],
+      "asset_prefixes": [
+        {"kind": "prefix", "value": "runtimes/acp/acp/web/static/", "rationale": "래퍼가 직접 검증하지 않는 정적 자산(dashboard.js 포함 — 설계 §3 JS 계약 경계) — acp-full이 정직. 래퍼 참조가 실측되는 개별 파일은 exact focused가 union으로 추가"},
+        {"kind": "prefix", "value": "runtimes/acp/acp/web/templates/", "rationale": "Jinja 템플릿 — e2e 미설치(marker 분리)로 focused 인과 특정 불가"},
+        {"kind": "prefix", "value": "runtimes/acp/tests/e2e/", "rationale": "playwright marker 분리 스위트(미설치 skip) — module-full로 정직"},
+        {"kind": "prefix", "value": "runtimes/acp/tests/fixtures/", "rationale": "테스트 fixture 데이터 — suite 인과 특정 불가"},
+        {"kind": "prefix", "value": "runtimes/acp/tests/js/", "rationale": "JS 계약 테스트 자산 — 래퍼 참조 실측 파일은 exact focused가 union으로 추가"}
+      ],
+      "asset_wrapper_glob": "test_*_js.py"
+    },
+    {
+      "name": "methodology",
+      "packages": [],
+      "source_roots": [
+        "methodology/tools",
+        "methodology/nitpicker",
+        "methodology/lint",
+        "methodology/t8",
+        "methodology/plugins/agent-workflow/scripts",
+        "methodology/plugins/agent-workflow/skills/phased-implementation-handoff/scripts"
+      ],
+      "test_root": "methodology/tests",
+      "test_exclude_dirs": ["fixtures"],
+      "interpreter": "runtimes/ztr/.venv/Scripts/python.exe",
+      "pytest_cwd": ".",
+      "full_group_id": "methodology-full",
+      "full_group_paths": ["methodology/tests", "methodology/nitpicker"],
+      "coupling_forced": [],
+      "asset_prefixes": [
+        {"kind": "prefix", "value": "methodology/tests/fixtures/", "rationale": "테스트 fixture 데이터 — 인과 특정 불가, guard 전체가 정직"}
+      ]
+    }
+  ],
+  "class_d_rules": [
+    {"kind": "prefix", "value": "methodology/docs/", "group": "methodology-full", "rationale": "P2b registry 승계 — 캐논 문서 변경은 suite 인과 특정 불가(over-selection 허용 class)"},
+    {"kind": "prefix", "value": "runtimes/ztr/docs/", "group": "ztr-full", "rationale": "P2b registry 승계"},
+    {"kind": "prefix", "value": "runtimes/acp/docs/", "group": "acp-full", "rationale": "P2b registry 승계"},
+    {"kind": "prefix", "value": "docs/", "group": "methodology-full", "rationale": "신설 — 루트 docs/handoff 등 공정 문서. 캐논 소유인 methodology-full로 제안(census 미매핑 분포 실측 유래)"},
+    {"kind": "prefix", "value": ".claude/", "group": "methodology-full", "rationale": "신설 — 세션·트라이얼 설정(.claude/cubicon-trial.config.md 등). 공정 소유로 methodology-full 제안"},
+    {"kind": "prefix", "value": "methodology/config/", "group": "methodology-full", "rationale": "신설 — registry 자신을 포함한 설정 데이터. guard 전체가 정직"},
+    {"kind": "prefix", "value": "methodology/plugins/", "group": "methodology-full", "rationale": "draft 제안 — SKILL.md·plugin.json 등 플러그인 문서/설정(census 미매핑 실측). scripts py는 class E exact 규칙이 union으로 focused 추가"},
+    {"kind": "exact", "value": ".gitignore", "group": "methodology-full", "rationale": "루트 단독 파일 — suite 인과 특정 불가"},
+    {"kind": "exact", "value": "AGENTS.md", "group": "methodology-full", "rationale": "루트 단독 문서 — 공정 소유 제안"},
+    {"kind": "exact", "value": "CHANGELOG.md", "group": "methodology-full", "rationale": "루트 단독 문서 — 공정 소유 제안"},
+    {"kind": "exact", "value": "CLAUDE.md", "group": "methodology-full", "rationale": "루트 단독 문서(세션 지침) — 공정 소유 제안"},
+    {"kind": "exact", "value": "README.md", "group": "methodology-full", "rationale": "루트 단독 문서 — 공정 소유 제안"},
+    {"kind": "prefix", "value": "methodology/artifacts/", "group": "methodology-full", "rationale": "Corrective 1 — freeze json·schema·리뷰 verdict evidence. suite 인과 특정 불가, guard 전체가 정직(census BLOCKED 실측: e440b7fdf·b768173dd·77f529a8a)"},
+    {"kind": "prefix", "value": "methodology/adapters/", "group": "methodology-full", "rationale": "Corrective 1 — 어댑터 캐논 문서(codex AGENTS.md 등). census BLOCKED 실측: 02773539c"},
+    {"kind": "prefix", "value": "methodology/.claude-plugin/", "group": "methodology-full", "rationale": "Corrective 1 — marketplace.json 등 배포 설정. census BLOCKED 실측: eabc946bd·77f529a8a"},
+    {"kind": "exact", "value": "methodology/DOC_TAXONOMY.md", "group": "methodology-full", "rationale": "Corrective 1 — methodology 모듈 직속 단독 문서(동류 전수: git ls-files 실측)"},
+    {"kind": "exact", "value": "methodology/INSTALL.md", "group": "methodology-full", "rationale": "Corrective 1 — methodology 모듈 직속 단독 문서. census BLOCKED 실측: 77f529a8a"},
+    {"kind": "exact", "value": "methodology/METHODOLOGY.md", "group": "methodology-full", "rationale": "Corrective 1 — methodology 모듈 직속 단독 문서(캐논). census BLOCKED 실측: 7935007f7·b8e81cb85"},
+    {"kind": "exact", "value": "methodology/MULTI_AGENT.md", "group": "methodology-full", "rationale": "Corrective 1 — methodology 모듈 직속 단독 문서(동류 전수: git ls-files 실측)"},
+    {"kind": "exact", "value": "methodology/README.md", "group": "methodology-full", "rationale": "Corrective 1 — methodology 모듈 직속 단독 문서. census BLOCKED 실측: 77f529a8a"},
+    {"kind": "exact", "value": "methodology/install.sh", "group": "methodology-full", "rationale": "Corrective 1 — 설치 스크립트(문서·배포류, 스위트 인과 특정 불가). census BLOCKED 실측: 77f529a8a"},
+    {"kind": "exact", "value": "methodology/package.sh", "group": "methodology-full", "rationale": "Corrective 1 — 패키징 스크립트. census BLOCKED 실측: 77f529a8a"},
+    {"kind": "exact", "value": "runtimes/README.md", "group": "methodology-full", "rationale": "Corrective 1 — runtimes 디렉터리 단독 문서(동류) — 공정 소유 제안"},
+    {"kind": "exact", "value": "runtimes/ztr/.gitignore", "group": "ztr-full", "rationale": "Corrective 1 — 모듈 직속 dotfile 설정. census BLOCKED 실측: 53fc66f99"},
+    {"kind": "exact", "value": "runtimes/ztr/AGENTS.md", "group": "ztr-full", "rationale": "Corrective 1 — 모듈 직속 단독 문서(동류 전수: git ls-files 실측)"},
+    {"kind": "exact", "value": "runtimes/ztr/README.md", "group": "ztr-full", "rationale": "Corrective 1 — 모듈 직속 단독 문서(동류)"},
+    {"kind": "exact", "value": "runtimes/ztr/ztr.bat", "group": "ztr-full", "rationale": "Corrective 1 — 모듈 직속 실행 래퍼 스크립트(동류) — module-full이 정직"},
+    {"kind": "exact", "value": "runtimes/acp/.gitignore", "group": "acp-full", "rationale": "Corrective 1 — 모듈 직속 dotfile 설정(ztr .gitignore 동류)"},
+    {"kind": "exact", "value": "runtimes/acp/PHASE.md", "group": "acp-full", "rationale": "Corrective 1 — 모듈 직속 단독 문서(동류)"},
+    {"kind": "exact", "value": "runtimes/acp/run.bat", "group": "acp-full", "rationale": "Corrective 1 — 모듈 직속 실행 래퍼 스크립트(동류) — module-full이 정직"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "case": "p2c-acp-cli-help-side-effects",
+  "source": "p2c-burned",
+  "module": "acp",
+  "parent": "ec6e3e35a3eba0e88aee525382305c3c7a17b708",
+  "fix": "d5cbb6f227453f526a131541ac93a6f1684d7b99",
+  "gold_red_test_files": [
+    "runtimes/acp/tests/test_cli_help.py"
+  ]
+}

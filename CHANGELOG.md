@@ -32,7 +32,7 @@ v0.2.0(빌드+self-dogfood 15단계 完) 이후 **90 커밋**. 스위트를 "돌
 ### 외부 실프로젝트 트라이얼 (다형성·실적용 실증)
 - **T3 닛피커 provider 플러그인화 完(핵심)**: Gemini API 만료 → Ollama 기본 플러그인화, 기존 로직 유지, 560 tests `4091760 (별 repo)`. Mechanical 레그 기준 = `config/system_prompt.md` 4계명(CORE RULES).
 - **T9 CubiForge 어댑션 진행**: β mechanical 계약정합 完(nit_envelope↔ztr Envelope 3분기 라이브) · γ 첫 실페이즈 부분 完 · 풀 4-leg 무인 E2E capstone `(별 repo)`. 2번째 실프로젝트 적용 실증(단 같은 ztr 백엔드 — §9 비-ztr 다형성은 여전히 NOT CLAIMED).
-- **T1 외부 실프로젝트(C++ FLTK) trial 진행**: 외부 오케스트레이터(ZTR 숨김·무오염·push 금지). 환경·바인딩 準備完, Slice A(UI 파서 제네릭화) 프롬프트 `ad3bc83`.
+- **T1 외부 프로젝트(C++ FLTK) trial 진행**: 외부 오케스트레이터(ZTR 숨김·무오염·push 금지). 환경·바인딩 準備完, Slice A(UI 파서 제네릭화) 프롬프트 `ad3bc83`.
 
 ### 버전관리 종합 (이 릴리스)
 - CHANGELOG 신설 · SUITE_NARRATIVE/README 현행화 · `.gitignore` 정리 · stale 브랜치 `codex/phase8-resume-chain` 정리.

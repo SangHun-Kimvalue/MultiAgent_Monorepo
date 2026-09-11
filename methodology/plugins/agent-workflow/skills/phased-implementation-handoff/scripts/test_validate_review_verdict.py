@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 MODULE_PATH = Path(__file__).with_name("validate_review_verdict.py")
@@ -34,6 +36,40 @@ def _validate(tmp_path: Path, value: dict[str, Any]) -> list[str]:
 
 def test_example_passes(tmp_path: Path) -> None:
     assert _validate(tmp_path, _example()) == []
+
+
+def test_proportionality_is_required(tmp_path: Path) -> None:
+    value = _example()
+    del value["proportionality"]
+    diagnostics = _validate(tmp_path, value)
+    assert any("proportionality" in item for item in diagnostics)
+
+
+def test_proportionality_rejects_unknown_value(tmp_path: Path) -> None:
+    value = _example()
+    value["proportionality"] = "MAYBE"
+    assert _validate(tmp_path, value)
+
+
+@pytest.mark.parametrize(
+    ("verdict", "proportionality", "exit_code"),
+    [
+        ("PASS", "PROPORTIONATE", 0),
+        ("PASS", "OVERENGINEERED", 0),
+        ("CHANGES_REQUESTED", "PROPORTIONATE", 1),
+        ("CHANGES_REQUESTED", "OVERENGINEERED", 1),
+        ("BLOCKED", "PROPORTIONATE", 2),
+        ("BLOCKED", "OVERENGINEERED", 2),
+    ],
+)
+def test_verdict_and_proportionality_are_independent(
+    tmp_path: Path, verdict: str, proportionality: str, exit_code: int
+) -> None:
+    value = _example()
+    value["verdict"] = verdict
+    value["proportionality"] = proportionality
+    value["exit_code"] = exit_code
+    assert _validate(tmp_path, value) == []
 
 
 def test_cross_lineage_rejects_matching_lineage(tmp_path: Path) -> None:

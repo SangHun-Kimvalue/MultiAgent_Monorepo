@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "paths": [
+    "methodology/docs/EXECUTION_ADAPTER_CONTRACT.md",
+    "runtimes/ztr/docs/LESSONS_LEARNED.md",
+    "runtimes/ztr/src/engine/phase_relay.py",
+    "runtimes/ztr/src/runner.py",
+    "runtimes/ztr/tests/test_phase_relay.py",
+    "runtimes/ztr/tests/test_run_phase_cli.py"
+  ]
+}

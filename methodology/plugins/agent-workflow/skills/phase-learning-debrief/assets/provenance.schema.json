@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cubicon.local/schemas/phase-learning-debrief/provenance-1.0.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "view_kind", "phase_slice_id", "commit_sha", "tree_sha",
+    "source_refs", "artifact_refs", "generation_ordinal", "persistence_authorization"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "view_kind": {"type": "string", "const": "NON_AUTHORITATIVE_LEARNING_VIEW"},
+    "phase_slice_id": {"type": "string", "minLength": 1},
+    "commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "tree_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_refs": {
+      "type": "array", "minItems": 1, "maxItems": 12,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "start_line", "end_line", "blob_oid"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "start_line": {"type": "integer", "minimum": 1},
+          "end_line": {"type": "integer", "minimum": 1},
+          "blob_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+        }
+      }
+    },
+    "artifact_refs": {
+      "type": "array", "minItems": 1, "maxItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "generation_ordinal": {"type": "integer", "const": 1},
+    "persistence_authorization": {"type": "string", "minLength": 1}
+  }
+}

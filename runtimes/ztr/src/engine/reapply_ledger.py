@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -29,10 +30,22 @@ DEFAULT_MAX_ROUNDS = 3
 
 _TERMINAL_STATES = {
     "CONVERGED",
+    "AWAITING_FINAL_VERIFY",
     "TIMEBOX_EXHAUSTED",
     "NO_PROGRESS",
     "ESCALATED_BLOCKED",
 }
+_SHA256_RE = re.compile(r"[0-9a-f]{64}")
+
+
+def command_digest(commands: list[tuple[str, str, bool, float | None]]) -> str:
+    """명령 순서를 보존한 ``(name, value, gating, timeout_s)`` digest."""
+    canonical = json.dumps(
+        [list(command) for command in commands],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def findings_digest(findings: list[Finding]) -> str:
@@ -73,12 +86,14 @@ class ReapplyLedger:
         max_rounds: int,
         terminal_state: str | None,
         rounds: list[dict[str, Any]],
+        full_verifications: list[dict[str, Any]],
     ) -> None:
         self.path = path
         self.phase_id = phase_id
         self.max_rounds = max_rounds
         self.terminal_state = terminal_state
         self.rounds = rounds
+        self.full_verifications = full_verifications
 
     @classmethod
     def create(
@@ -98,6 +113,7 @@ class ReapplyLedger:
             max_rounds=max_rounds,
             terminal_state=None,
             rounds=[],
+            full_verifications=[],
         )
 
     @classmethod
@@ -120,6 +136,7 @@ class ReapplyLedger:
         max_rounds = data.get("max_rounds")
         terminal_state = data.get("terminal_state")
         rounds = data.get("rounds")
+        full_verifications = data.get("full_verifications", [])
         if not isinstance(phase_id, str) or not phase_id:
             raise ValueError("재적용 원장 phase_id는 비어 있지 않은 문자열이어야 합니다")
         if type(max_rounds) is not int:
@@ -129,6 +146,16 @@ class ReapplyLedger:
             raise ValueError(f"지원하지 않는 terminal_state: {terminal_state!r}")
         if not isinstance(rounds, list) or not all(isinstance(item, dict) for item in rounds):
             raise ValueError("재적용 원장 rounds는 object 목록이어야 합니다")
+        if not isinstance(full_verifications, list) or not all(
+            isinstance(item, dict) for item in full_verifications
+        ):
+            raise ValueError("재적용 원장 full_verifications는 object 목록이어야 합니다")
+        if len(full_verifications) > 1:
+            raise ValueError("full 검증 소비 기록은 최대 1개여야 합니다")
+        for round_entry in rounds:
+            _validate_focused_round(round_entry)
+        for verification in full_verifications:
+            _validate_full_verification(verification)
 
         return cls(
             path=ledger_path,
@@ -136,6 +163,7 @@ class ReapplyLedger:
             max_rounds=max_rounds,
             terminal_state=terminal_state,
             rounds=rounds,
+            full_verifications=full_verifications,
         )
 
     @classmethod
@@ -162,6 +190,7 @@ class ReapplyLedger:
             "max_rounds": self.max_rounds,
             "terminal_state": self.terminal_state,
             "rounds": self.rounds,
+            "full_verifications": self.full_verifications,
         }
         try:
             tmp_path.write_text(
@@ -184,6 +213,97 @@ class ReapplyLedger:
     def rounds_remaining(self) -> int:
         return self.max_rounds - len(self.rounds)
 
+    def append_full_verification(self, verification: dict[str, Any]) -> None:
+        """성공한 full 검증을 정확히 한 번만 소비 기록으로 추가한다."""
+        if self.full_verifications:
+            raise ValueError("full 검증은 이미 소비되었습니다")
+        _validate_full_verification(verification)
+        self.full_verifications.append(verification)
+
+
+def _validate_digest(value: object, field: str) -> None:
+    if not isinstance(value, str) or _SHA256_RE.fullmatch(value) is None:
+        raise ValueError(f"{field}는 sha256 hex 문자열이어야 합니다")
+
+
+def _validate_legs(value: object) -> None:
+    if not isinstance(value, list):
+        raise ValueError("focused round legs는 object 목록이어야 합니다")
+    for leg in value:
+        if not isinstance(leg, dict):
+            raise ValueError("focused round leg는 object여야 합니다")
+        if not isinstance(leg.get("name"), str) or not leg["name"]:
+            raise ValueError("focused round leg name은 비어 있지 않은 문자열이어야 합니다")
+        try:
+            Verdict(leg.get("status"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("focused round leg status가 없거나 알 수 없는 값입니다") from exc
+        if type(leg.get("skipped")) is not bool:
+            raise ValueError("focused round leg skipped는 bool이어야 합니다")
+
+
+def _validate_focused_round(round_entry: dict[str, Any]) -> None:
+    focused = round_entry.get("focused")
+    if focused is None:
+        return
+    if type(focused) is not bool:
+        raise ValueError("round focused는 bool이어야 합니다")
+    if not focused:
+        return
+    _validate_legs(round_entry.get("legs"))
+    _validate_digest(round_entry.get("candidate_digest"), "candidate_digest")
+    _validate_digest(round_entry.get("command_digest"), "command_digest")
+    base_sha = round_entry.get("base_sha")
+    if not isinstance(base_sha, str) or not base_sha.strip():
+        raise ValueError("focused round base_sha는 비어 있지 않은 문자열이어야 합니다")
+
+
+def _validate_full_verification(verification: dict[str, Any]) -> None:
+    base_sha = verification.get("base_sha")
+    if not isinstance(base_sha, str) or not base_sha.strip():
+        raise ValueError("full verification base_sha는 비어 있지 않은 문자열이어야 합니다")
+    _validate_digest(verification.get("candidate_digest"), "candidate_digest")
+    _validate_digest(verification.get("command_digest"), "command_digest")
+    _validate_legs(verification.get("legs"))
+    completed_at = verification.get("completed_at")
+    if not isinstance(completed_at, str) or not completed_at:
+        raise ValueError("full verification completed_at은 비어 있지 않은 문자열이어야 합니다")
+
+
+def final_verify_gate_check(
+    ledger: ReapplyLedger,
+    *,
+    base_sha: str,
+    candidate_digest: str,
+    command_digest_value: str,
+) -> str | None:
+    """구조화된 원장 사실만으로 final-verify 진입 조건을 순서대로 검사한다."""
+    if not ledger.rounds or ledger.rounds[-1].get("focused") is not True:
+        return "마지막 라운드가 focused 라운드가 아닙니다"
+    last_round = ledger.rounds[-1]
+    try:
+        _validate_focused_round(last_round)
+    except ValueError as exc:
+        return str(exc)
+    legs = last_round["legs"]
+    if any(leg["status"] != Verdict.PASS.value for leg in legs):
+        return "마지막 focused 라운드의 gating step이 전부 PASS가 아닙니다"
+    for required in ("mechanical-review", "implementer-reviewer"):
+        matching = [leg for leg in legs if leg["name"] == required]
+        if not matching:
+            return f"마지막 focused 라운드에 {required} step이 없습니다"
+        if matching[-1]["skipped"] is True:
+            return f"마지막 focused 라운드의 {required} step이 skipped 상태입니다"
+    if last_round["base_sha"] != base_sha:
+        return "base_sha가 focused 라운드 기록과 일치하지 않습니다"
+    if last_round["candidate_digest"] != candidate_digest:
+        return "candidate_digest가 focused 라운드 기록과 일치하지 않습니다"
+    if last_round["command_digest"] != command_digest_value:
+        return "command_digest가 focused 라운드 기록과 일치하지 않습니다"
+    if ledger.full_verifications:
+        return "full 검증은 이미 소비되었습니다"
+    return None
+
 
 def decide_terminal_state(
     *,
@@ -192,10 +312,11 @@ def decide_terminal_state(
     max_rounds: int,
     prev_result_digest: str | None,
     this_result_digest: str | None,
+    focused: bool = False,
 ) -> str | None:
     """구조화 verdict, 라운드 수, digest 동일성만으로 종결 상태를 결정한다."""
     if verdict == Verdict.PASS:
-        return "CONVERGED"
+        return "AWAITING_FINAL_VERIFY" if focused else "CONVERGED"
     if (
         prev_result_digest is not None
         and this_result_digest is not None

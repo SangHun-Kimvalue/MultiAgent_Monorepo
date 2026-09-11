@@ -169,7 +169,7 @@ for name in ("agent-workflow", "ai-research"):
             raise SystemExit(f"Codex policy mismatch for {name}")
         if row.get("category") != "Productivity":
             raise SystemExit(f"Codex category mismatch for {name}")
-if sys.argv[2] == "claude" and data.get("metadata", {}).get("version") != "1.2.0":
+if sys.argv[2] == "claude" and data.get("metadata", {}).get("version") != "1.3.0":
     raise SystemExit("Claude marketplace metadata version mismatch")
 if sys.argv[3] and sum(1 for item in plugins if isinstance(item, dict) and item.get("name") == sys.argv[3]) != 1:
     raise SystemExit("unknown marketplace entry was not preserved")
@@ -286,7 +286,7 @@ echo "SMOKE_ROOT=$TMP_ROOT"
 
 assert_marketplace_contract "$ROOT_DIR/.claude-plugin/marketplace.json" claude
 assert_marketplace_contract "$ROOT_DIR/.agents/plugins/marketplace.json" codex
-assert_openai_yaml_contracts "$ROOT_DIR/plugins/agent-workflow" 4
+assert_openai_yaml_contracts "$ROOT_DIR/plugins/agent-workflow" 5
 assert_openai_yaml_contracts "$ROOT_DIR/plugins/ai-research" 2
 assert_orchestrator_contract \
   "$ROOT_DIR/plugins/agent-workflow/skills/phase-cycle-orchestrator/SKILL.md" \
@@ -348,7 +348,7 @@ for plugin in agent-workflow ai-research; do
     assert_files_identical "$skill_dir/SKILL.md" "$target_merge/.codex/skills/$skill/SKILL.md"
   done
 done
-assert_openai_yaml_contracts "$target_merge/plugins/agent-workflow" 4
+assert_openai_yaml_contracts "$target_merge/plugins/agent-workflow" 5
 assert_openai_yaml_contracts "$target_merge/plugins/ai-research" 2
 assert_codex_hook_bundle "$target_merge/plugins/agent-workflow"
 

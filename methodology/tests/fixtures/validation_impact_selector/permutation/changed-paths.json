@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "paths": [
+    "methodology/tools/workflow_doctor.py",
+    "methodology/docs/sample.md"
+  ]
+}

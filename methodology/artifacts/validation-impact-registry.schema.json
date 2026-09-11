@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mam://methodology/artifacts/validation-impact-registry.schema.json",
+  "title": "validation-impact-registry v1",
+  "description": "T16-P2a 사람 소유 registry 계약. changed path를 exact/prefix 규칙으로 test group 추천에 매핑한다. 이 스키마는 구조 계약 문서이며 enforcement 정본은 methodology/tools/validation_impact_selector.py의 fail-closed 검증이다. P2a 시점 registry 내용은 bootstrap draft로 calibration 완료·promotion evidence가 아니다(내용 교정과 raw SHA-256 동결은 P2b 소유).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "groups", "rules"],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "registry v1 고정. 다른 값은 selector가 BLOCKED/2로 거부한다."
+    },
+    "groups": {
+      "type": "array",
+      "description": "추천 대상 test group 목록. id 중복 금지. selector는 unique id 오름차순으로 canonical sort한다.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "cwd", "argv", "scope_class"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "cwd": {"$ref": "#/$defs/repoRelativePathOrDot"},
+          "argv": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "minLength": 1},
+            "description": "shell string이 아닌 argv 배열. selector는 실행하지 않고 구조만 보존한다."
+          },
+          "scope_class": {
+            "enum": ["focused", "module-full", "repository-full"],
+            "description": "closed enum. P2a에서는 실행 분기가 아닌 구조화 metadata로만 보존한다."
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "description": "changed path 매칭 규칙 목록. id 중복 금지, 모든 group ref는 groups에 실재해야 한다.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "match", "groups"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "match": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "value"],
+            "properties": {
+              "kind": {
+                "enum": ["exact", "prefix"],
+                "description": "P2a closed enum. glob/regex/dependency inference 없음."
+              },
+              "value": {"type": "string", "minLength": 1}
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"kind": {"const": "exact"}}},
+                "then": {"properties": {"value": {"$ref": "#/$defs/repoRelativePath"}}}
+              },
+              {
+                "if": {"properties": {"kind": {"const": "prefix"}}},
+                "then": {"properties": {"value": {"$ref": "#/$defs/repoRelativePathMaybeDir"}}}
+              }
+            ]
+          },
+          "groups": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "minLength": 1},
+            "description": "추천할 group id 목록. 중복 ref 금지."
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "repoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\]+(/[^/\\\\]+)*$",
+      "allOf": [
+        {"not": {"pattern": "(^|/)\\.\\.?(/|$)"}},
+        {"not": {"pattern": "^[A-Za-z]:"}}
+      ],
+      "description": "repository-relative POSIX 경로. absolute/drive/backslash/'.'/'..'/빈 segment 금지."
+    },
+    "repoRelativePathMaybeDir": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\]+(/[^/\\\\]+)*/?$",
+      "allOf": [
+        {"not": {"pattern": "(^|/)\\.\\.?(/|$)"}},
+        {"not": {"pattern": "^[A-Za-z]:"}}
+      ],
+      "description": "prefix match value 전용 — 디렉터리 경계 표시용 trailing '/' 하나만 추가 허용."
+    },
+    "repoRelativePathOrDot": {
+      "anyOf": [
+        {"const": "."},
+        {"$ref": "#/$defs/repoRelativePath"}
+      ],
+      "description": "repo root('.') 또는 repository-relative POSIX 경로."
+    }
+  }
+}

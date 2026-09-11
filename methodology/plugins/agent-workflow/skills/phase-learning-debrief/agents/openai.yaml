@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phase Learning Debrief"
+  short_description: "완료된 페이즈의 비권위 학습 브리핑을 생성한다."
+  default_prompt: "완료된 페이즈에 phase-learning-debrief를 사용해 한국어 Markdown 학습 브리핑을 만들어줘."

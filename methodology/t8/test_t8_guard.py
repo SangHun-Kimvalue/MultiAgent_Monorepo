@@ -1,9 +1,12 @@
 """T8 guard 재발 시뮬 테스트 — 프로토콜 §1 위험모드를 temp repo에서 재현해 차단을 검증."""
 from __future__ import annotations
 
+import ast
 import importlib.util
+import inspect
 import json
 import subprocess
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 import pytest
@@ -407,3 +410,363 @@ def test_non_git_dir_is_blocked(tmp_path: Path, capsys) -> None:
 
     assert rc == 2
     assert "git repo 아님" in capsys.readouterr().err
+
+
+def test_t2_cmd_commit_calls_validator_for_each_canonical_path(
+    repo: Path, monkeypatch, capsys
+) -> None:
+    (repo / "b.txt").write_text("b\n", encoding="utf-8")
+    (repo / "a.txt").write_text("a\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+    real_validate = t8_guard.validate_declared_path
+    calls: list[str] = []
+
+    def recording_validate(repo_path: Path, declared: str):
+        calls.append(declared)
+        return real_validate(repo_path, declared)
+
+    monkeypatch.setattr(t8_guard, "validate_declared_path", recording_validate)
+
+    rc = t8_guard.main(
+        ["--repo", str(repo), "commit", "-m", "t2", "--files", "b.txt", "./a.txt"]
+    )
+
+    assert rc == 0
+    assert calls == ["a.txt", "b.txt"]
+
+
+def test_t3a_unknown_reason_is_blocked_with_exact_stderr(
+    repo: Path, monkeypatch, capsys
+) -> None:
+    (repo / "mine.txt").write_text("mine\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+    monkeypatch.setattr(
+        t8_guard,
+        "validate_declared_path",
+        lambda _repo, _declared: t8_guard.PathVerdict(False, "mine.txt", "future_reason"),
+    )
+
+    rc = t8_guard.main(
+        ["--repo", str(repo), "commit", "-m", "t3a", "--files", "mine.txt"]
+    )
+
+    out = capsys.readouterr()
+    assert rc == 2
+    assert out.out == ""
+    assert out.err == "T8_BLOCKED: 경로 검증기 미지 판정 — reason=future_reason\n"
+
+
+def test_t3a_unknown_reason_is_blocked_even_when_validator_says_ok(
+    repo: Path, monkeypatch, capsys
+) -> None:
+    (repo / "mine.txt").write_text("mine\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+    monkeypatch.setattr(
+        t8_guard,
+        "validate_declared_path",
+        lambda _repo, _declared: t8_guard.PathVerdict(True, "mine.txt", "future_reason"),
+    )
+
+    rc = t8_guard.main(
+        ["--repo", str(repo), "commit", "-m", "t3a-ok", "--files", "mine.txt"]
+    )
+
+    out = capsys.readouterr()
+    assert rc == 2
+    assert out.out == ""
+    assert out.err == "T8_BLOCKED: 경로 검증기 미지 판정 — reason=future_reason\n"
+
+
+def test_t3a_unknown_reason_is_blocked_during_normalization(
+    repo: Path, monkeypatch, capsys
+) -> None:
+    (repo / "mine.txt").write_text("mine\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+    monkeypatch.setattr(
+        t8_guard,
+        "normalize_declared_path",
+        lambda _repo, _declared: t8_guard.PathVerdict(True, "mine.txt", "future_reason"),
+    )
+
+    rc = t8_guard.main(
+        ["--repo", str(repo), "commit", "-m", "t3a-normalize", "--files", "mine.txt"]
+    )
+
+    out = capsys.readouterr()
+    assert rc == 2
+    assert out.out == ""
+    assert out.err == "T8_BLOCKED: 경로 검증기 미지 판정 — reason=future_reason\n"
+
+
+def test_t3b_validator_runtime_error_propagates(repo: Path, monkeypatch, capsys) -> None:
+    (repo / "mine.txt").write_text("mine\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+
+    def raise_runtime_error(_repo: Path, _declared: str):
+        raise RuntimeError("validator boom")
+
+    monkeypatch.setattr(t8_guard, "validate_declared_path", raise_runtime_error)
+
+    with pytest.raises(RuntimeError, match="validator boom"):
+        t8_guard.main(
+            ["--repo", str(repo), "commit", "-m", "t3b", "--files", "mine.txt"]
+        )
+
+
+def test_t3c_validator_git_failure_preserves_system_exit_contract(
+    repo: Path, monkeypatch, capsys
+) -> None:
+    (repo / "mine.txt").write_text("mine\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+    real_git = t8_guard._git
+
+    def failing_git(repo_path: Path, *args: str):
+        if args and args[0] == "ls-files":
+            return subprocess.CompletedProcess(
+                ["git", *args], returncode=1, stdout="", stderr="fatal contract"
+            )
+        return real_git(repo_path, *args)
+
+    monkeypatch.setattr(t8_guard, "_git", failing_git)
+
+    rc = t8_guard.main(
+        ["--repo", str(repo), "commit", "-m", "t3c", "--files", "mine.txt"]
+    )
+
+    out = capsys.readouterr()
+    assert rc == 2
+    assert out.out == ""
+    assert out.err == "T8_BLOCKED: git ls-files -- mine.txt failed: fatal contract\n"
+
+
+def test_t4_validator_preserves_all_five_path_verdicts(repo: Path, capsys) -> None:
+    outside = t8_guard.validate_declared_path(repo, "../outside.txt")
+    assert outside == t8_guard.PathVerdict(False, None, "outside_repo")
+
+    magic = t8_guard.validate_declared_path(repo, "*.txt")
+    assert magic == t8_guard.PathVerdict(False, "*.txt", "pathspec_magic")
+
+    pkg = repo / "pkg"
+    pkg.mkdir()
+    (pkg / "tracked.txt").write_text("tracked\n", encoding="utf-8")
+    _git(repo, "add", "pkg/tracked.txt")
+    _git(repo, "commit", "-m", "add package")
+    directory = t8_guard.validate_declared_path(repo, "pkg")
+    assert directory == t8_guard.PathVerdict(False, "pkg", "directory_prefix")
+
+    missing = t8_guard.validate_declared_path(repo, "missing.txt")
+    assert missing == t8_guard.PathVerdict(False, "missing.txt", "not_concrete_file")
+
+    unchanged = t8_guard.validate_declared_path(repo, "base.txt")
+    assert unchanged == t8_guard.PathVerdict(False, "base.txt", "no_change")
+
+    (repo / "base.txt").write_text("changed\n", encoding="utf-8")
+    changed = t8_guard.validate_declared_path(repo, "base.txt")
+    assert changed == t8_guard.PathVerdict(True, "base.txt", None)
+    assert capsys.readouterr().out == ""
+
+
+def test_t4_normalization_seam_never_calls_git(repo: Path, monkeypatch) -> None:
+    def unexpected_git(*_args, **_kwargs):
+        raise AssertionError("normalization touched git")
+
+    monkeypatch.setattr(t8_guard, "_git", unexpected_git)
+
+    inside = t8_guard.normalize_declared_path(repo, ".\\base.txt")
+    outside = t8_guard.normalize_declared_path(repo, "../outside.txt")
+
+    assert inside == t8_guard.PathVerdict(True, "base.txt", None)
+    assert outside == t8_guard.PathVerdict(False, None, "outside_repo")
+
+
+def test_path_verdict_is_frozen() -> None:
+    verdict = t8_guard.PathVerdict(True, "base.txt", None)
+    with pytest.raises(FrozenInstanceError):
+        verdict.ok = False
+
+
+def test_t5_cmd_commit_obeys_validator_rejection(repo: Path, monkeypatch, capsys) -> None:
+    (repo / "mine.txt").write_text("mine\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+    monkeypatch.setattr(
+        t8_guard,
+        "validate_declared_path",
+        lambda _repo, _declared: t8_guard.PathVerdict(False, "mine.txt", "no_change"),
+    )
+
+    rc = t8_guard.main(
+        ["--repo", str(repo), "commit", "-m", "t5-reject", "--files", "mine.txt"]
+    )
+
+    out = capsys.readouterr()
+    assert rc == 1
+    assert out.out == ""
+    assert out.err == "T8_VIOLATION: 변경 없는 파일 선언(무효 스코프): mine.txt\n"
+
+
+def test_t5_cmd_commit_obeys_validator_acceptance(repo: Path, monkeypatch, capsys) -> None:
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+    monkeypatch.setattr(
+        t8_guard,
+        "validate_declared_path",
+        lambda _repo, _declared: t8_guard.PathVerdict(True, "base.txt", None),
+    )
+
+    rc = t8_guard.main(
+        ["--repo", str(repo), "commit", "-m", "t5-accept", "--files", "base.txt"]
+    )
+
+    out = capsys.readouterr()
+    assert rc == 2
+    assert out.out == ""
+    assert out.err.startswith("T8_BLOCKED: git commit 실패:")
+
+
+def test_t6_success_stdout_json_is_byte_exact(repo: Path, capsys) -> None:
+    (repo / "base.txt").write_text("changed\n", encoding="utf-8")
+    non_ascii = "한글 파일.txt"
+    (repo / non_ascii).write_text("내용\n", encoding="utf-8")
+    assert _preflight(repo) == 0
+    capsys.readouterr()
+
+    rc = t8_guard.main(
+        [
+            "--repo",
+            str(repo),
+            "commit",
+            "-m",
+            "t6",
+            "--files",
+            non_ascii,
+            "base.txt",
+        ]
+    )
+
+    out = capsys.readouterr()
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()[:9]
+    expected = (
+        json.dumps({"committed": ["base.txt", non_ascii], "head": head}, ensure_ascii=False)
+        + "\n"
+    ).encode("utf-8")
+    assert rc == 0
+    assert out.out.encode("utf-8") == expected
+    assert out.err == ""
+
+
+def test_t7_cmd_commit_contains_no_path_decision_replica() -> None:
+    source = inspect.getsource(t8_guard.cmd_commit)
+    forbidden = (
+        "_GLOB_MAGIC",
+        'startswith(":")',
+        "ls-files",
+        ".is_file()",
+        "status",
+        "--porcelain",
+        "_to_repo_relative",
+    )
+    assert [token for token in forbidden if token in source] == []
+
+
+def _find_path_decision_replicas(source: str) -> set[str]:
+    module = ast.parse(source)
+    excluded_functions = {
+        node
+        for node in module.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name in {"normalize_declared_path", "validate_declared_path"}
+    }
+    findings: set[str] = set()
+
+    class DecisionReplicaVisitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            for child in ast.iter_child_nodes(node):
+                if node not in excluded_functions or child not in node.body:
+                    self.visit(child)
+
+        visit_AsyncFunctionDef = visit_FunctionDef
+
+        def visit_Name(self, node: ast.Name) -> None:
+            if isinstance(node.ctx, ast.Load) and node.id in {
+                "_GLOB_MAGIC",
+                "_to_repo_relative",
+            }:
+                findings.add(node.id)
+
+        def visit_Constant(self, node: ast.Constant) -> None:
+            if node.value in {"ls-files", "--porcelain"}:
+                findings.add(str(node.value))
+
+        def visit_Call(self, node: ast.Call) -> None:
+            if isinstance(node.func, ast.Attribute):
+                if node.func.attr == "is_file":
+                    findings.add(".is_file()")
+                if (
+                    node.func.attr == "startswith"
+                    and node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and node.args[0].value == ":"
+                ):
+                    findings.add('startswith(":")')
+            self.generic_visit(node)
+
+    DecisionReplicaVisitor().visit(module)
+
+    return findings
+
+
+def test_t7_module_contains_no_path_decision_replica_outside_validators() -> None:
+    findings = _find_path_decision_replicas(inspect.getsource(t8_guard))
+
+    assert findings == set()
+
+
+def test_t7_module_replica_check_visits_nested_validator_name() -> None:
+    fake_module = """
+def normalize_declared_path():
+    _to_repo_relative
+
+def validate_declared_path():
+    "--porcelain"
+
+def cmd_commit():
+    def validate_declared_path():
+        _GLOB_MAGIC
+        "ls-files"
+
+    validate_declared_path()
+"""
+
+    findings = _find_path_decision_replicas(fake_module)
+
+    assert findings == {"_GLOB_MAGIC", "ls-files"}
+
+
+def test_t7_module_replica_check_visits_validator_decorator() -> None:
+    fake_module = """
+@mark(_GLOB_MAGIC)
+def validate_declared_path(repo, declared):
+    "--porcelain"
+"""
+
+    findings = _find_path_decision_replicas(fake_module)
+
+    assert findings == {"_GLOB_MAGIC"}
+
+
+def test_t7_module_replica_check_visits_async_validator_default_argument() -> None:
+    fake_module = """
+async def validate_declared_path(repo, declared, probe="ls-files"):
+    _to_repo_relative
+"""
+
+    findings = _find_path_decision_replicas(fake_module)
+
+    assert findings == {"ls-files"}

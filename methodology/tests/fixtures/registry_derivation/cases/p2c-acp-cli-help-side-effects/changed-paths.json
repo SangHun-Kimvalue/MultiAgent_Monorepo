@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "paths": [
+    ".claude/cubicon-trial.config.md",
+    "docs/handoff/CUBICON_TRIAL_DIAGNOSIS_20260615.md",
+    "methodology/docs/EXECUTION_ADAPTER_CONTRACT.md",
+    "methodology/docs/PHASE_CYCLE_ORCHESTRATOR_DESIGN.md",
+    "runtimes/acp/acp/__main__.py",
+    "runtimes/acp/tests/test_cli_help.py"
+  ]
+}

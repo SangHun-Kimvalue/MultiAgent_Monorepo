@@ -483,8 +483,8 @@ def _validate_codex_shape(provider: ProviderBinding) -> None:
 
 def _validate_claude_shape(provider: ProviderBinding) -> None:
     argv = provider.planned_argv
-    if provider.model != "sonnet" or provider.model_binding_kind != "moving_profile":
-        raise PreflightError("claude v1 requires sonnet with moving_profile")
+    if provider.model not in {"opus", "sonnet"} or provider.model_binding_kind != "moving_profile":
+        raise PreflightError("claude v1 requires opus or sonnet with moving_profile")
     if (
         provider.approval_policy != "not-applicable"
         or provider.sandbox_policy != "external"
@@ -504,14 +504,16 @@ def _validate_claude_shape(provider: ProviderBinding) -> None:
         token = argv[index]
         if token in {"-p", "--print", "--no-session-persistence"}:
             index += 1
-        elif token in {"--model", "--effort"}:
+        elif token in {"--model", "--effort", "--output-format"}:
             if index + 1 >= len(argv):
                 raise PreflightError(f"claude option {token} is missing its value")
             if token == "--model":
                 model_count += 1
                 model_value = argv[index + 1]
-            elif argv[index + 1] != "medium":
+            elif token == "--effort" and argv[index + 1] != "medium":
                 raise PreflightError("claude --effort value must be medium")
+            elif token == "--output-format" and argv[index + 1] != "json":
+                raise PreflightError("claude --output-format value must be json")
             index += 2
         elif token.startswith("--model="):
             model_count += 1
@@ -528,6 +530,8 @@ def _validate_claude_shape(provider: ProviderBinding) -> None:
         raise PreflightError(
             "claude planned_argv requires --no-session-persistence exactly once"
         )
+    if argv.count("--output-format") > 1:
+        raise PreflightError("claude planned_argv permits --output-format json at most once")
 
 
 def _validate_provider_shapes(config: BindingConfig) -> None:

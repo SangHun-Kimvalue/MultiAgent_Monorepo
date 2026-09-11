@@ -445,7 +445,7 @@ def test_codex_grammar_failure_blocks_provider_probe_zero(
     [
         lambda item: item["planned_argv"].remove("-p"),
         lambda item: item["planned_argv"].__setitem__(2, "-m"),
-        lambda item: item["planned_argv"].__setitem__(3, "opus"),
+        lambda item: item["planned_argv"].__setitem__(3, "haiku"),
         lambda item: item["planned_argv"].remove("--no-session-persistence"),
         lambda item: item["planned_argv"].__setitem__(5, "high"),
     ],
@@ -465,17 +465,62 @@ def test_claude_grammar_failure_blocks_provider_probe_zero(
     assert runner.calls == []
 
 
-def test_claude_model_equal_form_is_allowed(tmp_path: Path) -> None:
+@pytest.mark.parametrize("model", ["sonnet", "opus"])
+def test_claude_model_equal_form_is_allowed(tmp_path: Path, model: str) -> None:
     repo, path, config = _repo(tmp_path)
+    config["providers"][1]["model"] = model
     claude_argv = config["providers"][1]["planned_argv"]
     model_index = claude_argv.index("--model")
-    claude_argv[model_index : model_index + 2] = ["--model=sonnet"]
+    claude_argv[model_index : model_index + 2] = [f"--model={model}"]
     _write(path, config)
 
     payload, exit_code = _execute(path, FakeRunner(repo))
 
     assert exit_code == 0
     assert payload["providers"][1]["model_binding_kind"] == "moving_profile"
+
+
+@pytest.mark.parametrize("model", ["sonnet", "opus"])
+def test_claude_model_separate_form_is_allowed(tmp_path: Path, model: str) -> None:
+    repo, path, config = _repo(tmp_path)
+    config["providers"][1]["model"] = model
+    config["providers"][1]["planned_argv"][3] = model
+    _write(path, config)
+
+    payload, exit_code = _execute(path, FakeRunner(repo))
+
+    assert exit_code == 0
+    assert payload["providers"][1]["model_binding_kind"] == "moving_profile"
+
+
+def test_claude_output_format_json_is_optional(tmp_path: Path) -> None:
+    repo, path, config = _repo(tmp_path)
+    config["providers"][1]["planned_argv"].extend(["--output-format", "json"])
+    _write(path, config)
+
+    payload, exit_code = _execute(path, FakeRunner(repo))
+
+    assert exit_code == 0
+    assert payload["providers"][1]["model_binding_kind"] == "moving_profile"
+
+
+@pytest.mark.parametrize(
+    "suffix",
+    [["--output-format", "json", "--output-format", "json"], ["--output-format"], ["--output-format", "text"]],
+)
+def test_claude_output_format_invalid_blocks_provider_probe_zero(
+    tmp_path: Path, suffix: list[str]
+) -> None:
+    repo, path, config = _repo(tmp_path)
+    config["providers"][1]["planned_argv"].extend(suffix)
+    _write(path, config)
+    runner = FakeRunner(repo)
+
+    payload, exit_code = _execute(path, runner, live=True)
+
+    assert (payload["status"], exit_code) == ("BLOCKED", 2)
+    assert runner.provider_calls == []
+    assert runner.calls == []
 
 
 @pytest.mark.parametrize(

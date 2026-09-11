@@ -467,3 +467,200 @@ def test_emit_falls_back_to_ascii(monkeypatch, capsys) -> None:
     preflight.emit({"reason": "예산 소진 — four-way disposition"})
     payload = json.loads("".join(fake.out).strip())
     assert payload["reason"] == "예산 소진 — four-way disposition"
+
+
+# --- LESSON-M049 : 조회는 상태를 바꾸지 않는다 -------------------------------
+
+
+def _snapshot(tmp_path: Path) -> dict:
+    return {f.name: f.read_bytes() for f in sorted(tmp_path.iterdir()) if f.is_file()}
+
+
+def test_status_writes_nothing(tmp_path: Path) -> None:
+    """조회 전후로 **바이트 불변**이고 잠금 파일도 생기지 않는다."""
+    doc = _doc(tmp_path, grade="L2", consumed=1, doc_consumed=1)
+    before = _snapshot(tmp_path)
+
+    code, payload = _run(doc, "--status")
+
+    assert code == preflight.EXIT_OK
+    assert payload["status"] == "STATUS"
+    assert _snapshot(tmp_path) == before, "조회가 파일을 변경했다"
+    assert not list(tmp_path.glob("*.lock")), "조회가 잠금을 잡았다"
+
+
+def test_status_reports_both_axes_by_default(tmp_path: Path) -> None:
+    """--gate 를 생략하면 두 축을 모두 보고한다."""
+    doc = _doc(tmp_path, grade="L2", consumed=1, doc_consumed=2)
+    _, payload = _run(doc, "--status")
+
+    assert set(payload["gates"]) == {"output", "input"}
+    assert payload["gates"]["output"] == {
+        "counter": "rounds_consumed", "budget_limit": 4, "counter_present": True,
+        "consumed": 1, "remaining": 3, "exhausted": False,
+    }
+    assert payload["gates"]["input"]["remaining"] == 1
+    assert payload["work_grade"] == "L2"
+
+
+def test_status_single_axis_when_gate_given(tmp_path: Path) -> None:
+    doc = _doc(tmp_path, grade="L1", consumed=0, doc_consumed=0)
+    _, payload = _run(doc, "--status", "--gate", "input")
+    assert set(payload["gates"]) == {"input"}
+    assert payload["gates"]["input"]["budget_limit"] == 2
+
+
+def test_status_reports_exhaustion_as_fact_not_block(tmp_path: Path) -> None:
+    """소진은 **차단이 아니라 사실**이다 — exit 0 + remaining 0.
+
+    여기서 비0 을 내면 "확인했더니 막혔다"와 "확인 자체가 실패했다"를 구분할 수 없다.
+    """
+    doc = _doc(tmp_path, grade="L2", consumed=4, doc_consumed=3)
+    code, payload = _run(doc, "--status")
+
+    assert code == preflight.EXIT_OK, "소진을 차단으로 보고했다"
+    for axis in ("output", "input"):
+        assert payload["gates"][axis]["remaining"] == 0
+        assert payload["gates"][axis]["exhausted"] is True
+
+
+def test_status_on_legacy_document_reports_missing_axis(tmp_path: Path) -> None:
+    """`doc_rounds_consumed` 없는 기존 문서도 조회는 성공하고, 그 축을 사실로 보고한다."""
+    doc = tmp_path / "PLAN.md"
+    doc.write_text(
+        "```review-budget\nslice_id: legacy\nwork_grade: L2\nrounds_consumed: 2\n```\n",
+        encoding="utf-8",
+    )
+    code, payload = _run(doc, "--status")
+
+    assert code == preflight.EXIT_OK
+    assert payload["gates"]["output"]["consumed"] == 2
+    assert payload["gates"]["input"]["counter_present"] is False
+    assert "fail closed" in payload["gates"]["input"]["note"]
+
+
+def test_status_does_not_open_a_bypass(tmp_path: Path) -> None:
+    """조회가 통과해도 **예약은 여전히 fail-closed** 다(우회 경로 없음)."""
+    doc = tmp_path / "PLAN.md"
+    doc.write_text(
+        "```review-budget\nslice_id: legacy\nwork_grade: L2\nrounds_consumed: 0\n```\n",
+        encoding="utf-8",
+    )
+    status_code, _ = _run(doc, "--status", "--gate", "input")
+    reserve_code, reserve_payload = _run(doc, "--gate", "input")
+
+    assert status_code == preflight.EXIT_OK
+    assert reserve_code == preflight.EXIT_CONTRACT
+    assert "doc_rounds_consumed" in reserve_payload["reason"]
+
+
+def test_status_rejects_reviewer_command(tmp_path: Path) -> None:
+    """조회 모드로 Reviewer 를 띄울 수 없다 — 소비 없는 실행 경로를 만들지 않는다."""
+    marker = tmp_path / "ran.txt"
+    doc = _doc(tmp_path)
+    code, payload = _run(
+        doc, "--status", "--", sys.executable, "-c", f"open(r'{marker}','w').write('x')"
+    )
+    assert code == preflight.EXIT_CONTRACT
+    assert not marker.exists()
+    assert "read-only" in payload["reason"]
+
+
+@pytest.mark.parametrize(
+    "kwargs, extra, needle",
+    [
+        ({"blocks": 2}, (), "exactly one review-budget block"),
+        ({"grade": "L9"}, (), "unknown work_grade"),
+        ({"slice_id": "slice-a"}, ("--slice", "slice-b"), "slice_id mismatch"),
+    ],
+)
+def test_status_structural_violations_are_contract_errors(
+    tmp_path: Path, kwargs: dict, extra: tuple, needle: str
+) -> None:
+    """구조 위반은 조회에서도 fail-closed 다(축별 사실 보고와 구분)."""
+    doc = _doc(tmp_path, **kwargs)
+    code, payload = _run(doc, "--status", *extra)
+    assert code == preflight.EXIT_CONTRACT
+    assert needle in payload["reason"]
+
+
+def test_status_reports_axis_missing_the_default_counter(tmp_path: Path) -> None:
+    """**output 카운터가 없는** 문서도 조회는 성공한다.
+
+    조회가 내부적으로 기본 축 카운터를 요구하면(gate=None 처리가 새면) 여기서 깨진다.
+    """
+    doc = tmp_path / "PLAN.md"
+    doc.write_text(
+        "```review-budget\nslice_id: s\nwork_grade: L1\ndoc_rounds_consumed: 1\n```\n",
+        encoding="utf-8",
+    )
+    code, payload = _run(doc, "--status")
+
+    assert code == preflight.EXIT_OK, payload
+    assert payload["gates"]["output"]["counter_present"] is False
+    assert payload["gates"]["input"]["consumed"] == 1
+    assert payload["gates"]["input"]["remaining"] == 1
+
+
+def test_status_remaining_never_goes_negative(tmp_path: Path) -> None:
+    """카운터가 상한을 넘어도 `remaining` 은 0 이다 — 음수는 '빚진 라운드'로 오독된다."""
+    doc = _doc(tmp_path, grade="L2", consumed=6, doc_consumed=5)
+    code, payload = _run(doc, "--status")
+
+    assert code == preflight.EXIT_OK
+    assert payload["gates"]["output"]["remaining"] == 0
+    assert payload["gates"]["output"]["consumed"] == 6
+    assert payload["gates"]["output"]["exhausted"] is True
+    assert payload["gates"]["input"]["remaining"] == 0
+
+
+def test_status_never_acquires_a_lock(tmp_path: Path, monkeypatch) -> None:
+    """잠금을 **잡았다 푸는** mutation 은 최종 상태로는 구분되지 않는다(R1-P2-2).
+
+    그래서 획득 자체를 감시한다 — `status` 경로에서 `acquire_lock` 이 호출되면 실패한다.
+    """
+    doc = _doc(tmp_path, grade="L2", consumed=1, doc_consumed=1)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("조회가 잠금을 획득했다")
+
+    monkeypatch.setattr(preflight, "acquire_lock", forbidden)
+    code, payload = _run(doc, "--status")
+    assert code == preflight.EXIT_OK and payload["status"] == "STATUS"
+
+
+@pytest.mark.parametrize("raw", ["abc", "-1"])
+def test_status_reports_unusable_counter_without_remaining(tmp_path: Path, raw: str) -> None:
+    """비정수·음수는 **사실만** 보고하고 `remaining`/`exhausted` 를 만들지 않는다.
+
+    음수에 `max(0, limit - consumed)` 를 적용하면 **상한보다 큰 잔여**가 나와,
+    `remaining > 0` 만 보는 호출자가 Reviewer 를 띄우게 된다(R1-P2-1).
+    """
+    doc = tmp_path / "PLAN.md"
+    doc.write_text(
+        f"```review-budget\nslice_id: s\nwork_grade: L1\nrounds_consumed: {raw}\n"
+        "doc_rounds_consumed: 0\n```\n",
+        encoding="utf-8",
+    )
+    code, payload = _run(doc, "--status", "--gate", "output")
+    axis = payload["gates"]["output"]
+
+    assert code == preflight.EXIT_OK, "조회 자체는 성공해야 한다"
+    assert axis["counter_present"] is True
+    assert "fail closed" in axis["note"]
+    assert "remaining" not in axis, axis
+    assert "exhausted" not in axis, axis
+    assert ("consumed" in axis) is (raw != "abc")
+
+
+def test_unusable_counter_still_blocks_reserve(tmp_path: Path) -> None:
+    """조회가 성공해도 그 축의 예약은 여전히 fail-closed 다."""
+    doc = tmp_path / "PLAN.md"
+    doc.write_text(
+        "```review-budget\nslice_id: s\nwork_grade: L1\nrounds_consumed: -1\n```\n",
+        encoding="utf-8",
+    )
+    assert _run(doc, "--status", "--gate", "output")[0] == preflight.EXIT_OK
+    code, payload = _run(doc, "--gate", "output")
+    assert code == preflight.EXIT_CONTRACT
+    assert "must not be negative" in payload["reason"]

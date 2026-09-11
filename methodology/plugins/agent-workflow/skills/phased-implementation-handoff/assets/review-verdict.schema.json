@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://multiagent-methodology.local/schemas/review-verdict-2.0.schema.json",
-  "title": "Independent implementation review verdict (2.0 — review budget enforced)",
+  "$id": "https://multiagent-methodology.local/schemas/review-verdict-2.1.schema.json",
+  "title": "Independent implementation review verdict (2.1 — proportionality enforced)",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,6 +17,7 @@
     "review_artifact_path",
     "raw_output_path",
     "verdict",
+    "proportionality",
     "exit_code",
     "findings",
     "dispositions",
@@ -27,7 +28,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "2.0"
+      "const": "2.1"
     },
     "reviewed_at_utc": {
       "type": "string",
@@ -89,6 +90,13 @@
         "CHANGES_REQUESTED",
         "BLOCKED"
       ]
+    },
+    "proportionality": {
+      "enum": [
+        "PROPORTIONATE",
+        "OVERENGINEERED"
+      ],
+      "description": "심사 대상이 목적 대비 과한가에 대한 리뷰어 판정. verdict 와 독립이다 — APPROVED + OVERENGINEERED 조합이 유효하다."
     },
     "exit_code": {
       "type": "integer"

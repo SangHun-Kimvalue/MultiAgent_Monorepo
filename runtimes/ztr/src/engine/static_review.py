@@ -14,6 +14,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from src.engine.process_supervisor import (
+    attach,
+    merge_cleanup,
+    spawn_kwargs,
+    terminate_tree,
+)
 from src.envelope import (
     Envelope,
     INTERNAL_ERROR_EXIT_CODE,
@@ -72,6 +78,9 @@ class ToolRun:
     duration_s: float
     timed_out: bool = False
     error: str = ""
+    #: 트리 정리 결과 토큰(Phase 9). 비어 있으면 정리 완료. 안정 enum이며 코드가 이 값으로
+    #: 분기한다(R5) — 산문이 아니다. 정본 = `process_supervisor`.
+    cleanup: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -113,6 +122,15 @@ class StaticReviewReport:
     """ruff/mypy만으로 결정된 mechanical 리뷰 보고서."""
 
     tool_results: dict[str, ToolReviewResult]
+
+    def cleanup_tokens(self) -> tuple[str, ...]:
+        """도구 실행들의 트리 정리 열화를 모은다(Phase 9).
+
+        비어 있지 않으면 **정리를 보장하지 못했다**는 뜻이다. 호출자는 이를
+        `Envelope.not_claimed` 로 흘려 **외부 소비자가 보게** 해야 한다 — 내부 객체에만
+        있으면 관측 결과가 종전과 같아 기록했다고 볼 수 없다(출력 R1 P1).
+        """
+        return merge_cleanup(*(result.run.cleanup for result in self.tool_results.values()))
     findings: list[M2Finding]
     verdict: Verdict
     exit_code: int
@@ -243,55 +261,71 @@ async def run_subprocess_tool(
     cwd: Path,
     timeout_s: float,
 ) -> ToolRun:
-    """LESSON-001 규칙: communicate + wait_for + finally kill."""
+    """LESSON-001 규칙: communicate + wait_for + finally kill.
+
+    Phase 9: `proc.kill()`은 직계만 죽인다 — 트리 경계로 정리하고, 정리 열화는
+    **모든 반환 경로에서** `cleanup` 토큰으로 보고한다.
+
+    ⚠ **반환 지점은 하나다.** 예외 블록에서 곧바로 `return` 하면 그 반환값이 먼저
+    만들어져 **`finally` 가 수집한 토큰이 유실**된다(출력 R2 P1). 조용한 열화를 막으려면
+    필드만 채우고 `finally` 이후 한 곳에서 만들어야 한다.
+    """
     start = time.monotonic()
     proc: asyncio.subprocess.Process | None = None
+    job = None
+    cleaned = False
+    late_cleanup: list[tuple[str, ...]] = []
+    cleanup: tuple[str, ...] = ()
+    stdout_b: bytes = b""
+    stderr_b: bytes = b""
+    exit_code = INTERNAL_ERROR_EXIT_CODE
+    stderr_text: str | None = None
+    timed_out = False
+    error = ""
     try:
         proc = await asyncio.create_subprocess_exec(
             *command,
             cwd=str(cwd),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            **spawn_kwargs(),
         )
+        job = attach(proc)   # Phase 9: spawn 직후 트리 경계에 편입
         stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout_s)
-        exit_code = proc.returncode
-        if exit_code is None:
-            exit_code = INTERNAL_ERROR_EXIT_CODE
+        child_code = proc.returncode
+        exit_code = INTERNAL_ERROR_EXIT_CODE if child_code is None else child_code
     except TimeoutError:
-        if proc is not None and proc.returncode is None:
-            proc.kill()
-            stdout_b, stderr_b = await proc.communicate()
-        else:
-            stdout_b, stderr_b = b"", b""
-        return ToolRun(
-            command=tuple(command),
-            exit_code=TIMEOUT_EXIT_CODE,
-            stdout=_decode(stdout_b),
-            stderr_sanitized=redact_stderr(_decode(stderr_b)),
-            duration_s=time.monotonic() - start,
-            timed_out=True,
-            error="timeout",
-        )
+        timed_out = True
+        error = "timeout"
+        exit_code = TIMEOUT_EXIT_CODE
+        if proc is not None:
+            # ⚠ `proc.returncode is None`으로 가드하지 않는다 — **직계가 이미 죽었어도
+            # 트리는 살아 있을 수 있다**(중간 부모 선종료, P0 S2 실측).
+            stdout_b, stderr_b, cleanup = await terminate_tree(proc, job)
+            job, cleaned = None, True
     except OSError as exc:
-        return ToolRun(
-            command=tuple(command),
-            exit_code=INTERNAL_ERROR_EXIT_CODE,
-            stdout="",
-            stderr_sanitized=redact_stderr(str(exc)),
-            duration_s=time.monotonic() - start,
-            error=str(exc),
-        )
+        exit_code = INTERNAL_ERROR_EXIT_CODE
+        error = str(exc)
+        stderr_text = redact_stderr(str(exc))
+        stdout_b, stderr_b = b"", b""
     finally:
-        if proc is not None and proc.returncode is None:
-            proc.kill()
-            await proc.wait()
+        # 정상 종료 경로에서도 **반드시** 경계를 닫는다 — 남은 후손 정리 + Job 핸들 반납.
+        if proc is not None and not cleaned:
+            _out, _err, late = await terminate_tree(proc, job)
+            job = None
+            late_cleanup.append(late)   # 출력은 이미 확보했으므로 토큰만 수집
 
     return ToolRun(
         command=tuple(command),
         exit_code=exit_code,
-        stdout=_decode(stdout_b),
-        stderr_sanitized=redact_stderr(_decode(stderr_b)),
+        stdout="" if stderr_text is not None else _decode(stdout_b),
+        stderr_sanitized=(
+            stderr_text if stderr_text is not None else redact_stderr(_decode(stderr_b))
+        ),
         duration_s=time.monotonic() - start,
+        timed_out=timed_out,
+        error=error,
+        cleanup=merge_cleanup(cleanup, *late_cleanup),
     )
 
 

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "methodology-doctor-focused",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "methodology/tests/test_workflow_doctor.py"
+      ],
+      "scope_class": "focused"
+    },
+    {
+      "id": "methodology-tests",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "methodology/tests"
+      ],
+      "scope_class": "module-full"
+    }
+  ],
+  "rules": [
+    {
+      "id": "methodology-prefix",
+      "match": {"kind": "prefix", "value": "methodology/"},
+      "groups": ["methodology-tests"]
+    },
+    {
+      "id": "workflow-doctor-exact",
+      "match": {"kind": "exact", "value": "methodology/tools/workflow_doctor.py"},
+      "groups": ["methodology-doctor-focused"]
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "reviewed_at_utc": "2026-07-20T05:20:00Z",
   "executor": {
     "tool": "codex-cli",
@@ -32,6 +32,7 @@
   "review_artifact_path": "artifacts/reviews/example-review-input.md",
   "raw_output_path": "artifacts/reviews/example-review-raw.json",
   "verdict": "PASS",
+  "proportionality": "PROPORTIONATE",
   "exit_code": 0,
   "findings": [],
   "dispositions": [],

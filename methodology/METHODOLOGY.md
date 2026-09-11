@@ -145,6 +145,8 @@ finding 을 disposition 과 함께 Human Gate 로 올린다(종료 경계).
 ⚠ **집행되지 않는 부분**: **"한 축을 소진하고 같은 대상을 다른 축으로 재분류해 다시 심사"하는
 우회는 도구가 막지 못한다.** 심사 대상의 동일성은 의미 판단이라 숫자·enum 비교로 환원되지
 않는다(R5). 이 금지는 산문으로만 존재하며 집행은 Planner 와 Human Gate 에 있다.
+**슬라이스 밖 단발 리뷰(L0 간주) 해당 여부도 의미 판단이라 도구가 확인하지 않는다** — 계획·프롬프트를
+"분석"으로 분류해 preflight 를 건너뛰는 우회의 집행도 Planner 와 Human Gate 에 있다(T21-P4).
 
 - **증축 금지**: 선언된 리뷰 예산은 늘리지 않는다. 예외는 보안·인증·데이터 손실 위험 또는
   실제 false PASS가 재현된 경우뿐이며, 이때도 기존 슬라이스를 연장하지 않고 해당 위험만 다루는
@@ -153,9 +155,10 @@ finding 을 disposition 과 함께 Human Gate 로 올린다(종료 경계).
   호출하지 않는다. 현재 verdict, 미해결 finding, NOT CLAIMED를 그대로 Human Gate에 반환한다.
 - **기존 finding의 반복에는 예산을 리셋하지 않는다.** 라운드마다 무언가는 나오게 돼 있고,
   같은 지적이 형태만 바꿔 돌아오는 것으로 예산을 늘리지 않는다.
-- 예산을 소진하면 `APPROVED`를 계속 좇지 말고 남은 finding을 **four-way disposition**으로
-  처분한다(`ACCEPT` / `REJECT_FALSE_POSITIVE` / `DEFER_OUT_OF_SCOPE` /
-  `REJECT_OVERENGINEERING`, 근거 필수) → 그 처분을 들고 **사람에게 올린다**.
+- **four-way disposition 은 매 라운드 필수다**([`MULTI_AGENT.md`](MULTI_AGENT.md) 상속) — 라운드마다
+  모든 finding 을 `ACCEPT` / `REJECT_FALSE_POSITIVE` / `DEFER_OUT_OF_SCOPE` / `REJECT_OVERENGINEERING`
+  (근거 필수) 로 처분하고 기록한다. **예산 소진이 바꾸는 것은 라우팅뿐이다** — 소진되면 `APPROVED`를
+  계속 좇지 말고 남은 finding 의 처분을 들고 **사람에게 올린다**.
 - **disposition은 승인을 대체하지 않는다**([`MULTI_AGENT.md`](MULTI_AGENT.md) 상속 —
   수정 대상 선별일 뿐 phase 승인도 독립 재검증도 아니다). 정상 경로에서 사람이 고르는 것은
   `STOP` / `scope 재설계` / `현재 결과 승인 여부`다.
@@ -168,10 +171,23 @@ finding 을 disposition 과 함께 Human Gate 로 올린다(종료 경계).
 - **Human Gate 1 이후 acceptance contract는 동결**한다. Reviewer가 새 요구·새 invariant·새
   failure-injection matrix를 blocker로 추가하지 않는다. 보안·인증·데이터 손실·재현된 false PASS로
   계약 변경이 필요하면 현재 slice를 멈추고 사람에게 scope 재승인을 받는다.
+- **Human Gate 1 이전(입력 게이트·설계 제안)에도 Reviewer 발 새 범위는 자동 수용하지 않는다.**
+  사용자 요구로 추적되지 않는 새 보호 대상·새 범위를 제기한 finding 은 `ACCEPT` 전에 사용자에게
+  확인하거나 `DEFER_OUT_OF_SCOPE` 로 처분한다 — 동결 전이라도 범위의 주인은 사용자다. 기존 요구를 충족하기 위한
+  설계 보정은 새 범위가 아니다([[LESSON-M068]] 사례 2).
 - **실제 재현 없는 P2/P3는 blocker가 아니다.** risk/backlog로 기록하고 phase verdict를 막지 않는다.
   정적 가능성만으로 수정 트리거를 만들지 않는다.
 - **공정 무게는 등급에 맞춘다.** 이름 하나 바꾸는 변경에 설계·구현 리뷰를 각각 5라운드
   도는 것은 등급표를 무시한 것이다.
+- **L0·L1 문서 축 R2 이상은 직전 라운드에 `P1` finding 이 있을 때만 연다**(T21-P4). `P2`·`P3` 는 저자가
+  처분하고 재심사 없이 닫는다 — 반영 확인은 저자와 Human Gate 몫이다. 분기는 `work_grade`·severity enum
+  으로만 한다(R5). **L2·하드 게이트 문서와 구현 diff 축에는 적용하지 않는다** — 반영이 새 결함을 만드는
+  것은 문서도 같다(선례: `docs/discovery/phase-learning-debrief-20260819` L2 입력 R1 `P1 0` → R2 가 복구 불가
+  `BLOCKED` `P1` 적발 · `docs/discovery/ztr-relay-process-tree-kill-20260821` 입력 R2 `P1 4` = R1 반영이 만든 결함).
+  예산 상한은 그대로 천장이며, 이 조건은 그 아래에서 라운드를 여는 문턱이다.
+- **페이즈 슬라이스 밖 단발 리뷰는 L0 로 간주한다**(T21-P4) — 분석·비교·브리핑처럼 그 자체로 반입·구현을
+  결정하지 않는 문서다. 문서 축 1라운드이며 `review-budget` 블록·preflight 를 요구하지 않는다. 올리려면
+  요청서에 사유 한 줄을 적는다. 그 결과로 반입·구현을 결정할 때는 **그 결정 게이트**가 다시 심사한다.
 
 ### 3.1 Context / Token Budget
 

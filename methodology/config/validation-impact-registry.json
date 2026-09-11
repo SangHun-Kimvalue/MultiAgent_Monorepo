@@ -1,0 +1,3778 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_process_signal.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-011dcc65ed",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_approval_gate.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-072a86e996",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_orch_drivers.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-07d24732be",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_collector_health.py",
+        "tests/test_cursor_collector.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-08ebf33231",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_collector_health.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_drivers.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_orch_runs.py",
+        "tests/test_poller.py",
+        "tests/test_purge_command.py",
+        "tests/test_session_visibility.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py",
+        "tests/test_web_orch_api.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-1b142f1aaa",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_collector_health.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_ingest.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_purge_command.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-2c41359791",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_store.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-32cf5331be",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_claude_collector.py",
+        "tests/test_collector_health.py",
+        "tests/test_event_vocabulary.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_liveness.py",
+        "tests/test_orch_drivers.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_process_signal.py",
+        "tests/test_purge_command.py",
+        "tests/test_session_visibility.py",
+        "tests/test_state_semantics_contract.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py",
+        "tests/test_web_orch_api.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-3748f5d3a7",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_orch_runs.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-3a0b10e853",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_claude_collector.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-4455c6eda4",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_inactive_axis.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-49ee7f1b07",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_drivers.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-525861f094",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_orch_run_store_js.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-5752e15e1f",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_reclassification_notify.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-580c8d4e85",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_collector_health.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-623f1fc241",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_execution_evidence.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-63739ef365",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_collector_health.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_drivers.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_purge_command.py",
+        "tests/test_session_visibility.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py",
+        "tests/test_web_orch_api.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-6cffa4edc1",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_dedupe.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-6d13917d64",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_state_vocabulary.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-701b9cedc9",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_collector_health.py",
+        "tests/test_event_vocabulary.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_liveness.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_process_signal.py",
+        "tests/test_purge_command.py",
+        "tests/test_state_semantics_contract.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-7024121843",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_orch_events.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-8947c87fd1",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_state_vocabulary_js.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-8a2eeb1a70",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_state_semantics_contract.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-8da2dadf79",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_collector_health.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_notify.py",
+        "tests/test_orch_drivers.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_purge_command.py",
+        "tests/test_session_visibility.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py",
+        "tests/test_web_orch_api.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-94c76b96ef",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_collector_health.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_purge_command.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-9dce06c401",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_config.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-9e40b0aeda",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-a7b252559e",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_liveness.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-aaa71e78f8",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_session_visibility.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-b49606dfb3",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_session_summary_js.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-b5d4ca58b6",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_collectors.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-b74690f38d",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-b79b0454c2",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_join.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-b99a6a9019",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_claude_collector.py",
+        "tests/test_collector_health.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_process_signal.py",
+        "tests/test_purge_command.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-ba9fb7f554",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-c04d6ae611",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_orch_relay_driver.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-c711a9e065",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_collectors.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-d1b4f8dee9",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_codex_collector.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-d66304889a",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_archive_scope.py",
+        "tests/test_collector_health.py",
+        "tests/test_dedupe.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_poller.py",
+        "tests/test_purge_command.py",
+        "tests/test_reclassification_notify.py",
+        "tests/test_state_vocabulary.py",
+        "tests/test_tick_and_notification_view.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-d8457d9ec3",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_web_orch_api.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-df3d8c6d35",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_claude_collector.py",
+        "tests/test_codex_collector.py",
+        "tests/test_collector_health.py",
+        "tests/test_cursor_collector.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_process_signal.py",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-e141072de4",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_notify.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-e1a8d4804b",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_execution_evidence_js.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-e5591bddef",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_phase.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-e81619e378",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_claude_collector.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_process_signal.py",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-ea9ac16610",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_poller.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-f19bcaab23",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_tick_and_notification_view.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-f3534d3824",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_orch_ingest.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-f544c05730",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_cursor_collector.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-f9543897a5",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_event_vocabulary.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-fb8c6ce23d",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_cli_help.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-fc0f2c68d2",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_codex_collector.py",
+        "tests/test_collector_health.py",
+        "tests/test_execution_evidence.py",
+        "tests/test_inactive_axis.py",
+        "tests/test_orch_relay_driver.py",
+        "tests/test_purge_command.py"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-focused-fce11427b6",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/acp/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider"
+      ],
+      "cwd": "runtimes/acp",
+      "id": "acp-full",
+      "scope_class": "module-full"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_remediation_adapter.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-2d9adedc49",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/lint/test_cross_runtime_lint.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-2f69b54df6",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/nitpicker/test_nit_envelope.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-4299c6074c",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_execution_preflight.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-4ff09f1163",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_validation_impact_selector.py",
+        "methodology/tests/test_workflow_doctor.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-5bac6fa8e6",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/t8/test_t8_guard.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-5e1ee1f65f",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_compaction_hook.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-7730752d22",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_execution_preflight.py",
+        "methodology/tests/test_validation_impact_selector_calibration.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-83004b2b72",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_registry_derivation.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-9c4d7f74a7",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_validation_impact_selector_calibration.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-b0e3efb410",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/nitpicker/test_run_nit.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-cf8b7f7827",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_workflow_doctor.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-d834a5ac19",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_validation_impact_selector.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-e07c89098b",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests/test_registry_derivation.py",
+        "methodology/tests/test_validation_impact_selector.py",
+        "methodology/tests/test_validation_impact_selector_calibration.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-eb986c7728",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/plugins/agent-workflow/skills/phased-implementation-handoff/scripts/test_validate_review_verdict.py"
+      ],
+      "cwd": ".",
+      "id": "methodology-focused-fb4f150098",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "methodology/tests",
+        "methodology/nitpicker"
+      ],
+      "cwd": ".",
+      "id": "methodology-full",
+      "scope_class": "module-full"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_session_store.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-0a12b66982",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_issues_decisions.py",
+        "tests/test_phase5_recovery.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_session_store.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-149fce1b5a",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_resume_chain.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-163ef8d4e4",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_exec_adapter.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-1897968b3f",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_review_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-24992af1da",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-2bc0de53e3",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_run_phase_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-2f3d9038c5",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_envelope.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-3b3f747aac",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_phase_relay.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_static_review.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-3c9037a06a",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_phase3.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-44c3c05c92",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_invariants_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-53a9d11284",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_event_emit.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-59e29e1477",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_ollama.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-614abc2fbd",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_gate_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-677a38c8f0",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_envelope.py",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_harness_advanced.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_nitpicker.py",
+        "tests/test_phase_relay.py",
+        "tests/test_reapply_ledger.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_static_review.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-6b6e4887b6",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_reapply_ledger.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-6deb59b0bd",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_invariants.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-74366cec7b",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_issues_decisions.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-766e6a2203",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_exec_adapter.py",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-77f262d0bb",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_phase5_recovery.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-783191ee3e",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_nitpicker.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-851f26ff53",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_harness_advanced.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_nitpicker.py",
+        "tests/test_phase_relay.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_static_review.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-9aeb90b0ed",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_config.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-9ff6c58521",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_event_emit.py",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-a258ee4690",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-a318675edd",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_e2e_integration.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-a3ea71e71e",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_reapply_ledger.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-a95b7c2a01",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_phase5_unit.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-ad5238f4d8",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_harness_advanced.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-aed217cf9d",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_phase3.py",
+        "tests/test_phase5_recovery.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-ba96ae8da9",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_recording_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-c990bfa60a",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_static_review.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-cb3dcabcea",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-cca42e694e",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_config.py",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-d333ccb89c",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_phase_relay.py",
+        "tests/test_recording_cli.py",
+        "tests/test_resume_chain.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_static_review.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-d5258c52fd",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_base.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-d9e1d6bdf9",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_feedback.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-dd8362411e",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_feedback.py",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_reapply_ledger.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-e7406baea8",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_fix_round.py",
+        "tests/test_gate_cli.py",
+        "tests/test_harness_advanced.py",
+        "tests/test_invariants.py",
+        "tests/test_invariants_cli.py",
+        "tests/test_recording_cli.py",
+        "tests/test_review_cli.py",
+        "tests/test_run_phase_cli.py",
+        "tests/test_verify_cli.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-e74bb3a589",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_phase_relay.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-f4bb9b3c06",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_ollama.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-f576852b5c",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_registry.py"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-focused-fb3cc76951",
+      "scope_class": "focused"
+    },
+    {
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider"
+      ],
+      "cwd": "runtimes/ztr",
+      "id": "ztr-full",
+      "scope_class": "module-full"
+    }
+  ],
+  "rules": [
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-agents-md",
+      "match": {
+        "kind": "exact",
+        "value": "AGENTS.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-changelog-md",
+      "match": {
+        "kind": "exact",
+        "value": "CHANGELOG.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-claude-md",
+      "match": {
+        "kind": "exact",
+        "value": "CLAUDE.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-gitignore",
+      "match": {
+        "kind": "exact",
+        "value": ".gitignore"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-doc-taxonomy-md",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/DOC_TAXONOMY.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-install-md",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/INSTALL.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-install-sh",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/install.sh"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-2f69b54df6"
+      ],
+      "id": "exact-methodology-lint-cross-runtime-lint-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/lint/cross_runtime_lint.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-lint-readme-md",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/lint/README.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-2f69b54df6"
+      ],
+      "id": "exact-methodology-lint-test-cross-runtime-lint-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/lint/test_cross_runtime_lint.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-methodology-md",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/METHODOLOGY.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-multi-agent-md",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/MULTI_AGENT.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-4299c6074c"
+      ],
+      "id": "exact-methodology-nitpicker-nit-envelope-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/nitpicker/nit_envelope.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-nitpicker-nitpicker-config-example-json",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/nitpicker/nitpicker.config.example.json"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-nitpicker-readme-md",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/nitpicker/README.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-cf8b7f7827"
+      ],
+      "id": "exact-methodology-nitpicker-run-nit-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/nitpicker/run_nit.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-4299c6074c"
+      ],
+      "id": "exact-methodology-nitpicker-test-nit-envelope-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/nitpicker/test_nit_envelope.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-cf8b7f7827"
+      ],
+      "id": "exact-methodology-nitpicker-test-run-nit-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/nitpicker/test_run_nit.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-package-sh",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/package.sh"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-7730752d22"
+      ],
+      "id": "exact-methodology-plugins-agent-workflow-scripts-emit-compaction-boot-context-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/plugins/agent-workflow/scripts/emit_compaction_boot_context.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-fb4f150098"
+      ],
+      "id": "exact-methodology-plugins-agent-workflow-skills-phased-implementation-handoff-scripts-test-validate-review-verdict-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/plugins/agent-workflow/skills/phased-implementation-handoff/scripts/test_validate_review_verdict.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-fb4f150098"
+      ],
+      "id": "exact-methodology-plugins-agent-workflow-skills-phased-implementation-handoff-scripts-validate-review-verdict-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/plugins/agent-workflow/skills/phased-implementation-handoff/scripts/validate_review_verdict.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-readme-md",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/README.md"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-5e1ee1f65f"
+      ],
+      "id": "exact-methodology-t8-t8-guard-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/t8/t8_guard.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-5e1ee1f65f"
+      ],
+      "id": "exact-methodology-t8-test-t8-guard-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/t8/test_t8_guard.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-7730752d22"
+      ],
+      "id": "exact-methodology-tests-test-compaction-hook-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_compaction_hook.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-4ff09f1163"
+      ],
+      "id": "exact-methodology-tests-test-execution-preflight-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_execution_preflight.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-methodology-tests-test-install-package-sh",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_install_package.sh"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-9c4d7f74a7"
+      ],
+      "id": "exact-methodology-tests-test-registry-derivation-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_registry_derivation.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-2d9adedc49"
+      ],
+      "id": "exact-methodology-tests-test-remediation-adapter-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_remediation_adapter.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-b0e3efb410"
+      ],
+      "id": "exact-methodology-tests-test-validation-impact-selector-calibration-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_validation_impact_selector_calibration.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-e07c89098b"
+      ],
+      "id": "exact-methodology-tests-test-validation-impact-selector-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_validation_impact_selector.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-d834a5ac19"
+      ],
+      "id": "exact-methodology-tests-test-workflow-doctor-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tests/test_workflow_doctor.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-83004b2b72"
+      ],
+      "id": "exact-methodology-tools-execution-preflight-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tools/execution_preflight.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-9c4d7f74a7"
+      ],
+      "id": "exact-methodology-tools-registry-derivation-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tools/registry_derivation.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-2d9adedc49"
+      ],
+      "id": "exact-methodology-tools-remediation-adapter-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tools/remediation_adapter.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-eb986c7728"
+      ],
+      "id": "exact-methodology-tools-validation-impact-selector-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tools/validation_impact_selector.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-focused-5bac6fa8e6"
+      ],
+      "id": "exact-methodology-tools-workflow-doctor-py",
+      "match": {
+        "kind": "exact",
+        "value": "methodology/tools/workflow_doctor.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-readme-md",
+      "match": {
+        "kind": "exact",
+        "value": "README.md"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-072a86e996"
+      ],
+      "id": "exact-runtimes-acp-acp-approval-gate-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/approval_gate.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-collectors-base-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/collectors/base.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-ea9ac16610"
+      ],
+      "id": "exact-runtimes-acp-acp-collectors-claude-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/collectors/claude.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-fce11427b6"
+      ],
+      "id": "exact-runtimes-acp-acp-collectors-codex-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/collectors/codex.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-08ebf33231"
+      ],
+      "id": "exact-runtimes-acp-acp-collectors-cursor-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/collectors/cursor.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-b74690f38d"
+      ],
+      "id": "exact-runtimes-acp-acp-collectors-fake-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/collectors/fake.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-collectors-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/collectors/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-2c41359791"
+      ],
+      "id": "exact-runtimes-acp-acp-collectors-orch-collector-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/collectors/orch_collector.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-config-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/config.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-d8457d9ec3"
+      ],
+      "id": "exact-runtimes-acp-acp-dedupe-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/dedupe.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-3748f5d3a7"
+      ],
+      "id": "exact-runtimes-acp-acp-evidence-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/evidence.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-join-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/join.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-7024121843"
+      ],
+      "id": "exact-runtimes-acp-acp-liveness-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/liveness.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-c04d6ae611"
+      ],
+      "id": "exact-runtimes-acp-acp-main-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/__main__.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-models-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/models.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-94c76b96ef"
+      ],
+      "id": "exact-runtimes-acp-acp-notify-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/notify.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-6cffa4edc1"
+      ],
+      "id": "exact-runtimes-acp-acp-notify-view-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/notify_view.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-525861f094"
+      ],
+      "id": "exact-runtimes-acp-acp-orch-drivers-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/orch_drivers.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-orch-events-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/orch_events.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-c04d6ae611"
+      ],
+      "id": "exact-runtimes-acp-acp-orch-relay-driver-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/orch_relay_driver.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-1b142f1aaa"
+      ],
+      "id": "exact-runtimes-acp-acp-orch-runs-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/orch_runs.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-phase-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/phase.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-9dce06c401"
+      ],
+      "id": "exact-runtimes-acp-acp-poller-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/poller.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-ba9fb7f554"
+      ],
+      "id": "exact-runtimes-acp-acp-proc-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/proc.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-acp-store-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/store.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-e141072de4"
+      ],
+      "id": "exact-runtimes-acp-acp-timeutil-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/timeutil.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-6cffa4edc1"
+      ],
+      "id": "exact-runtimes-acp-acp-web-app-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/web/app.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-6cffa4edc1"
+      ],
+      "id": "exact-runtimes-acp-acp-web-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/acp/web/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-gitignore",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/.gitignore"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-phase-md",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/PHASE.md"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-pyproject-toml",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/pyproject.toml"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-run-bat",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/run.bat"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "exact-runtimes-acp-tests-conftest-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/conftest.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-e5591bddef"
+      ],
+      "id": "exact-runtimes-acp-tests-js-execution-evidence-store-test-mjs",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/js/execution_evidence_store.test.mjs"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-5752e15e1f"
+      ],
+      "id": "exact-runtimes-acp-tests-js-orch-run-store-test-mjs",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/js/orch_run_store.test.mjs"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-b5d4ca58b6"
+      ],
+      "id": "exact-runtimes-acp-tests-js-session-summary-store-test-mjs",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/js/session_summary_store.test.mjs"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-8a2eeb1a70"
+      ],
+      "id": "exact-runtimes-acp-tests-js-state-vocabulary-store-test-mjs",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/js/state_vocabulary_store.test.mjs"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-072a86e996"
+      ],
+      "id": "exact-runtimes-acp-tests-test-approval-gate-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_approval_gate.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-a7b252559e"
+      ],
+      "id": "exact-runtimes-acp-tests-test-archive-scope-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_archive_scope.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-4455c6eda4"
+      ],
+      "id": "exact-runtimes-acp-tests-test-claude-collector-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_claude_collector.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-fc0f2c68d2"
+      ],
+      "id": "exact-runtimes-acp-tests-test-cli-help-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_cli_help.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-d66304889a"
+      ],
+      "id": "exact-runtimes-acp-tests-test-codex-collector-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_codex_collector.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-623f1fc241"
+      ],
+      "id": "exact-runtimes-acp-tests-test-collector-health-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_collector_health.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-d1b4f8dee9"
+      ],
+      "id": "exact-runtimes-acp-tests-test-collectors-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_collectors.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-9e40b0aeda"
+      ],
+      "id": "exact-runtimes-acp-tests-test-config-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_config.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-f9543897a5"
+      ],
+      "id": "exact-runtimes-acp-tests-test-cursor-collector-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_cursor_collector.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-6d13917d64"
+      ],
+      "id": "exact-runtimes-acp-tests-test-dedupe-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_dedupe.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-fb8c6ce23d"
+      ],
+      "id": "exact-runtimes-acp-tests-test-event-vocabulary-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_event_vocabulary.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-e5591bddef"
+      ],
+      "id": "exact-runtimes-acp-tests-test-execution-evidence-js-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_execution_evidence_js.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-63739ef365"
+      ],
+      "id": "exact-runtimes-acp-tests-test-execution-evidence-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_execution_evidence.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-49ee7f1b07"
+      ],
+      "id": "exact-runtimes-acp-tests-test-inactive-axis-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_inactive_axis.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-b99a6a9019"
+      ],
+      "id": "exact-runtimes-acp-tests-test-join-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_join.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-aaa71e78f8"
+      ],
+      "id": "exact-runtimes-acp-tests-test-liveness-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_liveness.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-e1a8d4804b"
+      ],
+      "id": "exact-runtimes-acp-tests-test-notify-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_notify.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-07d24732be"
+      ],
+      "id": "exact-runtimes-acp-tests-test-orch-drivers-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_orch_drivers.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-8947c87fd1"
+      ],
+      "id": "exact-runtimes-acp-tests-test-orch-events-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_orch_events.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-f544c05730"
+      ],
+      "id": "exact-runtimes-acp-tests-test-orch-ingest-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_orch_ingest.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-c711a9e065"
+      ],
+      "id": "exact-runtimes-acp-tests-test-orch-relay-driver-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_orch_relay_driver.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-5752e15e1f"
+      ],
+      "id": "exact-runtimes-acp-tests-test-orch-run-store-js-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_orch_run_store_js.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-3a0b10e853"
+      ],
+      "id": "exact-runtimes-acp-tests-test-orch-runs-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_orch_runs.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-e81619e378"
+      ],
+      "id": "exact-runtimes-acp-tests-test-phase-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_phase.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-f19bcaab23"
+      ],
+      "id": "exact-runtimes-acp-tests-test-poller-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_poller.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-011dcc65ed"
+      ],
+      "id": "exact-runtimes-acp-tests-test-process-signal-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_process_signal.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-b79b0454c2"
+      ],
+      "id": "exact-runtimes-acp-tests-test-purge-command-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_purge_command.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-580c8d4e85"
+      ],
+      "id": "exact-runtimes-acp-tests-test-reclassification-notify-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_reclassification_notify.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-b5d4ca58b6"
+      ],
+      "id": "exact-runtimes-acp-tests-test-session-summary-js-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_session_summary_js.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-b49606dfb3"
+      ],
+      "id": "exact-runtimes-acp-tests-test-session-visibility-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_session_visibility.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-8da2dadf79"
+      ],
+      "id": "exact-runtimes-acp-tests-test-state-semantics-contract-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_state_semantics_contract.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-8a2eeb1a70"
+      ],
+      "id": "exact-runtimes-acp-tests-test-state-vocabulary-js-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_state_vocabulary_js.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-701b9cedc9"
+      ],
+      "id": "exact-runtimes-acp-tests-test-state-vocabulary-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_state_vocabulary.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-32cf5331be"
+      ],
+      "id": "exact-runtimes-acp-tests-test-store-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_store.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-f3534d3824"
+      ],
+      "id": "exact-runtimes-acp-tests-test-tick-and-notification-view-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_tick_and_notification_view.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-df3d8c6d35"
+      ],
+      "id": "exact-runtimes-acp-tests-test-web-orch-api-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/test_web_orch_api.py"
+      }
+    },
+    {
+      "groups": [
+        "acp-focused-fb8c6ce23d"
+      ],
+      "id": "exact-runtimes-acp-tests-vocab-extract-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/acp/tests/vocab_extract.py"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "exact-runtimes-readme-md",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/README.md"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-agents-md",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/AGENTS.md"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-gitignore",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/.gitignore"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-pyproject-toml",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/pyproject.toml"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-readme-md",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/README.md"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-agents-base-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/agents/base.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-agents-discovery-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/agents/discovery.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-agents-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/agents/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-851f26ff53"
+      ],
+      "id": "exact-runtimes-ztr-src-agents-nitpicker-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/agents/nitpicker.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-614abc2fbd"
+      ],
+      "id": "exact-runtimes-ztr-src-agents-ollama-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/agents/ollama.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-agents-registry-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/agents/registry.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-config-agents-config-yaml",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/config/agents.config.yaml"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-d333ccb89c"
+      ],
+      "id": "exact-runtimes-ztr-src-config-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/config/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-d333ccb89c"
+      ],
+      "id": "exact-runtimes-ztr-src-config-loader-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/config/loader.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-d333ccb89c"
+      ],
+      "id": "exact-runtimes-ztr-src-config-schema-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/config/schema.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-ba96ae8da9"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-circuit-breaker-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/circuit_breaker.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-a258ee4690"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-event-emit-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/event_emit.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-77f262d0bb"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-exec-adapter-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/exec_adapter.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-e7406baea8"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-fix-feedback-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/fix_feedback.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-ad5238f4d8"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-hooks-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/hooks.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-2bc0de53e3"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-invariants-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/invariants.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-3c9037a06a"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-phase-relay-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/phase_relay.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-e74bb3a589"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-post-merge-verifier-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/post_merge_verifier.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-e74bb3a589"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-quality-gate-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/quality_gate.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-a95b7c2a01"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-reapply-ledger-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/reapply_ledger.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-d5258c52fd"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-resume-chain-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/resume_chain.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-149fce1b5a"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-session-store-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/session_store.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-9aeb90b0ed"
+      ],
+      "id": "exact-runtimes-ztr-src-engine-static-review-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/engine/static_review.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-6b6e4887b6"
+      ],
+      "id": "exact-runtimes-ztr-src-envelope-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/envelope.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-src-main-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/__main__.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-2bc0de53e3"
+      ],
+      "id": "exact-runtimes-ztr-src-runner-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/src/runner.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-tests-conftest-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/conftest.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-tests-init-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/__init__.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-d9e1d6bdf9"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-base-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_base.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-9ff6c58521"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-config-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_config.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-a3ea71e71e"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-e2e-integration-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_e2e_integration.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-3b3f747aac"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-envelope-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_envelope.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-59e29e1477"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-event-emit-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_event_emit.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-1897968b3f"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-exec-adapter-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_exec_adapter.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-dd8362411e"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-fix-feedback-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_fix_feedback.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-cca42e694e"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-fix-round-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_fix_round.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-677a38c8f0"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-gate-cli-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_gate_cli.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-aed217cf9d"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-harness-advanced-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_harness_advanced.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-53a9d11284"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-invariants-cli-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_invariants_cli.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-74366cec7b"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-invariants-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_invariants.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-766e6a2203"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-issues-decisions-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_issues_decisions.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-851f26ff53"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-nitpicker-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_nitpicker.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-f576852b5c"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-ollama-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_ollama.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-f4bb9b3c06"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-phase-relay-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_phase_relay.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-44c3c05c92"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-phase3-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_phase3.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-783191ee3e"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-phase5-recovery-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_phase5_recovery.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-ad5238f4d8"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-phase5-unit-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_phase5_unit.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-6deb59b0bd"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-reapply-ledger-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_reapply_ledger.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-c990bfa60a"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-recording-cli-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_recording_cli.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-fb3cc76951"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-registry-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_registry.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-163ef8d4e4"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-resume-chain-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_resume_chain.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-24992af1da"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-review-cli-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_review_cli.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-2f3d9038c5"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-run-phase-cli-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_run_phase_cli.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-0a12b66982"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-session-store-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_session_store.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-cb3dcabcea"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-static-review-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_static_review.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-focused-a318675edd"
+      ],
+      "id": "exact-runtimes-ztr-tests-test-verify-cli-py",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/tests/test_verify_cli.py"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "exact-runtimes-ztr-ztr-bat",
+      "match": {
+        "kind": "exact",
+        "value": "runtimes/ztr/ztr.bat"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-claude",
+      "match": {
+        "kind": "prefix",
+        "value": ".claude/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-docs",
+      "match": {
+        "kind": "prefix",
+        "value": "docs/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-methodology-adapters",
+      "match": {
+        "kind": "prefix",
+        "value": "methodology/adapters/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-methodology-artifacts",
+      "match": {
+        "kind": "prefix",
+        "value": "methodology/artifacts/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-methodology-claude-plugin",
+      "match": {
+        "kind": "prefix",
+        "value": "methodology/.claude-plugin/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-methodology-config",
+      "match": {
+        "kind": "prefix",
+        "value": "methodology/config/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-methodology-docs",
+      "match": {
+        "kind": "prefix",
+        "value": "methodology/docs/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-methodology-plugins",
+      "match": {
+        "kind": "prefix",
+        "value": "methodology/plugins/"
+      }
+    },
+    {
+      "groups": [
+        "methodology-full"
+      ],
+      "id": "prefix-methodology-tests-fixtures",
+      "match": {
+        "kind": "prefix",
+        "value": "methodology/tests/fixtures/"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "prefix-runtimes-acp-acp-web-static",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/acp/acp/web/static/"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "prefix-runtimes-acp-acp-web-templates",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/acp/acp/web/templates/"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "prefix-runtimes-acp-docs",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/acp/docs/"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "prefix-runtimes-acp-tests-e2e",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/acp/tests/e2e/"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "prefix-runtimes-acp-tests-fixtures",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/acp/tests/fixtures/"
+      }
+    },
+    {
+      "groups": [
+        "acp-full"
+      ],
+      "id": "prefix-runtimes-acp-tests-js",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/acp/tests/js/"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "prefix-runtimes-ztr-docs",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/ztr/docs/"
+      }
+    },
+    {
+      "groups": [
+        "ztr-full"
+      ],
+      "id": "prefix-runtimes-ztr-src-web",
+      "match": {
+        "kind": "prefix",
+        "value": "runtimes/ztr/src/web/"
+      }
+    }
+  ]
+}

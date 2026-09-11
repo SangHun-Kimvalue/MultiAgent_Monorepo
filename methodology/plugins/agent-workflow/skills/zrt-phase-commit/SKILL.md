@@ -102,7 +102,7 @@ git commit -F "$TMP/commitmsg.txt"
 
 제목만 있는 작은 커밋은 `git commit -m "fix(screen): 한글 요약"`처럼 **한 줄 + 큰따옴표**까지만 허용한다.
 
-**금지 — 실제 파손 사례**: bash/Git Bash에서 PowerShell here-string 문법(`git commit -m @'` … `'@`)을 쓰면 안 된다. bash는 `@'…'@`를 "리터럴 `@` + 작은따옴표 문자열 + 리터럴 `@`"로 읽어, 메시지가 `@`로 시작하고 `@`로 끝나게 된다. 첫 줄이 `@`뿐이면 git이 다음 줄까지 subject로 접어 `@ fix(screen): …` 형태로 남는다(외부 프로젝트 릴리스 브랜치에서 10커밋 연속 발생). PowerShell here-string은 PowerShell 도구에서만 유효하고, 그때도 닫는 `'@`는 반드시 열 0에 와야 한다 — 이 조건을 매번 신경 쓰느니 파일 경유가 안전하다.
+**금지 — 실제 파손 사례**: bash/Git Bash에서 PowerShell here-string 문법(`git commit -m @'` … `'@`)을 쓰면 안 된다. bash는 `@'…'@`를 "리터럴 `@` + 작은따옴표 문자열 + 리터럴 `@`"로 읽어, 메시지가 `@`로 시작하고 `@`로 끝나게 된다. 첫 줄이 `@`뿐이면 git이 다음 줄까지 subject로 접어 `@ fix(screen): …` 형태로 남는다(외부 프로젝트 `Release_121_RC3`에서 10커밋 연속 발생). PowerShell here-string은 PowerShell 도구에서만 유효하고, 그때도 닫는 `'@`는 반드시 열 0에 와야 한다 — 이 조건을 매번 신경 쓰느니 파일 경유가 안전하다.
 
 ## Commit Message Format
 

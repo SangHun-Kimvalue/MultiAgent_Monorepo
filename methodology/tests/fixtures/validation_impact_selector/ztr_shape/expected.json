@@ -1,0 +1,40 @@
+{
+  "matches": [
+    {
+      "path": "runtimes/ztr/src/engine/phase_relay.py",
+      "rule_ids": ["ztr-engine-prefix"],
+      "group_ids": ["ztr-engine-tests"]
+    },
+    {
+      "path": "runtimes/ztr/src/engine/static_review.py",
+      "rule_ids": ["ztr-engine-prefix", "ztr-static-review-exact"],
+      "group_ids": ["ztr-engine-tests", "ztr-full"]
+    }
+  ],
+  "recommended_groups": [
+    {
+      "id": "ztr-engine-tests",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "runtimes/ztr/tests"
+      ],
+      "scope_class": "module-full"
+    },
+    {
+      "id": "ztr-full",
+      "cwd": ".",
+      "argv": [
+        "runtimes/ztr/.venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "runtimes/ztr"
+      ],
+      "scope_class": "repository-full"
+    }
+  ]
+}

@@ -20,7 +20,7 @@ description: >
 
 불변:
 - R5: 코드나 스킬이 LLM 산출물의 의미를 판정하지 않는다. 분기는 `status`, `exit_code`, `not_claimed`만 사용한다.
-- 오케스트레이터는 설계리뷰 권위를 재정의하지 않는다. 설계+프롬프트 저작의 게이트는 `phased-implementation-handoff` §8을 호출해 상속한다.
+- 오케스트레이터는 설계리뷰 권위를 재정의하지 않는다. 설계+프롬프트 저작의 게이트는 `phased-implementation-handoff` §5.5를 호출해 상속한다.
 - 오케스트레이터는 바깥 루프 운전자다. 직접 구현하거나 자기 설계·구현을 승인하지 않고, Reviewer 산문의 의미를 코드/스킬로 판정하지 않는다.
 - 구현리뷰 기준은 "이미 캐논에 완결되어 있다"고 주장하지 않는다. ASM-3 상세 체크리스트는 임시 기술부채다.
 - 구현리뷰 leg에는 `MULTI_AGENT.md`의 역할 독립성 + `phased-implementation-handoff` §8 체크리스트 + M2 5필드를 **review artifact 파일**로 주입한다.
@@ -85,7 +85,7 @@ description: >
    - 실행 전에 사람/Planner가 `task_grade`를 `L0|L1|L2` enum으로 확정한다. 코드나 스킬이
      자연어에서 등급을 추론하지 않으며, 누락·모호한 값은 Claude reviewer 모델 선택에서 Opus로 취급한다.
    - `phased-implementation-handoff`를 사용해 설계, 구현 프롬프트, 검증 기준을 만든다.
-   - `phased-implementation-handoff`의 §8 내장 Reviewer + Nitpicker 2-leg 게이트를 설계리뷰로 본다(오케스트레이터가 게이트를 자체 보유·재정의하지 않는다 — L23 권위 상속).
+   - 계획 리뷰는 `phased-implementation-handoff` §5.5 입력 게이트로 한 번 충족한다. 구현 후 출력은 §8의 내장 Reviewer + Nitpicker 2-leg 게이트를 유지한다(오케스트레이터가 게이트를 자체 보유·재정의하지 않는다).
    - `cross-session-plan-review`를 중복 호출하지 않는다. 이미 작성된 외부 계획을 따로 검토하는 경우에만 사용한다.
    - 라운드 예산과 별도로 `METHODOLOGY.md §3.1`의 Context / Token Budget을 적용한다. 리뷰 request에는
      `context_mode: initial|delta`, required-read 경로, 각 payload 문자 수를 기록한다. 상한 초과면
@@ -118,9 +118,11 @@ description: >
    - 기본 L1/L2 run의 `--timeout 900`과 사람이 명시한 L0 run의 `--timeout 300`은 reviewer
      전용이 아니라 그 run의 implementer/reviewer/mechanical/test 등 모든 leg 각각에 적용되는
      전역 per-leg wall timeout이다. 이번 단계에서는 등급 기반 timeout을 자동 선택하지 않는다.
-   - 현재 execution-preflight v1의 Sonnet-only Claude 제한은 기본 Opus reviewer binding과 충돌한다.
-     자동 end-to-end Opus 실행 가능을 주장하거나 이를 `NOT CLAIMED`로 낮추지 말고 `KNOWN CONFLICT`로
-     보고한다. 상세 정본과 후속 경계는 `EXECUTION_ADAPTER_CONTRACT.md` §3.3이다.
+   - execution-preflight v1은 `opus`/`sonnet` moving profile과 선택적 단일
+     `--output-format json`을 허용해 기본 Opus reviewer binding과 정렬됐다. 이는 source validation
+     범위만 갱신한 것이므로 자동 end-to-end Opus 실행은 별도 live relay 증거 전까지 `NOT CLAIMED`다.
+     설치본 갱신도 별도 승인·검증 전까지 `NOT CLAIMED`다. 상세 정본과 후속 경계는
+     `EXECUTION_ADAPTER_CONTRACT.md` §3.3이다.
    - 미정의 토큰이 남으면 실행 전 `BLOCKED`로 멈춘다.
    - 조건부 flag는 빈 문자열로 치환하지 말고 argv 원소를 삽입하거나 생략한다.
    - 경로는 repo root 기준으로 정규화하고 argv 배열의 한 원소로 전달한다.
@@ -128,6 +130,7 @@ description: >
    - dogfood 전용 위험 bypass가 필요하면 capability에 `dangerous_bypass_required_for_dogfood: true`로 명시하고 보고서에 범위를 남긴다. 범용 기본값처럼 숨기지 않는다.
 
 6. Run Inner Loop
+   - **실행 단계 모드**: 각 leg·단계는 시작 전에 `completion_mode=unattended|interactive_checkpoint`를 명시한다. `unattended`에서는 확인창 가능 표시 호출을 하지 않고 비대화형 검증만 수행하며, 불가한 검증은 증거와 `NOT CLAIMED` 또는 명시적 human checkpoint로 넘긴다. 세부 어댑터 예외·저장·전달 정책은 [LESSON-M061](../phased-implementation-handoff/references/unattended-completion.md)을 따른다.
    - **구현 위임의 본질 = 독립 Implementer 컨텍스트에 넘기는 것.** 아래 backend는 그 본질을 실현하는 *수단*이며, backend 하나가 막혀도 "구현 위임 자체가 불가"가 아니라 다음 backend로 내려간다(리뷰 leg 폴백 §5.5/§8과 **대칭**). relay는 backend 1종일 뿐 위임의 정의가 아니다.
    - **폴백 허용 사유 = "구현 시작 전 transport/capability 실패"에 한정**(classifier 거부·실행권한/sandbox 충돌·CLI 시작 불가). **Implementer가 실제 실행된 뒤의 코드·검증·리뷰 실패**(테스트 red·`CHANGES_REQUESTED`·repo 오류)는 backend 장애가 아니라 **기존 verdict대로 중단**한다 — 다른 backend에서 같은 구현을 반복해 fail-fast·timebox를 우회하지 않는다.
    - **Implementer backend 폴백 위계(4단계 — 계약 §3.1과 동일 번호, 막히면 한 칸씩만 내려간다)**:
@@ -353,3 +356,4 @@ Next:
 - **relay(ztr) 실행이 환경 제약(auto-mode bypass 거부 등)으로 막힌 것을 "구현 위임 자체가 불가"로 오판**하고, Step 6-③ 독립 subagent Implementer 폴백을 **건너뛴 채 곧장 사용자에게 "수동으로 하라"로 떠넘긴다.** (relay는 backend 1종일 뿐 위임의 정의가 아니다 — 위계를 한 칸 내려가라.)
 - **subagent Implementer 폴백(③)에서 독립 Reviewer·Mechanical 완주 없이** subagent의 자연어 완료 보고를 PASS로 의미 판정하거나 곧장 Human Gate 2(커밋)로 간다(R5·자기 구현 자기 승인 금지 위반 — subagent 결과는 "구현 산출 대기"이며 표준 verdict 전엔 PASS 아님).
 - **Implementer가 실제 실행된 뒤의 코드·검증·리뷰 실패를 backend 장애로 오분류**해 다른 backend에서 같은 구현을 반복한다(폴백은 구현 시작 전 transport/capability 실패에만).
+- `completion_mode=unattended` 단계에서 확인창 가능 표시 호출을 하거나, 미검증 전달 채널을 기다려 종료를 홀딩한다([LESSON-M061](../phased-implementation-handoff/references/unattended-completion.md)).

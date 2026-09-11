@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "case": "p2c-methodology-nitpicker-status-parser",
+  "source": "p2c-burned",
+  "module": "methodology",
+  "parent": "932f0923f22ae91b9cf00e9ef0ef93940316f9a2",
+  "fix": "bfc7683d30ea7f1b54b8902cd6acacfbe7235577",
+  "gold_red_test_files": [
+    "methodology/nitpicker/test_run_nit.py"
+  ]
+}
