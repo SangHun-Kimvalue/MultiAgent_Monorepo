@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
+import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -24,7 +26,8 @@ from methodology.tools.phase_equivalence import (
 
 
 BASE_SHA = "c3bd90185dcc36f04fc6888cf2153a3dd825910d"
-PYTHON = Path("C:/Users/shkim/tools/py313/python.exe")
+# Machine-absolute paths hide runner OSErrors behind EquivalenceBlocked (T17-CI-2).
+PYTHON = Path(os.environ.get("PHASE_EQUIVALENCE_PYTHON") or sys.executable)
 
 
 @pytest.fixture(scope="module")

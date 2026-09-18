@@ -236,7 +236,7 @@ def discover(cls) -> int:
 
 ## LESSON-014: Writer 프롬프트에 대상 파일 코드를 반드시 주입하라 [설계] [프롬프트]
 
-**상황**: 외부 C++ 프로젝트에 ZTR을 적용. ContextExtractor가 CameraManager.cpp(10K chars)를 수집했지만, PromptAdapter의 `build_writer_prompt`가 `ctx['target_content']`를 프롬프트에 포함하지 않았음.
+**상황**: 외부 프로젝트 C++ 프로젝트에 ZTR을 적용. ContextExtractor가 CameraManager.cpp(10K chars)를 수집했지만, PromptAdapter의 `build_writer_prompt`가 `ctx['target_content']`를 프롬프트에 포함하지 않았음.
 
 **증상**: Claude가 "리뷰할 C++ 코드가 제공되지 않았습니다"라고 응답. 코드를 보지 못한 채 질문만 던짐.
 
@@ -459,7 +459,7 @@ export PATH="/c/Users/<user>/AppData/Local/Programs/nodejs:$PATH"
 - 다수의 `127.0.0.1:<port>/mcp AuthorizationRequired` 메시지가 stderr에 쏟아짐.
 
 **원인**:
-- codex는 git repo 안을 신뢰 기준으로 삼는다. 그 외부 프로젝트는 worktree(=git)라 무관하지만, 임의 비-git 작업폴더는 trust 체크에 걸린다.
+- codex는 git repo 안을 신뢰 기준으로 삼는다. 외부 프로젝트은 worktree(=git)라 무관하지만, 임의 비-git 작업폴더는 trust 체크에 걸린다.
 - codex `exec`는 prompt를 stdin으로 받는 경로가 있어, stdin이 열린 채면 EOF를 기다린다(LESSON-020/021 stdin-EOF 계열과 동근).
 - 헤드리스 환경엔 MCP 인증 콜백을 받을 브라우저/세션이 없어 인증이 실패하지만, 이는 본작업과 무관한 부가 기능이라 exit code에 영향 없음.
 
