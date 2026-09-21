@@ -40,10 +40,10 @@ flowchart TD
 | 구성 | 2층 구성: `methodology/`(캐논·스킬) · `runtimes/{ztr, acp}` — 스위트 결정 문서는 비공개 원본에서 관리 |
 | 결합 원칙 | 코드 비융합 — envelope JSON · exit code(0·1·2·124·70) · 이벤트 계약으로만 결합 |
 | 자동화 경계 | 안쪽 루프(구현→기계검사→테스트→리뷰) 4단계 자동 수행 / **휴먼 게이트 2개**(phase start · phase end — 커밋 여부와 다음 페이즈를 각각 승인) |
-| 일상 운전 경로 | **방법론 스킬(phase-cycle-orchestrator) + ztr**. ACP는 관제 컴포넌트로 구현·테스트(516)돼 있으나 상시 운용 경로는 아님 |
-| 검증 | 구성요소 자동 테스트 **약 1,780개**(ztr 582 · ACP 516 · methodology 684 — 컴포넌트별 최근 full-suite 기록의 합) · [Model Forge](https://github.com/SangHun-Kimvalue/Model_Forge)에 적용해 4-leg 무인 E2E 완주 · 독립 리뷰 게이트가 구현 leg의 실결함(`int(inf)` 크래시 등)을 적발 |
+| 일상 운전 경로 | **방법론 스킬(phase-cycle-orchestrator) + ztr**. ACP는 관제 컴포넌트로 구현·테스트(531)돼 있으나 상시 운용 경로는 아님 |
+| 검증 | 구성요소 자동 테스트 **약 2,190개**(ztr 660 · ACP 531 · methodology 1,004 — 2026-09-21 정본 저장소 수집 기준. 이 공개 미러는 큐레이션 스냅샷이라 수가 조금 적다) · 이 미러에서 **R5 게이트 CI**(Windows · ztr·ACP·methodology 3개 스위트)가 돈다 · [Model Forge](https://github.com/SangHun-Kimvalue/Model_Forge)에 적용해 4-leg 무인 E2E 완주 · 독립 리뷰 게이트가 구현 leg의 실결함(`int(inf)` 크래시 등)을 적발 |
 | 통합 방식 | 기존 3개 프로젝트의 구조를 단일 워크스페이스로 통합한 공개 스냅샷 |
-| 정직성 장치 | PASS vs **NOT CLAIMED**를 방법론이 강제 — 검증된 것과 미검증 부채를 분리 기록 · 정형 교훈(LESSON) 110건 누적 |
+| 정직성 장치 | PASS vs **NOT CLAIMED**를 방법론이 강제 — 검증된 것과 미검증 부채를 분리 기록 · 정형 교훈(LESSON) 164건 누적 |
 
 ## 왜 만들었나 — 실패에서 도출한 경계
 
@@ -82,7 +82,7 @@ YAGNI · 재현성(버전 고정·재현 명령) · 계약 명시(전·후조건
 - ✅ 실프로젝트 적용 — [Model Forge](https://github.com/SangHun-Kimvalue/Model_Forge)를 이 스위트로 개발, 독립 리뷰가 타 leg가 놓친 결함을 적발한 장면을 라이브로 확인
 - ❌ 완전 무인 자율 개발 — 의도적으로 범위 밖 (페이즈 경계는 사람)
 - ❌ 정량 시간·토큰 절감 주장 — 통제 기준선 부재로 NOT CLAIMED (액션-카운트 수렴만 확인)
-- ❌ 테스트 합계 1,780은 컴포넌트별 **서로 다른 시점** full-suite 기록의 합 — 동시 재실행본 아님
+- ❌ 테스트 합계 2,190은 정본 저장소의 **수집(collect) 개수**이지 단일 실행의 통과 기록이 아님 — 통과 여부는 CI 배지와 컴포넌트별 실행 기록으로 본다
 - ❌ ACP 상시 운용 — 일상 개발은 스킬 오케스트레이터 + ztr로 운전하며, ACP는 관제 컴포넌트로만 구현·테스트됨
 - ❌ circuit_breaker(반복 실패 차단) 발동은 미실증
 - ❌ 리뷰 예산 preflight는 **막지 못하는 우회 2가지(축 재분류·잠금 무시 writer)를 스스로 문서화** — "완전 집행"이라 하지 않음
