@@ -81,7 +81,7 @@ async def test_resume_leg_passes_transposed_cwd_and_new_leg_omits_it(
         commands=[
             RelayCommand(
                 name="implementer",
-                argv=["codex", "exec", "--cd=D:\\ZRT"],
+                argv=["codex", "exec", "--cd=D:\\work\\ztr"],
                 timeout_s=12.5,
             )
         ],
@@ -90,7 +90,7 @@ async def test_resume_leg_passes_transposed_cwd_and_new_leg_omits_it(
     )
     resume_command, attempt = relay._prepare_resume(relay._commands[0])
     assert resume_command is not None
-    assert resume_command.cwd == "D:\\ZRT"
+    assert resume_command.cwd == "D:\\work\\ztr"
     assert resume_command.timeout_s == 12.5
     assert attempt is not None
 
@@ -122,7 +122,7 @@ async def test_resume_leg_passes_transposed_cwd_and_new_leg_omits_it(
         run_dir=run_dir,
     )
 
-    assert seen_kwargs[0]["cwd"] == "D:\\ZRT"
+    assert seen_kwargs[0]["cwd"] == "D:\\work\\ztr"
     assert "cwd" not in seen_kwargs[1]
 
 
@@ -140,7 +140,7 @@ def test_resume_fallback_keeps_cwd_none(tmp_path: Path) -> None:
         commands=[
             RelayCommand(
                 name="implementer",
-                argv=["codex", "exec", "--cd", "D:\\ZRT"],
+                argv=["codex", "exec", "--cd", "D:\\work\\ztr"],
                 timeout_s=12.5,
             )
         ],
@@ -153,13 +153,13 @@ def test_resume_fallback_keeps_cwd_none(tmp_path: Path) -> None:
         policy="auto",
         requested_id="thread-123",
         resumed=True,
-        working_dir="D:\\ZRT",
+        working_dir="D:\\work\\ztr",
     )
 
     command, _ = relay._fallback_resume(relay._commands[0], failed_attempt=failed)
 
     assert command.cwd is None
-    assert command.argv == ["codex", "exec", "--json", "--cd", "D:\\ZRT"]
+    assert command.argv == ["codex", "exec", "--json", "--cd", "D:\\work\\ztr"]
     assert command.timeout_s == 12.5
 
 

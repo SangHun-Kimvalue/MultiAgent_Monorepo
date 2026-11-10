@@ -30,7 +30,7 @@ metadata:
 
 ## 산출 경로
 
-호출자가 제공한 `output_root` 아래 `<YYYY-MM-DD>.news.json`으로 기록한다. shadow 실행의 기본 root는 `C:\Users\shkim\Desktop\Todo\briefing\_test\`이며, activation 전에는 운영 briefing root를 사용하지 않는다.
+호출자가 제공한 `output_root` 아래 `<YYYY-MM-DD>.news.json`으로 기록한다. shadow 실행의 기본 root는 `C:\Users\dev\Desktop\Todo\briefing\_test\`이며, activation 전에는 운영 briefing root를 사용하지 않는다.
 
 ## 신뢰 경계
 

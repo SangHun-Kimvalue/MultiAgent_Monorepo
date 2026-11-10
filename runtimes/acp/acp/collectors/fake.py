@@ -73,7 +73,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-live-001",
-                project_path="C:/Users/shkim/Desktop/Todo/AgentControlPlane",
+                project_path="C:/Users/dev/Desktop/Todo/AgentControlPlane",
                 model="gpt-5-fake",
                 last_activity=_dt(live_age),    # 30초 전 활동 → LIVE, e2e 전이 옵션 시 HOLDING
                 running_pid=12345,
@@ -84,7 +84,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-idle-002",
-                project_path="C:/Users/shkim/Desktop/Todo/ZeroTokenRoundtable",
+                project_path="C:/Users/dev/Desktop/Todo/ZeroTokenRoundtable",
                 model="claude-fake",
                 last_activity=_dt(360),          # 6분 전 활동 → IDLE
                 last_event="task_complete",
@@ -93,7 +93,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-holding-003",
-                project_path="C:/Users/shkim/Desktop/Todo/CubiForge",
+                project_path="C:/Users/dev/Desktop/Todo/ModelForge",
                 model="codex-fake",
                 last_activity=_dt(1200),         # 20분 전 task_complete → HOLDING
                 running_pid=None,
@@ -111,7 +111,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-stale-005",
-                project_path="C:/Users/shkim/Desktop/Todo/AgentControlPlane",
+                project_path="C:/Users/dev/Desktop/Todo/AgentControlPlane",
                 model="gpt-5-fake",
                 last_activity=_dt(3900),         # stale_ttl 초과 → STALE
                 last_event="task_complete",
@@ -120,7 +120,7 @@ class FakeCollector(BaseCollector):
             SessionRecord(
                 app="fake",
                 session_id="fake-error-006",
-                project_path="C:/Users/shkim/Desktop/Todo/AgentControlPlane",
+                project_path="C:/Users/dev/Desktop/Todo/AgentControlPlane",
                 model="gpt-5-fake",
                 last_activity=_dt(10),
                 last_event="error",

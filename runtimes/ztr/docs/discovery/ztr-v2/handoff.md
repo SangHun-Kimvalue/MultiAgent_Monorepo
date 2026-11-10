@@ -8,7 +8,7 @@
 ## 현재 상태
 - Discovery 산출 7+1종 완료: `docs/discovery/ztr-v2/` (brief, role_assignment, requirements, design, validation_plan, open_items, risk_register, 본 문서)
 - 환경 실측 완료: ollama 0.18.0 ✅ / ruff 0.3.4 ✅ / Python 3.12.10 ✅ / **claude·codex CLI 부재** ⚠️(E-1) / mypy·venv 부재(Phase 1 구성)
-- 상위 결정 문서: `docs/ZRT_V2_DIAGNOSIS.md`(KEEP/DROP·차용표), `D:\MultiAgent_Methodology\docs\PROCESS_CONCLUSION.md`(전체 구도)
+- 상위 결정 문서: `docs/ZRT_V2_DIAGNOSIS.md`(KEEP/DROP·차용표), `D:\work\methodology\docs\PROCESS_CONCLUSION.md`(전체 구도)
 
 ## Planner 입력 — 페이즈 제안 (확정은 Planner 몫)
 

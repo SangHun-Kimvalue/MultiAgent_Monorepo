@@ -44,7 +44,7 @@
     "json"
   ],
   "review_artifact_path": "methodology/docs/HANDOFF.md",
-  "raw_output_path": "C:/Users/shkim/.claude/projects/C--Users-shkim-Desktop-Todo-MAM/42d629b7-f5eb-4a52-b673-bf989b7cb10b.jsonl",
+  "raw_output_path": "C:/Users/dev/.claude/projects/C--Users-dev-Desktop-Todo-MAM/42d629b7-f5eb-4a52-b673-bf989b7cb10b.jsonl",
   "verdict": "PASS",
   "exit_code": 0,
   "findings": [],

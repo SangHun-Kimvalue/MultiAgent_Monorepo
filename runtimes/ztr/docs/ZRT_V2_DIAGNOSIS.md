@@ -5,7 +5,7 @@
 > multi-agent-starter(MS)는 외부 참조 프로젝트.
 > 본 문서는 ZRT v1의 한계를 진단하고, v2의 역할 재정의 + 차용 항목을 확정한다.
 >
-> 연관 문서: `D:\MultiAgent_Methodology\docs\STARTER_ADOPTION_PLAN.md` (MM 차용 계획 — 특히 A3)
+> 연관 문서: `D:\work\methodology\docs\STARTER_ADOPTION_PLAN.md` (MM 차용 계획 — 특히 A3)
 >
 > 작성일: 2026-06-13 · 상태: **Discovery 완료 — DISCOVERY_PASS (조건부: Phase 5는 spike S1 후 진입)**
 > Discovery 산출물: `docs/discovery/ztr-v2/` (brief·requirements·design·validation_plan·open_items·risk_register·handoff·role_assignment)

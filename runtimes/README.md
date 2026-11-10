@@ -5,8 +5,8 @@
 ## 흡수 시점 (ADR AD-4 — 단계화, 빅뱅 금지)
 | 컴포넌트 | prefix | 흡수 시점 | 상태 |
 |---|---|---|---|
-| ztr (mechanical runtime + 안쪽 루프 relay) | `runtimes/ztr/` | **ztr Phase 8(resume 체인) 착수 시** | ⬜ 대기 (`D:\ZRT`) |
-| ACP (control plane / 관제) | `runtimes/acp/` | **오케스트레이터 골격 동작 후** | ⬜ 대기 (`D:\Dashboard`) |
+| ztr (mechanical runtime + 안쪽 루프 relay) | `runtimes/ztr/` | **ztr Phase 8(resume 체인) 착수 시** | ⬜ 대기 (`D:\work\ztr`) |
+| ACP (control plane / 관제) | `runtimes/acp/` | **오케스트레이터 골격 동작 후** | ⬜ 대기 (`D:\work\acp`) |
 
 흡수 명령(예):
 ```

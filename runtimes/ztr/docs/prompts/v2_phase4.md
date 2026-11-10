@@ -39,7 +39,7 @@
    - `runner.py`는 CLI 배선과 envelope 출력만 담당.
 
 ★ 명시적 out-of-scope ★
-- MM 캐논(`D:\MultiAgent_Methodology`)과의 양방향 동기화 또는 수정
+- MM 캐논(`D:\work\methodology`)과의 양방향 동기화 또는 수정
 - 의미론적 설계 품질 평가
 - 문서 자동 수정
 - `--handoff-line` 출력(M5)과 progressive disclosure(S6)의 완성형

@@ -3,7 +3,7 @@
 - 상태: ACCEPTED
 - 일자: 2026-06-13
 - 맥락(why·여정·기각안): `methodology/docs/SUITE_NARRATIVE.md` 참조 (이 ADR은 **결정사항만** 담는다)
-- 관련: `methodology/docs/PHASE_CYCLE_ORCHESTRATOR_DESIGN.md`, `methodology/docs/METHODOLOGY_KIT_ROADMAP.md`, `D:\ZRT\docs\ROADMAP_V2.md`(ztr 흡수 후 `runtimes/ztr/docs/`)
+- 관련: `methodology/docs/PHASE_CYCLE_ORCHESTRATOR_DESIGN.md`, `methodology/docs/METHODOLOGY_KIT_ROADMAP.md`, `D:\work\ztr\docs\ROADMAP_V2.md`(ztr 흡수 후 `runtimes/ztr/docs/`)
 
 > 주: 본 ADR은 스위트 루트 `docs/decisions/`로 **hoist 완료**(MultiAgent_Monorepo, 2026-06-13) — 컴포넌트 내부가 아니라 스위트 레벨 결정이므로. 내러티브/설계 문서는 링크 무결성을 위해 우선 `methodology/docs/`에 둔다(물리 hoist는 후속 정리).
 
@@ -13,8 +13,8 @@
 
 **AD-2 — 새 엄브렐러 레포.** 스위트는 **MM 개명이 아니라 새 엄브렐러 레포**로 구성하고, 기존 3프로젝트를 컴포넌트로 흡수한다:
 - methodology 컴포넌트 = 현 MM (캐논 + 스킬 + 어댑터 + config)
-- mechanical runtime 컴포넌트 = ztr (`D:\ZRT`)
-- control plane 컴포넌트 = ACP (`D:\Dashboard`)
+- mechanical runtime 컴포넌트 = ztr (`D:\work\ztr`)
+- control plane 컴포넌트 = ACP (`D:\work\acp`)
 
 **AD-3 — 흡수 방식 = git subtree + 계약 seam.** 흡수는 `git subtree`(이력 보존, 단일 clone). 컴포넌트 간 결합은 **계약(envelope JSON / exit code 0·1·2·124·70 / 이벤트)으로만** 한다. 캐논(중립 markdown)과 런타임 코드는 **import/디렉터리 비융합**. seam은 구현을 갈아끼우게 하되 계약은 공유한다.
 
@@ -39,6 +39,6 @@
 
 **A1 (2026-06-13)** — AD-4 문구 정밀화(결정 불변, 오독 차단).
 - "ztr subtree 흡수 = Phase 8 **착수 시**"의 정확한 의미 = **spike S2 통과 후**.
-- 운영 결정: **spike S2는 standalone `D:\ZRT`에서 진행**(de-risk-first). S2 통과를 흡수 게이트로 하고, 통과 후 `runtimes/ztr/`로 흡수 → Phase 8 resume 구현.
+- 운영 결정: **spike S2는 standalone `D:\work\ztr`에서 진행**(de-risk-first). S2 통과를 흡수 게이트로 하고, 통과 후 `runtimes/ztr/`로 흡수 → Phase 8 resume 구현.
 - 사유: "Phase 8 착수"가 "S2 포함 착수"로 읽혀 조기 흡수((b)안) 제안이 나옴. 결정/이주 분리·빅뱅 금지(AD-4 본문) 원칙과 일치하도록 정밀화.
 - 출처: 설계 검토 leg finding (CHANGES_REQUESTED, major).

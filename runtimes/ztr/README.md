@@ -7,7 +7,7 @@
 ### 1. Clone + Install
 
 ```bash
-git clone https://dev.azure.com/shkim2/The%20great%20Roundtable/_git/The%20great%20Roundtable
+git clone <private-origin-repo-url>
 cd ZeroTokenRoundtable
 pip install -e ".[dev]"
 ```

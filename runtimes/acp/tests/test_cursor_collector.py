@@ -25,7 +25,7 @@ def _write_workspace(base, ws_hash: str, folder: str, *, with_db: bool = True, t
 
 def test_cursor_collector_decodes_file_uri_and_uses_state_db_mtime(tmp_path):
     base = tmp_path / "workspaceStorage"
-    _write_workspace(base, "hash-a", "file:///c:/Users/shkim/Desktop/Proj", ts=1700000000.0)
+    _write_workspace(base, "hash-a", "file:///c:/Users/dev/Desktop/Proj", ts=1700000000.0)
 
     records = CursorWorkspaceCollector(base).collect()
 
@@ -33,14 +33,14 @@ def test_cursor_collector_decodes_file_uri_and_uses_state_db_mtime(tmp_path):
     rec = records[0]
     assert rec.app == "cursor"
     assert rec.session_id == "hash-a"
-    assert rec.project_path == r"c:\Users\shkim\Desktop\Proj"
+    assert rec.project_path == r"c:\Users\dev\Desktop\Proj"
     assert rec.last_activity == datetime.fromtimestamp(1700000000.0, tz=timezone.utc)
     assert rec.source_file.endswith("state.vscdb")
 
 
 def test_cursor_collector_preserves_remote_uri_and_join_reports_no_phase_file(tmp_path):
     base = tmp_path / "workspaceStorage"
-    remote = "vscode-remote://ssh-remote%2Brpi_5/home/pi/Cubi_xCeler_rpi"
+    remote = "vscode-remote://ssh-remote%2Brpi_5/home/pi/sample_app_rpi"
     _write_workspace(base, "hash-remote", remote)
 
     rec = CursorWorkspaceCollector(base).collect()[0]

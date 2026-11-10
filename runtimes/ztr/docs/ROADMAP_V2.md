@@ -82,14 +82,14 @@ Planner 확정 (2026-06-13 본 세션 — 보류 항목을 여기서 못박음):
 DoD: unit + deterministic + live 1회(2-페이즈 resume, 벤더별). full 오케스트레이션 자동화는 NOT CLAIMED.
 
 ### Phase 8 착수 기록 (2026-06-13)
-- AD-4/개정 A1에 따라 `D:\ZRT`를 모노레포 `runtimes/ztr/`로 subtree 흡수 후 구현 착수. 흡수 전 백업 bundle 생성: `D:\suite-backup-20260613-194642\ztr-main.bundle`, `D:\suite-backup-20260613-194642\monorepo-master.bundle`.
+- AD-4/개정 A1에 따라 `D:\work\ztr`를 모노레포 `runtimes/ztr/`로 subtree 흡수 후 구현 착수. 흡수 전 백업 bundle 생성: `D:\suite-backup-20260613-194642\ztr-main.bundle`, `D:\suite-backup-20260613-194642\monorepo-master.bundle`.
 - 구현 방향: `src/engine/resume_chain.py`에 session-map 로드/저장, provider profile 기반 argv 변형, stdout JSON id 추출을 분리. `phase_relay.py`는 실행 전 변형·실패 시 정책 분기·성공 후 캡처만 호출한다.
 - 정책 확정: `auto`로 map id를 사용한 resume 실패는 새 세션으로 폴백하고 맥락 손실 경고 및 `fallback_used=true`를 남긴다. 명시 session id 실패는 사용자 의도를 보존하기 위해 폴백하지 않는다.
 - 단순화 확정: project.config 치환 전면 설계는 후속으로 두고, Phase 8은 CLI profile(`none`/`claude`/`codex`) 최소분으로 provider별 resume 변형을 명시 구성한다. resume id는 outer envelope model claim에 넣지 않고 step resume payload와 session-map에만 남긴다.
 - 버전 traceability: Phase 8 live 검증은 Claude Code `2.1.176`, Codex CLI `0.130.0-alpha.5`로 수행했다. Codex는 WindowsApps alias가 Access denied였으므로 `C:\Users\user\AppData\Local\OpenAI\Codex\bin\codex.exe` 절대경로와 `--ignore-user-config -m gpt-5.5`로 검증했다.
 - D7 config seam 기술부채: 현재 resume 변형은 `project.config` provider seam으로 이전되지 않았고 `--*-resume-profile {none,claude,codex}` CLI 플래그와 `resume_chain.py`의 provider별 argv 변형으로 고정되어 있다. 2벤더 Phase 8 범위에서는 의도적 최소화이나, provider 중립 config seam 이전은 후속 project.config 확장 단계까지 NOT CLAIMED로 둔다.
 - NOT CLAIMED: full 다중페이즈 오케스트레이터, 외부 CLI id 필드의 장기 안정성, 실제 만료 id 서버 경로 재현.
-- 설계 검토 leg 후속(2026-06-13): §7(명시-id resume 실패 BLOCKED 승격 + silent-new-session 차단) 반영(`74dcce6`). 전용 venv(`runtimes/ztr/.venv`, `pip install -e .[dev]`)로 e2e 편집가능 그림자(subprocess `python -m src`가 `D:\ZRT\src`로 해석되던 문제) 닫음. **invariants 모노레포 경로 버그 수정**: `git diff`(repo-root 상대)와 `git ls-files`(기본 cwd 상대)의 base를 `--full-name`으로 통일하고 `runtimes/ztr` 밖 변경은 필터링 → 서브트리 컨텍스트에서 `m2_finding_terms` BLOCKED 해소. 전용 venv full-run에서 `test_e2e_integration` 포함 **212 passed** 확인. circuit_breaker 타이밍 테스트는 **간헐 실패(flaky, 부하 민감 — 재실행 시 통과)** → 결정론화 후속 hygiene(NOT CLAIMED).
+- 설계 검토 leg 후속(2026-06-13): §7(명시-id resume 실패 BLOCKED 승격 + silent-new-session 차단) 반영(`74dcce6`). 전용 venv(`runtimes/ztr/.venv`, `pip install -e .[dev]`)로 e2e 편집가능 그림자(subprocess `python -m src`가 `D:\work\ztr\src`로 해석되던 문제) 닫음. **invariants 모노레포 경로 버그 수정**: `git diff`(repo-root 상대)와 `git ls-files`(기본 cwd 상대)의 base를 `--full-name`으로 통일하고 `runtimes/ztr` 밖 변경은 필터링 → 서브트리 컨텍스트에서 `m2_finding_terms` BLOCKED 해소. 전용 venv full-run에서 `test_e2e_integration` 포함 **212 passed** 확인. circuit_breaker 타이밍 테스트는 **간헐 실패(flaky, 부하 민감 — 재실행 시 통과)** → 결정론화 후속 hygiene(NOT CLAIMED).
 
 ### Phase 8 구현 중 설계 세션으로 넘길 제안 (2026-06-13)
 - **Windows 자동화 payload 규약 필요**: 긴 diff/파일 본문/리뷰 요청을 argv에 직접 싣는 방식은 Windows 명령줄 길이 한도와 quoting 규칙에 반복적으로 걸린다. `phase-cycle-orchestrator` 설계 세션에서 "작은 argv + 파일 기반 payload + 구조화 stdout"을 공통 규약으로 승격할 것을 제안한다.
@@ -107,10 +107,10 @@ DoD: unit + deterministic + live 1회(2-페이즈 resume, 벤더별). full 오�
 - 시작 기준선: ruff PASS, mypy PASS, pytest `189 passed`, `ztr invariants` PASS, `ztr review --changed` PASS(`qwen2.5-coder:7b`). 깨끗한 워킹트리에서 `ztr verify --post-merge --changed`는 변경 대상 없음으로 BLOCKED 가능하므로 기준선 PASS로 claim하지 않는다.
 - 구현: `review`, `verify --post-merge`, `run-phase`에 `--record` 옵션을 추가해 v2 Envelope verdict를 `SessionStore`에 기록. 기록 실패는 stderr warning으로 격리하고 stdout 단일 Envelope JSON과 명령 verdict를 오염시키지 않는다.
 - 결정론적 E2E: 테스트에서 `review(CHANGES_REQUESTED) -> review(PASS) -> verify(PASS) -> invariants(PASS)`와 `gate(CHANGES_REQUESTED/PASS)` 체인을 단일 Envelope JSON 및 exit code 매핑으로 고정. **여기서 "결정론적"=LLM 호출 0회**(ollama는 config `agents` 비활성 분기로 미호출). 단 정적 툴체인(ruff+mypy)이 `sys.executable`에 설치돼 있다는 **환경 전제**가 있다 — 표준 `.venv`에선 GREEN(19 passed)이나, mypy 미설치 인터프리터로 돌리면 review가 BLOCKED로 떨어져 단언이 깨질 수 있음(이식성 메모).
-- Live recorded relay 명령: `.venv\Scripts\python.exe -m src run-phase --record --prompt-file D:\ZRT\.ztr\phase7-e2e\phase7_run_phase_prompt.md --phase-id phase7-live-codex-recorded --timeout 180 --output-dir D:\ZRT\.ztr\run-phase --implementer-cmd <codex exec JSON array>`.
-- Live recorded relay 결과: outer envelope `PASS`, exit code `0`, backend `phase-relay`, model `external-cli`, step child exit `0`, stdout preview `ZRT_PHASE7_E2E_OK`. 캡처 디렉터리: `D:\ZRT\.ztr\run-phase\20260613-143645-phase7-live-codex-recorded`; outer envelope: `D:\ZRT\.ztr\phase7-e2e\outer_envelope_codex_recorded.json`.
-- SessionStore/UI 관측: `.ztr/sessions.db`에 session `#1` 생성(`task=ztr run-phase phase7-live-codex-recorded`, `final_verdict=PASS`, `rounds=1`). `python -m src web` 로컬 서버에서 `/`와 `/session/1` 모두 `PASS` 및 `phase7-live-codex-recorded` 표시 확인. HTML assertion 산출물: `D:\ZRT\.ztr\phase7-e2e\ui_index.html`, `D:\ZRT\.ztr\phase7-e2e\ui_session_detail.html`.
-- Live 2-leg relay 시도: `codex exec` implementer + `claude -p --model sonnet` reviewer leg로 `ztr run-phase` 실행. outer envelope `PASS`, exit code `0`, completed `2/2`, 캡처 디렉터리 `D:\ZRT\.ztr\run-phase\20260613-143805-phase7-live-codex-claude-attempt`. 이는 headless CLI 릴레이 관통 증거이며, Sonnet 리뷰 품질 평가는 NOT CLAIMED.
+- Live recorded relay 명령: `.venv\Scripts\python.exe -m src run-phase --record --prompt-file D:\work\ztr\.ztr\phase7-e2e\phase7_run_phase_prompt.md --phase-id phase7-live-codex-recorded --timeout 180 --output-dir D:\work\ztr\.ztr\run-phase --implementer-cmd <codex exec JSON array>`.
+- Live recorded relay 결과: outer envelope `PASS`, exit code `0`, backend `phase-relay`, model `external-cli`, step child exit `0`, stdout preview `ZRT_PHASE7_E2E_OK`. 캡처 디렉터리: `D:\work\ztr\.ztr\run-phase\20260613-143645-phase7-live-codex-recorded`; outer envelope: `D:\work\ztr\.ztr\phase7-e2e\outer_envelope_codex_recorded.json`.
+- SessionStore/UI 관측: `.ztr/sessions.db`에 session `#1` 생성(`task=ztr run-phase phase7-live-codex-recorded`, `final_verdict=PASS`, `rounds=1`). `python -m src web` 로컬 서버에서 `/`와 `/session/1` 모두 `PASS` 및 `phase7-live-codex-recorded` 표시 확인. HTML assertion 산출물: `D:\work\ztr\.ztr\phase7-e2e\ui_index.html`, `D:\work\ztr\.ztr\phase7-e2e\ui_session_detail.html`.
+- Live 2-leg relay 시도: `codex exec` implementer + `claude -p --model sonnet` reviewer leg로 `ztr run-phase` 실행. outer envelope `PASS`, exit code `0`, completed `2/2`, 캡처 디렉터리 `D:\work\ztr\.ztr\run-phase\20260613-143805-phase7-live-codex-claude-attempt`. 이는 headless CLI 릴레이 관통 증거이며, Sonnet 리뷰 품질 평가는 NOT CLAIMED.
 - PASS로 claim: CLI 체인 E2E의 결정론적 exit routing, live `run-phase` leg 순차 실행, stdin EOF, child exit code→verdict routing, raw stdin/stdout/stderr/step envelope 캡처, outer 단일 Envelope JSON, `--record` SessionStore 기록, 대시보드 목록/상세 v2 PASS 관측.
 - NOT CLAIMED: 자동 소스 편집, 자동 merge, 자동 rollback, 리뷰 자연어 의미 판단, Sonnet 리뷰 품질, 실제 프로젝트 개선의 의미론적 성공, 장기 운영 품질.
 - **독립 Reviewer leg (Planner Opus 집행)**: PASS — blocker 0/major 0/minor 2. R5 Boundaries 깨끗(--record는 verdict enum·rounds·redact stderr·사실 metadata만 기록, LLM 의미 파싱 없음), stdout 단일 Envelope 계약 불변(opt-in·실패 격리), 대시보드 관측 전용(Jinja autoescape, XSS 없음). minor 2건 반영: ① deterministic의 toolchain 전제 명시(위), ② invariants `_is_text_invariant_target`의 `tests/` 제외 의도 주석 고정.
@@ -125,8 +125,8 @@ DoD: unit + deterministic + live 1회(2-페이즈 resume, 벤더별). full 오�
 ### Phase 6 종결 기록 (2026-06-13)
 - 시작 기준선: ruff PASS, mypy PASS, pytest `189 passed`, `ztr invariants` PASS, `ztr review --changed` PASS(`qwen2.5-coder:7b`). 깨끗한 워킹트리에서 `ztr verify --post-merge --changed`는 `verify 대상이 없습니다`로 BLOCKED — 변경 대상이 없는 상태에서는 PASS를 claim하지 않는다.
 - Dogfood 1차 live leg: `claude -p --model sonnet` 실행·캡처는 성공했으나 Claude CLI 세션 한도(`You've hit your session limit`)로 child exit `1`, relay verdict `CHANGES_REQUESTED`. Sonnet live PASS와 Sonnet 리뷰 품질은 NOT CLAIMED.
-- Dogfood 2차 live leg: `codex exec --cd D:\ZRT --sandbox read-only --ephemeral --color never -`를 `ztr run-phase` implementer leg로 실행. outer envelope `PASS`, exit code `0`, model `external-cli`, step child exit `0`, stdout preview `ZRT_RUN_PHASE_DOGFOOD_OK`.
-- 캡처 디렉터리: `D:\ZRT\.ztr\run-phase\20260613-103124-phase6-dogfood-codex-after-fix`. 확인 파일: `01-implementer.stdin.txt`, `01-implementer.stdout.txt`, `01-implementer.stderr.txt`, `01-implementer.envelope.json`. outer envelope: `D:\ZRT\.ztr\run-phase-dogfood\outer_envelope_codex_after_fix.json`.
+- Dogfood 2차 live leg: `codex exec --cd D:\work\ztr --sandbox read-only --ephemeral --color never -`를 `ztr run-phase` implementer leg로 실행. outer envelope `PASS`, exit code `0`, model `external-cli`, step child exit `0`, stdout preview `ZRT_RUN_PHASE_DOGFOOD_OK`.
+- 캡처 디렉터리: `D:\work\ztr\.ztr\run-phase\20260613-103124-phase6-dogfood-codex-after-fix`. 확인 파일: `01-implementer.stdin.txt`, `01-implementer.stdout.txt`, `01-implementer.stderr.txt`, `01-implementer.envelope.json`. outer envelope: `D:\work\ztr\.ztr\run-phase-dogfood\outer_envelope_codex_after_fix.json`.
 - PASS로 claim: CLI leg 순차 실행(단일 leg), stdin EOF, child exit code→verdict routing, raw stdin/stdout/stderr/step envelope 캡처, 단일 outer Envelope JSON 출력, read-only live Codex leg 관통.
 - NOT CLAIMED: 자동 소스 편집, 자동 merge, 자동 rollback, 리뷰 자연어 의미 판단, Sonnet 리뷰 품질, 실제 프로젝트 개선의 의미론적 성공.
 - Dogfood 반영: `run-phase` outer envelope의 `model` 필드를 특정 역할 모델(`sonnet`)로 claim하지 않고 `external-cli`로 중립화. 실제 CLI/모델은 step `command`와 캡처 stderr에 기록한다. 런타임 캡처 `.ztr/run-phase/`, `.ztr/run-phase-dogfood/`는 git 추적 제외.
@@ -144,7 +144,7 @@ DoD: unit + deterministic + live 1회(2-페이즈 resume, 벤더별). full 오�
 - 결과 payload: `{"checks": [...], "summary": {...}}`를 envelope.stdout JSON 문자열로 고정. invariant issue는 M2 5-field 형식으로 출력.
 - 리뷰 반영 예정 기준: 의미론적 설계 품질 평가는 하지 않고, 파일·문자열·git 변경 사실만 검사.
 - 검증 목표: `python -m ruff check src tests` PASS, `python -m mypy src` PASS, `python -m pytest -q` GREEN, `python -m src invariants` PASS, `python -m src review --changed` PASS.
-- NOT CLAIMED: MM 캐논(`D:\MultiAgent_Methodology`)과 양방향 동기화, `--handoff-line`, full E2E.
+- NOT CLAIMED: MM 캐논(`D:\work\methodology`)과 양방향 동기화, `--handoff-line`, full E2E.
 
 ### Phase 3 종결 기록 (2026-06-13)
 - Implementer: `ztr gate <result-file>`와 `ztr verify --post-merge` 배선. 두 명령 모두 stdout 단일 Envelope JSON 계약 준수.
@@ -171,7 +171,7 @@ DoD: unit + deterministic + live 1회(2-페이즈 resume, 벤더별). full 오�
 
 - **Phase 2 (ztr review)**: 완료. NitpickerAgent를 내부 static review 어댑터로 축소하고 `ztr review --changed` 서브커맨드 배선. finding = `severity / finding / evidence_or_repro / impact / recommendation`(M2), 미실행 검사는 `not_claimed`(M3).
 - **Phase 3 (gate+verify)**: 완료. H4 `OutputQualityGate`를 `ztr gate`로, H6 `PostMergeVerifier`를 `ztr verify --post-merge`로 배선. stdout 단일 Envelope 계약 유지.
-- **Phase 4 (invariants)**: MM 캐논(`D:\MultiAgent_Methodology`)과 인바리언트 목록 협의(A3) — HANDOFF 갱신, lessons append-only, finding 포맷, NOT CLAIMED 표기. 파일시스템 사실 검사만(의미 해석 금지). DoD: 위반 검출 시연.
+- **Phase 4 (invariants)**: MM 캐논(`D:\work\methodology`)과 인바리언트 목록 협의(A3) — HANDOFF 갱신, lessons append-only, finding 포맷, NOT CLAIMED 표기. 파일시스템 사실 검사만(의미 해석 금지). DoD: 위반 검출 시연.
 - **Phase 5 (run-phase)**: 진입 게이트 = spike S1 완전 통과(§0 결정 로그). 헤드리스 구동(`claude -p/--resume`, `codex exec`), verdict enum 라우팅, 휴먼 게이트 3곳, Toast, 타임박스(L1=동일축 3회→STOP). DoD: deterministic 루프(가짜 CLI 스텁) + live 1회(Sonnet 리뷰).
 - **Phase 6 (dogfood)**: 완료. live Codex leg로 relay mechanics를 dogfood하고 PASS/NOT CLAIMED 경계를 재확정. full E2E 자동 편집·머지와 실제 개선 루프는 NOT CLAIMED.
 

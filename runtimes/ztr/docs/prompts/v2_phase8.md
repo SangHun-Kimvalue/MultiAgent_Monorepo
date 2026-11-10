@@ -1,6 +1,6 @@
 # ZRT v2 Phase 8 — run-phase resume 체인
 
-상위 handoff: `D:\MultiAgent_Monorepo\docs\handoff\PHASE8_RESUME_HANDOFF.md`
+상위 handoff: `D:\work\repo\docs\handoff\PHASE8_RESUME_HANDOFF.md`
 
 ## 범위
 

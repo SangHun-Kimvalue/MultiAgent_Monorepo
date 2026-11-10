@@ -48,7 +48,7 @@ mypy 4건 narrowing 해소 + **strict 승격**(`50cc7bf` — `--strict` 26파일
 
 ### 부수 적발 → 해소: 전면 스테일 경로 (2026-07-10)
 
-바인딩 중에 config의 relay 템플릿·leg argv가 **`D:\MultiAgent_Monorepo`·`C:\Users\user` 시절
+바인딩 중에 config의 relay 템플릿·leg argv가 **`D:\work\repo`·`C:\Users\user` 시절
 절대경로**로 전면 스테일임이 드러났다. 전 경로를 현 루트 기준으로 **재실측**해 재바인딩했다:
 
 - codex/claude = npm shim `0.142.2` / `2.1.176`

@@ -425,7 +425,7 @@ export PATH="/c/Users/<user>/AppData/Local/Programs/nodejs:$PATH"
 **해결**:
 - `ztr run-phase` 자체 호출은 Python `subprocess.run([...])`로 argv 배열을 구성했다.
 - Codex leg는 `-m gpt-5.5`를 명시하고 dogfood 한정으로 `--dangerously-bypass-approvals-and-sandbox`를 사용했다.
-- ztr run-phase는 repo root cwd에서 실행하고 `PYTHONPATH=D:\MultiAgent_Monorepo\runtimes\ztr`와 explicit `--config`를 주입했다.
+- ztr run-phase는 repo root cwd에서 실행하고 `PYTHONPATH=D:\work\repo\runtimes\ztr`와 explicit `--config`를 주입했다.
 - Mechanical leg는 별도 argv wrapper로 `runtimes/ztr`에 chdir한 뒤 실행했다.
 - 실패/교정 이력과 설계 follow-up을 `docs/handoff/DOGFOOD_ORCHESTRATOR_REPORT.md`와 `docs/handoff/DESIGN_FOLLOWUP_ORCHESTRATOR_DOGFOOD_RULES.md`에 기록했다.
 
@@ -524,7 +524,7 @@ export PATH="/c/Users/<user>/AppData/Local/Programs/nodejs:$PATH"
 
 ## LESSON-030: reviewer verdict가 exit code에 없으면 relay가 false-PASS — stdout 토큰으로 분기 + fail-closed [통합] [C3] [Windows]
 
-**상황**: 2026-06-18 CubiForge 12Z-G(IP/abuse 사전필터)를 `ztr run-phase`로 구현하던 중, reviewer leg(`claude -p`)가 독립 측정 후 **BLOCKED 판정**(implementer가 추가한 trademark 행에 필수 `blocked_id` 누락 → 테이블 로드 실패 회귀)을 냈는데, top envelope는 `status=PASS exit 0`으로 기록됐다.
+**상황**: 2026-06-18 Model Forge 12Z-G(IP/abuse 사전필터)를 `ztr run-phase`로 구현하던 중, reviewer leg(`claude -p`)가 독립 측정 후 **BLOCKED 판정**(implementer가 추가한 trademark 행에 필수 `blocked_id` 누락 → 테이블 로드 실패 회귀)을 냈는데, top envelope는 `status=PASS exit 0`으로 기록됐다.
 
 **증상**: `phase_relay._route_exit_code`는 child `exit 0`을 무조건 `Verdict.PASS`로 매핑한다. `claude -p`는 리뷰 결론과 무관하게 프로세스가 성공하면 exit 0을 반환하므로, reviewer의 BLOCKED가 envelope에서 PASS로 둔갑한다. 교차 reviewer가 회귀를 잡았어도 **게이트가 작동하지 않는다**(false-PASS). mechanical(run_nit)은 tracked JSON만 봐 보강도 못 했다.
 
@@ -540,13 +540,13 @@ export PATH="/c/Users/<user>/AppData/Local/Programs/nodejs:$PATH"
 
 ## LESSON-031: codex는 self-lint 불가(Windows) + run-phase 단일패스 → codex 페이즈는 ztr leg만으로 clean PASS 불가, autofix+휴먼피드백 배선 필요 [통합] [Windows] [Mechanical]
 
-**상황**: CubiForge 12Z-G 인간-게이트 N페이즈 체이닝 dogfood에서, 게이트 결함 A/B/C/D를 차례로 고친 뒤 mechanical(run_nit --include-untracked)이 codex 신규파일을 실제 리뷰하게 됐다. 그러자 매 codex 페이즈가 mechanical에서 CHANGES_REQUESTED로 멈췄다(예: I001 import 미정렬).
+**상황**: Model Forge 12Z-G 인간-게이트 N페이즈 체이닝 dogfood에서, 게이트 결함 A/B/C/D를 차례로 고친 뒤 mechanical(run_nit --include-untracked)이 codex 신규파일을 실제 리뷰하게 됐다. 그러자 매 codex 페이즈가 mechanical에서 CHANGES_REQUESTED로 멈췄다(예: I001 import 미정렬).
 
 **증상**: `ztr run-phase`를 다시 돌려도 clean PASS가 안 닫힌다. 재실행 = implementer(codex) 재호출 = 비결정적 재생성이라 같은 클래스 lint가 다시 등장한다.
 
 **원인**: 세 가지가 겹친다 — (1) codex가 Windows workspace-write sandbox에서 ruff/mypy 셸을 못 돌려(LESSON-025) 자기 lint를 발견·자가수정 못 함, (2) run-phase는 단일 패스(implementer→mechanical→reviewer)라 구현과 mechanical 사이 수정 단계가 없음, (3) mechanical findings가 implementer로 자동 피드백되지 않음(자동 수정 루프는 오케스트레이터 설계상 범위 밖). 따라서 "맹목 재실행"으로는 루프가 닫히지 않는다. codex는 발견은 못 해도 **지시받으면 apply_patch로 수정은 가능**하다는 점이 핵심(불가가 아니라 배선 부재).
 
-**해결(방향, 별도 페이즈)**: (ㄴ) implementer 직후·mechanical 전에 결정론 autofix 스텝(`ruff --fix`+format, verdict 없음)으로 자동수정 가능한 lint 제거. (ㄱ) mechanical/reviewer findings를 다음 implementer resume 프롬프트에 주입해 재호출 — 단 **사람이 트리거하는 휴먼-게이트**로만(자동 루프 금지, R5/페이즈경계 사람확인). 구현 핸드오프: CubiForge `docs/handoff/ztr_autofix_feedback_phase_prompt.md`.
+**해결(방향, 별도 페이즈)**: (ㄴ) implementer 직후·mechanical 전에 결정론 autofix 스텝(`ruff --fix`+format, verdict 없음)으로 자동수정 가능한 lint 제거. (ㄱ) mechanical/reviewer findings를 다음 implementer resume 프롬프트에 주입해 재호출 — 단 **사람이 트리거하는 휴먼-게이트**로만(자동 루프 금지, R5/페이즈경계 사람확인). 구현 핸드오프: Model Forge `docs/handoff/ztr_autofix_feedback_phase_prompt.md`.
 
 **원칙**: 실행자가 자기 출력을 검사할 수 없는 환경(여기선 Windows codex)에서는 단일패스 run-phase의 leg 게이트만으로 그 실행자의 페이즈를 clean PASS시킬 수 없다. ztr는 "구현 + advisory 신호"를 내고, 권위 있는 검증·lint수정·커밋은 아웃터 휴먼 루프가 맡는 것이 실측된 운영 모델이다(= "완전 무인"이 범위 밖인 이유와 동근). 게이트를 더 빡세게 만들수록(A/B/C/D) 이 사실이 더 분명히 드러난다 — 게이트 강화와 autofix/피드백 배선은 함께 가야 한다.
 
@@ -564,11 +564,11 @@ export PATH="/c/Users/<user>/AppData/Local/Programs/nodejs:$PATH"
 
 `[통합][Mechanical]`
 
-## LESSON-033: 첫 in-environment relay dogfood(CubiForge 12Z-H2) — (ㄴ)autofix 발화 검증 + mechanical 900s hang(원인=run_nit 총 리뷰시간 > relay leg timeout; jemmin spooler는 이미 WAL+busy_timeout) [통합] [Mechanical] [Windows]
+## LESSON-033: 첫 in-environment relay dogfood(Model Forge 12Z-H2) — (ㄴ)autofix 발화 검증 + mechanical 900s hang(원인=run_nit 총 리뷰시간 > relay leg timeout; jemmin spooler는 이미 WAL+busy_timeout) [통합] [Mechanical] [Windows]
 
 > ⚠️ **정정-2(2026-06-22, 실측)**: 초판("ollama 본질 hang")·정정-1("jemmin spool.db lock 경합") **둘 다 부정확**. 코드 실측 — jemmin spooler는 이미 `WAL + synchronous=NORMAL + busy_timeout=3000`(`src/jemmin/state/sqlite_spooler.py:29-31`)이라 DB lock이면 **3초에 에러**(900s 불가). run_nit는 per-file ollama timeout **120s**(`run_nit.py:45,210` `future.result(timeout=120)` + [TIMEOUT]). **실제 원인 = 변경파일 N개 × 파일당 ≤120s ollama 리뷰의 누적이 relay 900s leg timeout을 초과** + run_nit stdout 버퍼링이 kill 시 유실(→ 빈 출력). vanilla DB lock도, 단일 ollama hang도 아니다. 동시 ollama 경합 시 파일당 더 느려져 악화될 뿐. 아래 본문은 이 **정정-2** 기준으로 읽을 것(jemmin/spool 코드는 손대지 않는다 — 이미 하드닝됨).
 
-**상황**: CubiForge ADR-0015 Item 4(draft-only enforcement)를 처음으로 *오케스트레이터 세션이 직접* `ztr run-phase` relay로 헤드리스 실행(이전 H1/외부 codex 세션은 relay를 밖에서 돌리고 보고만 전달 → relay 내부 미검증). leg: implementer=codex(exec -s workspace-write --json -) / autofix=(ㄴ) `ruff check --fix .` / mechanical=`run_nit.py --changed --include-untracked --keep-going` / reviewer=claude(stdout_token). per-leg timeout 900s.
+**상황**: Model Forge ADR-0015 Item 4(draft-only enforcement)를 처음으로 *오케스트레이터 세션이 직접* `ztr run-phase` relay로 헤드리스 실행(이전 H1/외부 codex 세션은 relay를 밖에서 돌리고 보고만 전달 → relay 내부 미검증). leg: implementer=codex(exec -s workspace-write --json -) / autofix=(ㄴ) `ruff check --fix .` / mechanical=`run_nit.py --changed --include-untracked --keep-going` / reviewer=claude(stdout_token). per-leg timeout 900s.
 
 **관찰(실측 envelope)**:
 - implementer(codex): PASS exit0 — apply_patch로 H2 코드 작성 성공(`promote_fallback_draft` 등). **codex가 Windows에서 헤드리스로 파일편집 OK**(LESSON-025와 일관: 파일편집 가능, 셸은 불가).
@@ -626,7 +626,7 @@ export PATH="/c/Users/<user>/AppData/Local/Programs/nodejs:$PATH"
 
 ## LESSON-036: codex 헤드리스 안정화 — MCP noise는 `--ignore-user-config`로, SoT-burn은 scoped preamble로 (LESSON-026 supersede) [환경] [Windows] [통합]
 
-**문제(실측 2026-06-24, codex 0.140.0, CubiForge γ relay)**: 풀 4-leg 무인 relay가 implementer(codex) 단계에서 반복 실패.
+**문제(실측 2026-06-24, codex 0.140.0, Model Forge γ relay)**: 풀 4-leg 무인 relay가 implementer(codex) 단계에서 반복 실패.
 - run#1(무-preamble): codex가 프로젝트 `CLAUDE.md` boot 지시로 대형 SoT(PHASES/HANDOFF/DESIGN)를 pwsh로 재독하다 **48.8s에 exit -1**(미완·파일변경 0).
 - run#2(`-c mcp_servers.<name>.enabled=false` 적용): **즉시 exit 1** — `Error loading config.toml: invalid transport in mcp_servers.github`. `GITHUB_PAT_TOKEN` 미설정이라 github MCP transport가 invalid인데, `-c mcp_servers.*` override가 전체 [mcp_servers] strict 재파싱을 유발해 깨짐.
 - 공통 배경: notion(미로그인)·orca-slicer(127.0.0.1) MCP가 `rmcp::transport::worker: worker quit with fatal`을 반복 emit(LESSON-026은 "비차단"이라 했으나 안정성/로그를 해침).
@@ -647,7 +647,7 @@ export PATH="/c/Users/<user>/AppData/Local/Programs/nodejs:$PATH"
 
 ## LESSON-037: 게이트 leg 수동 구동 시 외부 하네스 timeout ≥ leg 내부 timeout — 아니면 내부 한도가 무의미 [환경] [Mechanical] [통합]
 
-**상황**: CubiForge Item 2 드라이브(2026-07-01)에서 mechanical leg를 relay 없이 수동 구동:
+**상황**: Model Forge Item 2 드라이브(2026-07-01)에서 mechanical leg를 relay 없이 수동 구동:
 `timeout 500 python run_nit.py --file-timeout 600 ...`. 그런데 실행 툴(Bash) 기본 한도가 120s라
 **외부 하네스가 2분에 leg를 kill** — 내부 `--file-timeout 600`은 한 번도 도달 못 했다. 증상은
 "mechanical timeout BLOCKED"로 보이지만 실제로는 **바깥 타이머가 먼저 끊은 것**(LESSON-033의

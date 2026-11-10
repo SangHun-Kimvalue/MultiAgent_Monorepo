@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "timeout_seconds": 30,
-  "repo_root": "D:\\MultiAgent_Monorepo",
+  "repo_root": "D:\\work\\repo",
   "mechanical": {
     "interpreter": "runtimes/ztr/.venv/Scripts/python.exe",
     "entrypoint": "methodology/nitpicker/run_nit.py",
     "args": [
       "--repo",
-      "D:\\MultiAgent_Monorepo",
+      "D:\\work\\repo",
       "--provider",
       "ollama",
       "--model",
@@ -42,7 +42,7 @@
         "-c",
         "model_reasoning_effort=\"high\"",
         "--cd",
-        "D:\\MultiAgent_Monorepo",
+        "D:\\work\\repo",
         "-"
       ],
       "working_directory": ".",

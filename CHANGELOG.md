@@ -3,7 +3,7 @@
 > 성격: **버전 태그 ↔ 완료 페이즈 ↔ 대표 커밋** 매핑(릴리스 지향 히스토리).
 > 트랙별 딥 SoT는 `methodology/docs/PHASE_CYCLE_ORCHESTRATOR_DESIGN.md §10`(진행 상태), 의도·방향 서사는 `methodology/docs/SUITE_NARRATIVE.md`. 이 문서는 그 둘을 **중복하지 않고** 버전 경계만 짚는다.
 > 정직성 규약: `完` = 게이트 PASS·머지 실증. `진행`/`NOT CLAIMED` = 미실증 명시. 상태 충돌 시 §10 요약판이 SoT.
-> 별 repo(Nitpicker Daemon·CubiForge) 커밋은 `(별 repo)`로 표기 — 이 모노레포 이력이 아니다.
+> 별 repo(Nitpicker Daemon·Model Forge) 커밋은 `(별 repo)`로 표기 — 이 모노레포 이력이 아니다.
 
 ---
 
@@ -31,14 +31,14 @@ v0.2.0(빌드+self-dogfood 15단계 完) 이후 **90 커밋**. 스위트를 "돌
 
 ### 외부 실프로젝트 트라이얼 (다형성·실적용 실증)
 - **T3 닛피커 provider 플러그인화 完(핵심)**: Gemini API 만료 → Ollama 기본 플러그인화, 기존 로직 유지, 560 tests `4091760 (별 repo)`. Mechanical 레그 기준 = `config/system_prompt.md` 4계명(CORE RULES).
-- **T9 CubiForge 어댑션 진행**: β mechanical 계약정합 完(nit_envelope↔ztr Envelope 3분기 라이브) · γ 첫 실페이즈 부분 完 · 풀 4-leg 무인 E2E capstone `(별 repo)`. 2번째 실프로젝트 적용 실증(단 같은 ztr 백엔드 — §9 비-ztr 다형성은 여전히 NOT CLAIMED).
+- **T9 Model Forge 어댑션 진행**: β mechanical 계약정합 完(nit_envelope↔ztr Envelope 3분기 라이브) · γ 첫 실페이즈 부분 完 · 풀 4-leg 무인 E2E capstone `(별 repo)`. 2번째 실프로젝트 적용 실증(단 같은 ztr 백엔드 — §9 비-ztr 다형성은 여전히 NOT CLAIMED).
 - **T1 외부 프로젝트(C++ FLTK) trial 진행**: 외부 오케스트레이터(ZTR 숨김·무오염·push 금지). 환경·바인딩 準備完, Slice A(UI 파서 제네릭화) 프롬프트 `ad3bc83`.
 
 ### 버전관리 종합 (이 릴리스)
 - CHANGELOG 신설 · SUITE_NARRATIVE/README 현행화 · `.gitignore` 정리 · stale 브랜치 `codex/phase8-resume-chain` 정리.
 
 ### T10 재적용 수렴 루프 — 개설·Discovery_PASS (진행)
-- **동기**(xCeler-Plus 실측): `run-phase` 한 사이클 후 리뷰 finding을 fix→재검증하는 루프 부재(`fix_feedback`는 수동 `ztr fix-prompt`만 배선).
+- **동기**(제품 앱 실측): `run-phase` 한 사이클 후 리뷰 finding을 fix→재검증하는 루프 부재(`fix_feedback`는 수동 `ztr fix-prompt`만 배선).
 - **방향**: 완전 자동 재적용(v1 함정)은 영구 금지, **매 라운드 사람 승인**하는 휴먼-게이트 수렴 루프(PASS/N=3). 계층 분리(결정론 1라운드=ztr / 루프·게이트=SKILL·GUI).
 - Discovery_PASS(7 산출물+risk_register, `docs/discovery/reapply-convergence-loop/`). 슬라이스 A(ztr fix-round)→B(SKILL 규약)→C(GUI 버튼). 다음=Slice A phased-handoff. 상세=§10 T10.
 

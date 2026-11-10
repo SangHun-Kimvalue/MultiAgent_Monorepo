@@ -148,7 +148,7 @@ def test_claude_new_argv_only_forces_json_output() -> None:
 
 def test_codex_resume_argv_uses_exec_resume_shape() -> None:
     plan = build_resume_argv_plan(
-        ["codex", "exec", "--cd", "D:\\ZRT"],
+        ["codex", "exec", "--cd", "D:\\work\\ztr"],
         profile="codex",
         session_id="thread-123",
     )
@@ -160,14 +160,14 @@ def test_codex_resume_argv_uses_exec_resume_shape() -> None:
         "thread-123",
         "--json",
     ]
-    assert plan.working_dir == "D:\\ZRT"
+    assert plan.working_dir == "D:\\work\\ztr"
 
 
 @pytest.mark.parametrize(
     ("tokens", "flag", "value"),
     [
-        (["--cd", "D:\\ZRT"], "--cd", "D:\\ZRT"),
-        (["-C", "D:\\ZRT"], "-C", "D:\\ZRT"),
+        (["--cd", "D:\\work\\ztr"], "--cd", "D:\\work\\ztr"),
+        (["-C", "D:\\work\\ztr"], "-C", "D:\\work\\ztr"),
         (["--sandbox", "workspace-write"], "--sandbox", "workspace-write"),
         (["-s", "read-only"], "-s", "read-only"),
         (["--add-dir", "D:\\Extra"], "--add-dir", "D:\\Extra"),
@@ -196,7 +196,7 @@ def test_codex_resume_strips_each_exec_only_flag(
     "token",
     [
         "--sandbox=workspace-write",
-        "--cd=D:\\ZRT",
+        "--cd=D:\\work\\ztr",
         "-Cfoo",
         "-sfoo",
         "-pfoo",
@@ -213,24 +213,24 @@ def test_codex_resume_strips_joined_exec_only_values(token: str) -> None:
     assert token not in argv
 
 
-@pytest.mark.parametrize("token", ["-CD:\\ZRT", "-C=D:\\ZRT", "--cd=D:\\ZRT"])
+@pytest.mark.parametrize("token", ["-CD:\\work\\ztr", "-C=D:\\work\\ztr", "--cd=D:\\work\\ztr"])
 def test_codex_resume_extracts_joined_working_dir_without_prefix(token: str) -> None:
     plan = build_resume_argv_plan(
         ["codex", "exec", token, "-"], profile="codex", session_id="thread-123"
     )
 
-    assert plan.working_dir == "D:\\ZRT"
+    assert plan.working_dir == "D:\\work\\ztr"
 
 
 def test_codex_new_argv_preserves_exec_only_flags() -> None:
     argv = build_resume_argv(
-        ["codex", "exec", "--cd", "D:\\ZRT", "-s", "read-only", "-"],
+        ["codex", "exec", "--cd", "D:\\work\\ztr", "-s", "read-only", "-"],
         profile="codex",
         session_id=None,
     )
 
     assert argv == [
-        "codex", "exec", "--json", "--cd", "D:\\ZRT", "-s", "read-only", "-"
+        "codex", "exec", "--json", "--cd", "D:\\work\\ztr", "-s", "read-only", "-"
     ]
 
 
@@ -294,12 +294,12 @@ def test_resume_attempt_surfaces_strip_without_changing_verdict_facts() -> None:
     )
 
     _, attempt = coordinator.prepare(
-        ["codex", "exec", "--sandbox", "read-only", "--cd", "D:\\ZRT"],
+        ["codex", "exec", "--sandbox", "read-only", "--cd", "D:\\work\\ztr"],
         role="implementer",
     )
     payload = attempt.as_payload()
 
-    assert payload["working_dir"] == "D:\\ZRT"
+    assert payload["working_dir"] == "D:\\work\\ztr"
     assert payload["stripped_flags"] == ["--sandbox", "--cd"]
     assert payload["resumed"] is True
     assert payload["requested_id"] == "thread-123"
